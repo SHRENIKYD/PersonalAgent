@@ -14,7 +14,7 @@ import {
   Task,
   TrackKey,
 } from '../models';
-import { MONTH_SEEDS, TRACKS, generateMonthNames } from '../growth-data';
+import { GOALS_PER_TRACK, MONTH_SEEDS, TRACKS, generateMonthNames } from '../growth-data';
 import { DSA_TOPICS } from '../prep-dsa-data';
 import { CS_TOPICS, SYSDESIGN_TOPICS, WEB_TOPICS } from '../prep-concept-data';
 
@@ -40,8 +40,15 @@ const PREP_TOPIC_SIZES: Record<PrepCategoryKey, number[]> = {
   web: WEB_TOPICS.map(t => t.items.length),
 };
 
-function seededTrack(pair: [string, string]): [{ text: string; done: boolean }, { text: string; done: boolean }] {
-  return [{ text: pair[0], done: false }, { text: pair[1], done: false }];
+function seededTrack(triple: [string, string, string]): { text: string; done: boolean }[] {
+  return triple.map(text => ({ text, done: false }));
+}
+
+/** Pads a track's goal list up to GOALS_PER_TRACK with empty rows — never removes any. */
+function padTrack(goals: { text: string; done: boolean }[]): { text: string; done: boolean }[] {
+  const next = [...goals];
+  while (next.length < GOALS_PER_TRACK) next.push({ text: '', done: false });
+  return next;
 }
 
 function defaultRoadmap(): RoadmapState {
@@ -51,10 +58,10 @@ function defaultRoadmap(): RoadmapState {
       name,
       theme: seed?.theme ?? '',
       tracks: {
-        career: seededTrack(seed?.career ?? ['', '']),
-        health: seededTrack(seed?.health ?? ['', '']),
-        habits: seededTrack(seed?.habits ?? ['', '']),
-        balance: seededTrack(seed?.balance ?? ['', '']),
+        career: seededTrack(seed?.career ?? ['', '', '']),
+        health: seededTrack(seed?.health ?? ['', '', '']),
+        habits: seededTrack(seed?.habits ?? ['', '', '']),
+        balance: seededTrack(seed?.balance ?? ['', '', '']),
       },
     };
   });
@@ -66,6 +73,16 @@ function defaultRoadmap(): RoadmapState {
     { name: 'Connect with someone', weeks: new Array(HABIT_WEEKS).fill(false) },
   ];
   return { months, habits };
+}
+
+/** Migration for roadmaps saved before a 3rd goal slot per track existed. */
+function padRoadmapTracks(roadmap: RoadmapState): RoadmapState {
+  roadmap.months.forEach(m => {
+    (['career', 'health', 'habits', 'balance'] as TrackKey[]).forEach(key => {
+      m.tracks[key] = padTrack(m.tracks[key]);
+    });
+  });
+  return roadmap;
 }
 
 function defaultPrep(): PrepState {
@@ -104,7 +121,7 @@ export class StateService {
   constructor(private storage: StorageService) {
     this.tasks.set(this.storage.get<Task[]>(KEYS.tasks, []));
     this.notes.set(this.storage.get<Note[]>(KEYS.notes, []));
-    this.roadmap.set(this.storage.get<RoadmapState>(KEYS.roadmap, defaultRoadmap()));
+    this.roadmap.set(padRoadmapTracks(this.storage.get<RoadmapState>(KEYS.roadmap, defaultRoadmap())));
     this.prep.set(this.storage.get<PrepState>(KEYS.prep, defaultPrep()));
     this.certs.set(this.storage.get<CertsState>(KEYS.certs, defaultCerts()));
     this.fitnessLog.set(this.storage.get<Record<string, boolean>>(KEYS.fitness, {}));

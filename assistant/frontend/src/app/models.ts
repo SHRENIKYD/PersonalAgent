@@ -89,6 +89,7 @@ export type TabKey =
   | 'dashboard'
   | 'growth'
   | 'fitness'
+  | 'news'
   | 'dsa'
   | 'cs'
   | 'sysdesign'

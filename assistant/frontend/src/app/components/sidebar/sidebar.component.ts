@@ -19,6 +19,7 @@ const TABS: Tab[] = [
   { key: 'notes', label: 'Notes' },
   { key: 'growth', label: 'Growth' },
   { key: 'fitness', label: 'Fitness & Diet' },
+  { key: 'news', label: 'News' },
   { key: 'dsa', label: 'DSA' },
   { key: 'cs', label: 'CS Fundamentals' },
   { key: 'sysdesign', label: 'System Design' },
