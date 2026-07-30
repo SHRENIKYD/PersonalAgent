@@ -18,6 +18,7 @@ const TABS: Tab[] = [
   { key: 'tasks', label: 'Tasks' },
   { key: 'notes', label: 'Notes' },
   { key: 'growth', label: 'Growth' },
+  { key: 'fitness', label: 'Fitness & Diet' },
   { key: 'dsa', label: 'DSA' },
   { key: 'cs', label: 'CS Fundamentals' },
   { key: 'sysdesign', label: 'System Design' },
@@ -34,6 +35,16 @@ const TABS: Tab[] = [
     <aside class="sidebar">
       <div class="brand">Aide</div>
       <div class="brand-sub">Personal Assistant</div>
+
+      <div class="overall-progress">
+        <div class="overall-progress-top">
+          <span class="overall-progress-tag">Overall</span>
+          <span class="overall-progress-label">{{ state.overallProgress().pct }}%</span>
+        </div>
+        <div class="overall-progress-track">
+          <div class="overall-progress-fill" [style.width.%]="state.overallProgress().pct"></div>
+        </div>
+      </div>
 
       <nav class="tabs">
         <button
@@ -75,6 +86,10 @@ export class SidebarComponent {
     if (key === 'growth') {
       const p = this.state.roadmapProgress();
       return p.total ? `${p.done}/${p.total}` : '';
+    }
+    if (key === 'fitness') {
+      const p = this.state.fitnessWeekProgress();
+      return `${p.pct}%`;
     }
     if (PREP_TABS.includes(key)) {
       const p = this.state.categoryProgress(key as PrepCategoryKey);

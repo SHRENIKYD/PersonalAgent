@@ -24,6 +24,7 @@ const KEYS = {
   roadmap: 'assistant-roadmap-v1',
   prep: 'assistant-prep-v1',
   certs: 'assistant-certs-v1',
+  fitness: 'assistant-fitness-v1',
 };
 
 const HABIT_WEEKS = 26;
@@ -57,7 +58,8 @@ function defaultRoadmap(): RoadmapState {
   const habits: Habit[] = [
     { name: 'Sleep 7+ hours', weeks: new Array(HABIT_WEEKS).fill(false) },
     { name: 'Deep work block', weeks: new Array(HABIT_WEEKS).fill(false) },
-    { name: 'Move your body', weeks: new Array(HABIT_WEEKS).fill(false) },
+    { name: 'Workout per plan (see Fitness tab)', weeks: new Array(HABIT_WEEKS).fill(false) },
+    { name: 'On-diet (see Fitness tab)', weeks: new Array(HABIT_WEEKS).fill(false) },
     { name: 'Connect with someone', weeks: new Array(HABIT_WEEKS).fill(false) },
   ];
   return { months, habits };
@@ -90,6 +92,8 @@ export class StateService {
   roadmap = signal<RoadmapState>(defaultRoadmap());
   prep = signal<PrepState>(defaultPrep());
   certs = signal<CertsState>(defaultCerts());
+  /** key = `${YYYY-MM-DD}:${workoutDayName}` or `${YYYY-MM-DD}:diet` -> done */
+  fitnessLog = signal<Record<string, boolean>>({});
   saveStatus = signal<string>('');
 
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -100,6 +104,7 @@ export class StateService {
     this.roadmap.set(this.storage.get<RoadmapState>(KEYS.roadmap, defaultRoadmap()));
     this.prep.set(this.storage.get<PrepState>(KEYS.prep, defaultPrep()));
     this.certs.set(this.storage.get<CertsState>(KEYS.certs, defaultCerts()));
+    this.fitnessLog.set(this.storage.get<Record<string, boolean>>(KEYS.fitness, {}));
   }
 
   // ---------------- derived views ----------------
@@ -116,6 +121,23 @@ export class StateService {
   progress = computed(() => {
     const total = this.tasks().length;
     const done = this.doneTasks().length;
+    return { total, done, pct: total === 0 ? 0 : Math.round((done / total) * 100) };
+  });
+
+  /** Combined total/done across tasks, growth roadmap, all four prep categories, and certs. */
+  overallProgress = computed(() => {
+    const parts = [
+      this.progress(),
+      this.roadmapProgress(),
+      this.categoryProgress('dsa'),
+      this.categoryProgress('cs'),
+      this.categoryProgress('sysdesign'),
+      this.categoryProgress('web'),
+      this.certsProgress(),
+      this.fitnessWeekProgress(),
+    ];
+    const total = parts.reduce((sum, p) => sum + p.total, 0);
+    const done = parts.reduce((sum, p) => sum + p.done, 0);
     return { total, done, pct: total === 0 ? 0 : Math.round((done / total) * 100) };
   });
 
@@ -323,13 +345,42 @@ export class StateService {
     this.scheduleSave();
   }
 
+  // ---------------- fitness (workout + diet adherence) ----------------
+
+  isFitnessLogged(key: string): boolean {
+    return !!this.fitnessLog()[key];
+  }
+
+  toggleFitnessLog(key: string, value: boolean) {
+    this.fitnessLog.update(log => ({ ...log, [key]: value }));
+    this.scheduleSave();
+  }
+
+  /** Adherence over the last 7 calendar days, across both workout and diet checks. */
+  fitnessWeekProgress = computed(() => {
+    const log = this.fitnessLog();
+    const days: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      days.push(d.toISOString().slice(0, 10));
+    }
+    let total = 0, done = 0;
+    days.forEach(d => {
+      total += 2;
+      if (log[`${d}:workout`]) done++;
+      if (log[`${d}:diet`]) done++;
+    });
+    return { total, done, pct: total === 0 ? 0 : Math.round((done / total) * 100) };
+  });
+
   // ---------------- certificates ----------------
 
   certsProgress = computed(() => {
     const c = this.certs();
     const total = c.todo.filter(x => x.name.trim()).length;
     const done = c.todo.filter(x => x.done).length;
-    return { total, done };
+    return { total, done, pct: total === 0 ? 0 : Math.round((done / total) * 100) };
   });
 
   addCertTodo() {
@@ -406,8 +457,11 @@ export class StateService {
       const ok3 = this.storage.set(KEYS.roadmap, this.roadmap());
       const ok4 = this.storage.set(KEYS.prep, this.prep());
       const ok5 = this.storage.set(KEYS.certs, this.certs());
+      const ok6 = this.storage.set(KEYS.fitness, this.fitnessLog());
       this.saveStatus.set(
-        ok1 && ok2 && ok3 && ok4 && ok5 ? 'Saved' : 'Save failed — check browser storage settings'
+        ok1 && ok2 && ok3 && ok4 && ok5 && ok6
+          ? 'Saved'
+          : 'Save failed — check browser storage settings'
       );
     }, 400);
   }
