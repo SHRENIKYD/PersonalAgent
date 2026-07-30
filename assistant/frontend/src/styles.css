@@ -852,6 +852,49 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 .explanation p { margin: 0; font-size: 13.5px; color: var(--muted); }
 
+.note {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.note-section {
+  background: var(--panel-2);
+  border-left: 3px solid var(--line);
+  border-radius: 0 6px 6px 0;
+  padding: 9px 12px;
+}
+
+.note-section:nth-of-type(1) { border-left-color: var(--accent-dim); }
+.note-section:nth-of-type(2) { border-left-color: var(--hud-cyan); }
+.note-section:nth-of-type(3) { border-left-color: var(--accent); }
+.note-section:last-child { border-left-color: var(--ok); }
+
+.note-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 4px;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.note-section p { margin: 0; font-size: 13.5px; }
+
+.note-code {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--hud-cyan);
+  overflow-x: auto;
+  white-space: pre;
+  margin: 0;
+}
+
 /* ---------------- certificates ---------------- */
 
 .cert-row {

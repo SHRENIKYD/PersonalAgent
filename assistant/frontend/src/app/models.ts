@@ -146,6 +146,8 @@ export interface Approach {
   description: string;
   time: string;   // Big-O, e.g. "O(n^2)"
   space: string;  // Big-O, e.g. "O(1)"
+  /** Optional pseudocode for this approach — shown as a code block under the description. */
+  pseudocode?: string;
 }
 
 export interface DsaProblem {
@@ -161,10 +163,18 @@ export interface DsaTopic {
   problems: DsaProblem[];
 }
 
-/** A concept question — no brute-force/optimized split, just a plain-English explanation. */
+/**
+ * A concept question — no brute-force/optimized split, just clean study notes: what it is,
+ * how it actually works, a concrete example or pseudocode where one clarifies the mechanism,
+ * and why it's the kind of thing interviewers actually ask about.
+ */
 export interface ConceptItem {
   name: string;
-  explanation: string;
+  definition: string;
+  howItWorks: string;
+  /** Pseudocode, a code snippet, or a worked example — omitted when prose alone is clearer. */
+  example?: string;
+  whyItMatters: string;
 }
 
 export interface ConceptTopic {
