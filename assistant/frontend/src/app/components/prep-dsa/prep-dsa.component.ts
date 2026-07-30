@@ -30,7 +30,77 @@ function key(ti: number, pi: number): string {
           </span>
         </button>
 
-        <div class="prep-problem-list" *ngIf="isTopicOpen(ti)">
+        <!-- Narrative topics: a teaching arc, each concept building on the redundancy the last one left behind. -->
+        <div class="prep-problem-list" *ngIf="isTopicOpen(ti) && topic.narrative as nar">
+          <div class="prep-problem" *ngFor="let c of nar.concepts; let pi = index">
+            <div class="prep-problem-head" (click)="toggleProblem(ti, pi)">
+              <input
+                type="checkbox"
+                [checked]="checked(ti, pi)"
+                (click)="$event.stopPropagation()"
+                (change)="toggle(ti, pi, $any($event.target).checked)" />
+              <span class="prep-problem-name" [class.done]="checked(ti, pi)">{{ pi + 1 }}. {{ c.name }}</span>
+              <span class="prep-problem-chevron" [class.open]="isProblemOpen(ti, pi)">›</span>
+            </div>
+
+            <div class="prep-problem-body" *ngIf="isProblemOpen(ti, pi)">
+              <div class="note">
+                <div class="note-section">
+                  <div class="note-label">Why this exists</div>
+                  <p>{{ c.whyThisExists }}</p>
+                </div>
+                <div class="note-section">
+                  <div class="note-label">Definition — {{ c.definitionLabel }}</div>
+                  <p>{{ c.definition }}</p>
+                </div>
+                <div class="note-section">
+                  <div class="note-label">In simple words</div>
+                  <p>{{ c.inSimpleWords }}</p>
+                </div>
+                <div class="note-section">
+                  <div class="note-label">Two worked examples</div>
+                  <pre class="note-code" *ngFor="let ex of c.examples">{{ ex }}</pre>
+                </div>
+                <div class="note-section" *ngIf="c.code">
+                  <div class="note-label">
+                    Code
+                    <span *ngIf="c.timeComplexity"> &middot; TC {{ c.timeComplexity }}</span>
+                    <span *ngIf="c.spaceComplexity"> &middot; SC {{ c.spaceComplexity }}</span>
+                  </div>
+                  <pre class="note-code">{{ c.code }}</pre>
+                </div>
+                <div class="note-section">
+                  <div class="note-label">What this unlocks</div>
+                  <p>{{ c.whatThisUnlocks }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <h2 class="section-title">Summary — Formulas &amp; Definitions</h2>
+          <div class="fit-table-wrap">
+            <table class="fit-table">
+              <thead><tr><th>Concept</th><th>Definition / Formula</th></tr></thead>
+              <tbody>
+                <tr *ngFor="let row of nar.summary"><td>{{ row.concept }}</td><td>{{ row.formula }}</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h2 class="section-title">Self-Test</h2>
+          <div class="prep-problem" *ngFor="let q of nar.selfTest; let qi = index">
+            <div class="prep-problem-head" (click)="toggleSelfTest(ti, qi)">
+              <span class="prep-problem-name">Q{{ qi + 1 }}. {{ q.question }}</span>
+              <span class="prep-problem-chevron" [class.open]="isSelfTestOpen(ti, qi)">›</span>
+            </div>
+            <div class="prep-problem-body" *ngIf="isSelfTestOpen(ti, qi)">
+              <div class="note-section"><p>{{ q.answer }}</p></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Legacy topics: independent problem cards (brute force / optimized / explanation). -->
+        <div class="prep-problem-list" *ngIf="isTopicOpen(ti) && !topic.narrative">
           <div class="prep-problem" *ngFor="let p of topic.problems; let pi = index">
             <div class="prep-problem-head" (click)="toggleProblem(ti, pi)">
               <input
@@ -73,10 +143,11 @@ function key(ti: number, pi: number): string {
 })
 export class PrepDsaComponent {
   topics = DSA_TOPICS;
-  totalProblems = DSA_TOPICS.reduce((sum, t) => sum + t.problems.length, 0);
+  totalProblems = DSA_TOPICS.reduce((sum, t) => sum + (t.narrative?.concepts.length ?? t.problems.length), 0);
 
   private openTopics = signal<Set<number>>(new Set());
   private openProblems = signal<Set<string>>(new Set());
+  private openSelfTest = signal<Set<string>>(new Set());
 
   constructor(public state: StateService) {}
 
@@ -111,6 +182,19 @@ export class PrepDsaComponent {
   toggleProblem(ti: number, pi: number) {
     const k = key(ti, pi);
     this.openProblems.update(set => {
+      const next = new Set(set);
+      if (next.has(k)) next.delete(k); else next.add(k);
+      return next;
+    });
+  }
+
+  isSelfTestOpen(ti: number, qi: number): boolean {
+    return this.openSelfTest().has(key(ti, qi));
+  }
+
+  toggleSelfTest(ti: number, qi: number) {
+    const k = key(ti, qi);
+    this.openSelfTest.update(set => {
       const next = new Set(set);
       if (next.has(k)) next.delete(k); else next.add(k);
       return next;

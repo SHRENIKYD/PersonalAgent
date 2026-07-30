@@ -1,15 +1,196 @@
-import { DsaTopic } from './models';
+import { DsaTopic, NarrativeTopic } from './models';
+
+/**
+ * Pilot narrative for Arrays & Strings — a teaching arc rather than independent problem
+ * cards: each technique exists specifically to remove the redundant work the previous one
+ * left behind, ending on a summary table and a self-test. Content adapted from the user's
+ * own class-notes reference on subarray-sum techniques and the sliding window pattern.
+ */
+const ARRAYS_STRINGS_NARRATIVE: NarrativeTopic = {
+  concepts: [
+    {
+      name: 'Sum of All Subarrays — Brute Force',
+      whyThisExists: 'Before optimizing anything, we need one working baseline solution to see exactly which work is repeated.',
+      definitionLabel: 'Sum of All Subarrays',
+      definition: 'Adding up the sum of every single subarray of an array, then adding all those sums together into one final total.',
+      inSimpleWords: 'Take every possible contiguous slice of the array, add up each slice, and then add all those slice-totals together. The brute-force way uses three loops: one to pick where a slice starts, one to pick where it ends, and one to actually walk through and add up that slice. Nothing is remembered between slices — every slice is summed completely from scratch, which is wasteful.',
+      examples: [
+        'A = [3,2,5] → 6 subarrays\n[3]=3  [3,2]=5  [3,2,5]=10\n[2]=2  [2,5]=7   [5]=5\nTotal = 3+5+10+2+7+5 = 32',
+        'A = [1,4] → 3 subarrays\n[1]=1  [1,4]=5  [4]=4\nTotal = 1+5+4 = 10',
+      ],
+      code:
+        'ans = 0\n' +
+        'for i in 0..n-1:\n' +
+        '  for j in i..n-1:        // subarray [i,j]\n' +
+        '    s = 0\n' +
+        '    for k in i..j: s += A[k]\n' +
+        '    ans += s\n' +
+        'return ans',
+      timeComplexity: 'O(N^3)', spaceComplexity: 'O(1)',
+      whatThisUnlocks: 'The inner k-loop keeps re-adding numbers we already added before — precomputing sums removes that entirely.',
+    },
+    {
+      name: 'Optimisation #1 — Using Prefix Sum',
+      whyThisExists: 'The innermost k-loop is pure repeated work — prefix sum replaces it with one subtraction.',
+      definitionLabel: 'Prefix Sum Array (pf)',
+      definition: 'An array where pf[i] holds the running total of all elements from index 0 to i. Once built, the sum of any range [L..R] is just pf[R] - pf[L-1] (or pf[R] alone when L = 0).',
+      inSimpleWords: 'Instead of re-adding every element of a slice by hand each time, we prepare a running-total array once. Then the sum of any slice [i..j] is found instantly by subtracting two numbers from that running-total array — no re-walking the slice needed. This removes the slowest inner loop and turns O(N) work per subarray into O(1) work per subarray.',
+      examples: [
+        'A=[3,2,5] → pf=[3,5,10]\nsum[1,2] = pf[2]-pf[0] = 10-3 = 7\n(matches [2,5]=7 directly)',
+        'A=[4,-1,6] → pf=[4,3,9]\nsum[0,1] = pf[1] = 3\nsum[1,2] = pf[2]-pf[0] = 9-4 = 5',
+      ],
+      code:
+        'pf[0] = A[0]\n' +
+        'for i in 1..n-1: pf[i] = pf[i-1] + A[i]     // O(N)\n\n' +
+        'total = 0\n' +
+        'for i in 0..n-1:\n' +
+        '  for j in i..n-1:\n' +
+        '    sum = (i == 0) ? pf[j] : pf[j] - pf[i-1]\n' +
+        '    total += sum',
+      timeComplexity: 'O(N^2)', spaceComplexity: 'O(N)',
+      whatThisUnlocks: 'We can drop the extra pf[] array entirely and just carry the running sum forward as we go.',
+    },
+    {
+      name: 'Optimisation #2 — Using Carry Forward',
+      whyThisExists: 'Same speed as prefix sum, but without spending extra memory on a whole pf[] array.',
+      definitionLabel: 'Carry-Forward Running Sum',
+      definition: 'A single variable (currSum) that is reset to 0 at each new start index, then grows by adding one new element every time the end index moves forward — instead of rebuilding the sum from scratch.',
+      inSimpleWords: 'For each starting point, keep a small running total. As the ending point slides one step to the right, just add that one new element to the running total instead of recomputing the whole slice sum. This gives the same speed as prefix sum, but we never need to build or store a separate array — we only ever remember one number at a time.',
+      examples: [
+        'A=[-4,1,3,2]\ni=0: j=0:-4 j=1:-3 j=2:-7 j=3:-5\ni=1: j=1:1 j=2:4 j=3:6\nGrand total = 16',
+        'A=[2,3]\ni=0: j=0:2 j=1:5\ni=1: j=1:3\nTotal = 2+5+3 = 10',
+      ],
+      code:
+        'total = 0\n' +
+        'for i in 0..n-1:\n' +
+        '  currSum = 0\n' +
+        '  for j in i..n-1:\n' +
+        '    currSum += A[j]     // subarray sum [i,j]\n' +
+        '    total += currSum\n' +
+        'return total',
+      timeComplexity: 'O(N^2)', spaceComplexity: 'O(1)',
+      whatThisUnlocks: 'O(N^2) is still two loops too many — flipping the question entirely gets us to O(N).',
+    },
+    {
+      name: 'Contribution Technique',
+      whyThisExists: 'This is the perspective flip that turns the whole problem from O(N^2) into a single O(N) pass.',
+      definitionLabel: 'Contribution Technique',
+      definition: 'Instead of asking "what is the sum of this subarray", we ask "in how many subarrays does this one element appear" — then multiply each element by that count and add everything up. For an array of size N, element A[i] appears in (i+1) × (N-i) subarrays, so its total contribution is A[i] × (i+1) × (N-i).',
+      inSimpleWords: 'Every element gets counted once for every subarray it belongs to. An element at index i can be the start of a subarray in (i+1) ways (any start from 0 up to i) and the end of a subarray in (N-i) ways (any end from i up to N-1). Multiplying these gives exactly how many subarrays contain that element. Multiply that count by the element\'s value, and add it up across all elements — no subarrays need to be built at all.',
+      examples: [
+        'A=[3,2,5], N=3\n3: (1)(3)=3 → 3x3=9\n2: (2)(2)=4 → 2x4=8\n5: (3)(1)=3 → 5x3=15 → total=32',
+        'A=[1,4], N=2\n1: (1)(2)=2 → 1x2=2\n4: (2)(1)=2 → 4x2=8\nTotal = 2+8 = 10',
+      ],
+      code:
+        'ans = 0\n' +
+        'for i in 0..n-1:\n' +
+        '  ans += (i+1) * (n-i) * A[i]\n' +
+        'return ans',
+      timeComplexity: 'O(N)', spaceComplexity: 'O(1)',
+      whatThisUnlocks: 'The same start/end counting idea also tells us exactly how many subarrays exist for any fixed length K.',
+    },
+    {
+      name: 'Counting Subarrays of Fixed Length K',
+      whyThisExists: 'Before sliding a window of size K across the array, we need to know exactly how many such windows exist.',
+      definitionLabel: 'Fixed-Length Subarray',
+      definition: 'A subarray whose length is a specific, chosen number K, rather than any length. For an array of size N, valid start positions for a length-K subarray run from index 0 to index N-K, giving N-K+1 possible subarrays of length K.',
+      inSimpleWords: 'If a subarray must have exactly K elements, its start index can\'t go past N-K, because there must be enough elements left to reach length K. Counting the valid starting positions (0, 1, 2, ... up to N-K) gives exactly N-K+1 possible subarrays of length K.',
+      examples: [
+        'N=7, K=4\nTotal = N-K+1 = 7-4+1 = 4',
+        'N=10, K=5\nTotal = 10-5+1 = 6',
+      ],
+      code: 'count = N - K + 1',
+      timeComplexity: 'O(1)', spaceComplexity: 'O(1)',
+      whatThisUnlocks: 'Now we tackle a real problem on these fixed-length windows: finding the maximum sum among them.',
+    },
+    {
+      name: 'Max Subarray Sum of Length K — Brute Force',
+      whyThisExists: 'This is the concrete problem the sliding window pattern is built to solve efficiently.',
+      definitionLabel: 'Sliding Window (informal)',
+      definition: 'A fixed-size "frame" of K consecutive elements that we conceptually move one step at a time across the array, checking a property (like sum) at each position.',
+      inSimpleWords: 'We want the single length-K slice with the biggest total. The slow way checks every length-K slice one at a time, adding up all K numbers fresh for each one — even though neighbouring slices share almost all their elements. That repeated re-adding of shared elements is exactly the redundant work we will remove next. Total work is (N-K+1) × K, which becomes close to N²/4 when K ≈ N/2 — so the worst case is O(N²).',
+      examples: [
+        'A=[-3,4,-2,5,3,-2,8,2,-1,4], N=10, K=5\nwindows [0,4]..[5,9], sums: 7,8,12,16,12,11\nMax = 16 (window [3,7])',
+        'A=[1,2,3,4], K=2\nWindows: [1,2]=3 [2,3]=5 [3,4]=7\nMax = 7',
+      ],
+      code:
+        'i = 0, j = K-1; ans = -infinity\n' +
+        'while j < n:\n' +
+        '  sum = 0\n' +
+        '  for p in i..j: sum += A[p]   // K times\n' +
+        '  ans = max(ans, sum)\n' +
+        '  i++, j++',
+      timeComplexity: 'O(N*K), worst case O(N^2)', spaceComplexity: 'O(1)',
+      whatThisUnlocks: 'Adjacent windows overlap almost completely — carry forward the sum instead of rebuilding it, which is the sliding window technique.',
+    },
+    {
+      name: 'Optimisation — The Sliding Window',
+      whyThisExists: 'This is the payoff — turning a per-window O(K) recompute into a per-step O(1) update.',
+      definitionLabel: 'Sliding Window Technique',
+      definition: 'Build the sum of the very first window once. Then, to move to the next window, subtract the element that just left the window on the left and add the new element that just entered on the right — never re-summing the whole window.',
+      inSimpleWords: 'Picture a physical window frame of width K sliding one step right along the array. Almost everything inside the frame stays the same — only one element leaves on the left and one new element enters on the right. So instead of re-adding all K numbers, we just do sum = sum - (element that left) + (element that entered). This single update replaces an entire K-length loop.',
+      examples: [
+        'K=5: sum1=[-3,4,-2,5,3]=7\nsum2 = sum1 -(-3)+(-2) = 7+3-2 = 8\nsum3 = sum2 - 4 + 8 = 8-4+8 = 12',
+        'A=[1,2,3,4,5], K=3\nsum1=[1,2,3]=6\nsum2=6-1+4=9, sum3=9-2+5=12',
+      ],
+      code:
+        'sum = 0\n' +
+        'for i in 0..K-1: sum += A[i]   // 1st window\n' +
+        'ans = sum\n' +
+        'i = 1, j = K\n' +
+        'while j < n:\n' +
+        '  sum = sum - A[i-1] + A[j]\n' +
+        '  ans = max(ans, sum)\n' +
+        '  i++, j++\n' +
+        'return ans',
+      timeComplexity: 'O(N)', spaceComplexity: 'O(1)',
+      whatThisUnlocks: 'This exact slide-the-window idea powers moving averages, fraud checks, and rolling dashboards in production.',
+    },
+    {
+      name: 'Smart Prompting Patterns',
+      whyThisExists: 'These five prompt patterns turn AI into a thinking partner for optimization problems instead of an answer machine.',
+      definitionLabel: 'Smart Prompting Pattern',
+      definition: 'A reusable way of phrasing a question to an AI so it guides your thinking toward an optimization, instead of simply handing you a finished solution. Five patterns: Find Redundancy (code works but is slow), Compare Structurally (unsure which of 2 solutions to use), Flip the Perspective (stuck, brute force isn\'t improving), Predict the Optimisation (about to read an "optimized approach" section), and Meta — Ask First (want a tutor, not an autopilot).',
+      inSimpleWords: 'Rather than asking an AI to solve a problem outright, ask it to point at the redundant work in your own solution, or to help you flip your perspective on the problem — the goal is to walk away understanding the technique, not just holding an answer you didn\'t derive.',
+      examples: [
+        'Find Redundancy:\n"Here\'s my brute force [paste]. Tell me which\nlines do redundant work and what previously-\ncomputed values could be reused."',
+        'Flip the Perspective:\n"I\'m iterating over [X]. Can I flip the\nperspective and iterate over [Y] instead,\ncounting how each one contributes?"',
+      ],
+      whatThisUnlocks: 'Next class moves to a new foundation layer — memory management and the reasoning behind sorting algorithms.',
+    },
+  ],
+  summary: [
+    { concept: 'Sum of all subarrays (brute force)', formula: '3 nested loops (start, end, sum) — O(N³)' },
+    { concept: 'Prefix sum optimisation', formula: 'sum[i..j] = pf[j]-pf[i-1] (or pf[j] if i=0) — O(N²)' },
+    { concept: 'Carry forward optimisation', formula: 'currSum reset per start i, += A[j] as j grows — O(N²), O(1) space' },
+    { concept: 'Contribution technique', formula: 'A[i] contributes A[i] × (i+1) × (N-i) — O(N)' },
+    { concept: 'Total subarrays of size N', formula: 'N(N+1) / 2' },
+    { concept: 'Total subarrays of length K', formula: 'N - K + 1' },
+    { concept: 'Sliding window update', formula: 'sum = sum - A[i-1] + A[j] — O(1) per step' },
+    { concept: 'Brute-force window search', formula: 'O(N × K), worst case O(N²) when K ≈ N/2' },
+    { concept: 'Sliding window search', formula: 'O(N) total — build first window O(K), then O(1) per slide' },
+  ],
+  selfTest: [
+    { question: 'Why does the brute-force sum-of-subarrays approach cost O(N^3)?', answer: '3 nested loops: pick start, pick end, then sum that range.' },
+    { question: 'What does the contribution formula A[i]×(i+1)×(N-i) count?', answer: 'How many subarrays contain A[i] (start choices × end choices).' },
+    { question: 'For N=10, K=5, how many length-K subarrays exist?', answer: 'N-K+1 = 10-5+1 = 6.' },
+    { question: 'In sliding window, what is the O(1) update rule?', answer: 'sum = sum - A[i-1] + A[j] (drop old left, add new right).' },
+    { question: 'Name one real system that uses sliding window in production.', answer: 'e.g. fraud detection, stock moving averages, trending topics.' },
+  ],
+};
 
 /**
  * Every problem gets a brute-force approach, an optimized approach (each with time/space
  * complexity and, for the optimized approach, pseudocode), and a plain-English explanation of
  * the core insight. That last field is deliberately not a repeat of the optimized approach's
  * description — it's aimed at *why* the trick works, which is usually the thing worth actually
- * remembering.
+ * remembering. Arrays & Strings is a pilot for a richer narrative format (see
+ * ARRAYS_STRINGS_NARRATIVE above) — pending approval before the other 10 topics migrate too.
  */
 export const DSA_TOPICS: DsaTopic[] = [
   {
     name: 'Arrays & Strings',
+    narrative: ARRAYS_STRINGS_NARRATIVE,
     problems: [
       {
         name: 'Two Sum',

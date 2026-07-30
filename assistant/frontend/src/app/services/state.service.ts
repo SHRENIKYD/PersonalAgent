@@ -35,10 +35,10 @@ const HABIT_WEEKS = 26;
  * concept topics count items. Both are just "how many checkable rows does this topic have."
  */
 const PREP_TOPIC_SIZES: Record<PrepCategoryKey, number[]> = {
-  dsa: DSA_TOPICS.map(t => t.problems.length),
-  cs: CS_TOPICS.map(t => t.items.length),
-  sysdesign: SYSDESIGN_TOPICS.map(t => t.items.length),
-  web: WEB_TOPICS.map(t => t.items.length),
+  dsa: DSA_TOPICS.map(t => t.narrative?.concepts.length ?? t.problems.length),
+  cs: CS_TOPICS.map(t => t.narrative?.concepts.length ?? t.items.length),
+  sysdesign: SYSDESIGN_TOPICS.map(t => t.narrative?.concepts.length ?? t.items.length),
+  web: WEB_TOPICS.map(t => t.narrative?.concepts.length ?? t.items.length),
 };
 
 function seededTrack(triple: [string, string, string]): { text: string; done: boolean }[] {
