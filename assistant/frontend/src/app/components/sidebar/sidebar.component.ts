@@ -2,18 +2,28 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from '../../services/state.service';
 import { UiService } from '../../services/ui.service';
-import { TabKey } from '../../models';
+import { SettingsService } from '../../services/settings.service';
+import { PrepCategoryKey, TabKey } from '../../models';
 
 interface Tab {
   key: TabKey;
   label: string;
 }
 
+const PREP_TABS: TabKey[] = ['dsa', 'cs', 'sysdesign', 'web'];
+
 const TABS: Tab[] = [
   { key: 'chat', label: 'Assistant' },
   { key: 'dashboard', label: 'Today' },
   { key: 'tasks', label: 'Tasks' },
   { key: 'notes', label: 'Notes' },
+  { key: 'growth', label: 'Growth' },
+  { key: 'dsa', label: 'DSA' },
+  { key: 'cs', label: 'CS Fundamentals' },
+  { key: 'sysdesign', label: 'System Design' },
+  { key: 'web', label: 'Web & Full-Stack' },
+  { key: 'certs', label: 'Certificates' },
+  { key: 'settings', label: 'Settings' },
 ];
 
 @Component({
@@ -31,7 +41,7 @@ const TABS: Tab[] = [
           [class.active]="ui.activeTab() === t.key"
           (click)="ui.setTab(t.key)">
           <span>{{ t.label }}</span>
-          <span class="frac">{{ countFor(t.key) }}</span>
+          <span class="frac" [class.warn]="t.key === 'settings' && !settings.ready()">{{ countFor(t.key) }}</span>
         </button>
       </nav>
     </aside>
@@ -40,7 +50,11 @@ const TABS: Tab[] = [
 export class SidebarComponent {
   tabs = TABS;
 
-  constructor(public state: StateService, public ui: UiService) {}
+  constructor(
+    public state: StateService,
+    public ui: UiService,
+    public settings: SettingsService
+  ) {}
 
   countFor(key: TabKey): string {
     if (key === 'tasks') {
@@ -54,6 +68,21 @@ export class SidebarComponent {
     if (key === 'dashboard') {
       const d = this.state.dueToday().length;
       return d ? `${d}` : '';
+    }
+    if (key === 'settings' && !this.settings.ready()) {
+      return '!';
+    }
+    if (key === 'growth') {
+      const p = this.state.roadmapProgress();
+      return p.total ? `${p.done}/${p.total}` : '';
+    }
+    if (PREP_TABS.includes(key)) {
+      const p = this.state.categoryProgress(key as PrepCategoryKey);
+      return p.total ? `${p.done}/${p.total}` : '';
+    }
+    if (key === 'certs') {
+      const p = this.state.certsProgress();
+      return p.total ? `${p.done}/${p.total}` : '';
     }
     return '';
   }

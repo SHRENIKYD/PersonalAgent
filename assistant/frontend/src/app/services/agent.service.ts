@@ -1,11 +1,13 @@
 import { Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { StateService } from './state.service';
+import { SettingsService } from './settings.service';
 import {
   ApiMessage,
   AssistantResponse,
+  ContentBlock,
   DisplayEntry,
   Priority,
   Task,
@@ -182,6 +184,25 @@ function systemPrompt(): string {
   ].join('\n');
 }
 
+/**
+ * Request settings for direct-to-Anthropic mode.
+ *
+ * The backend keeps its own copy of these in Program.cs — the two are intentionally
+ * independent, since in backend mode the browser must not be able to dictate the model or
+ * token ceiling. Change one and consider whether the other should follow.
+ */
+const DIRECT_CONFIG = {
+  model: 'claude-opus-5',
+  max_tokens: 8000,
+  // Adaptive thinking stays on: with tools and thinking disabled, the model can write a
+  // tool call into its visible text instead of emitting a tool_use block, and the call
+  // then silently never runs.
+  thinking: { type: 'adaptive', display: 'summarized' },
+  output_config: { effort: 'medium' },
+} as const;
+
+const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+
 @Injectable({ providedIn: 'root' })
 export class AgentService {
   transcript = signal<DisplayEntry[]>([]);
@@ -190,7 +211,11 @@ export class AgentService {
   /** Full Anthropic-shaped history. Separate from the transcript, which is display-only. */
   private history: ApiMessage[] = [];
 
-  constructor(private http: HttpClient, private state: StateService) {}
+  constructor(
+    private http: HttpClient,
+    private state: StateService,
+    private settings: SettingsService
+  ) {}
 
   reset() {
     this.history = [];
@@ -212,10 +237,7 @@ export class AgentService {
       await this.runLoop(pendingIndex);
     } catch (e) {
       console.error('Assistant request failed', e);
-      this.replace(pendingIndex, {
-        kind: 'error',
-        text: 'Could not reach the assistant. Check that the backend is running, then try again.',
-      });
+      this.replace(pendingIndex, { kind: 'error', text: this.explainFailure(e) });
     } finally {
       this.thinking.set(false);
     }
@@ -230,14 +252,7 @@ export class AgentService {
     let slot = pendingIndex;
 
     for (let turn = 0; turn < MAX_TURNS; turn++) {
-      const res = await firstValueFrom(
-        this.http.post<AssistantResponse>(`${environment.apiBaseUrl}/api/assistant`, {
-          messages: this.history,
-          system: systemPrompt(),
-          tools: TOOLS,
-        })
-      );
-
+      const res = await this.requestTurn();
       const blocks = res.content ?? [];
 
       // Echo the assistant turn back verbatim. Thinking blocks in particular must
@@ -289,6 +304,91 @@ export class AgentService {
       kind: 'error',
       text: 'Stopped after too many steps without finishing. Try rephrasing that.',
     });
+  }
+
+  /**
+   * Turns a failed request into something the user can act on. The two modes fail in
+   * different ways, and "something went wrong" sends people to the wrong place —
+   * a 401 in direct mode is a bad key, not a broken app.
+   */
+  private explainFailure(e: unknown): string {
+    const direct = this.settings.mode() === 'direct';
+    const status = (e as { status?: number } | null)?.status;
+
+    if (e instanceof Error && e.message.startsWith('No API key')) {
+      return e.message;
+    }
+    if (status === 401 || status === 403) {
+      return direct
+        ? 'Anthropic rejected the API key. Check it on the Settings tab.'
+        : 'The backend rejected the request — check its ANTHROPIC_API_KEY.';
+    }
+    if (status === 429) {
+      return 'Rate limited by Anthropic. Wait a moment and try again.';
+    }
+    if (status === 0) {
+      return direct
+        ? 'Could not reach Anthropic. Check your connection.'
+        : `Could not reach the backend at ${environment.apiBaseUrl}. Is it running, and does its FRONTEND_ORIGINS allow this page?`;
+    }
+    if (typeof status === 'number' && status >= 500) {
+      return direct
+        ? 'Anthropic returned a server error. Try again shortly.'
+        : 'The backend returned an error — check its logs.';
+    }
+    return direct
+      ? 'The request to Anthropic failed. See the browser console for details.'
+      : 'Could not reach the assistant. Check that the backend is running, then try again.';
+  }
+
+  // ---------------- transport ----------------
+
+  /** One request to the model, via whichever transport is configured. */
+  private requestTurn(): Promise<AssistantResponse> {
+    return this.settings.mode() === 'direct' ? this.requestDirect() : this.requestViaBackend();
+  }
+
+  private async requestViaBackend(): Promise<AssistantResponse> {
+    return firstValueFrom(
+      this.http.post<AssistantResponse>(`${environment.apiBaseUrl}/api/assistant`, {
+        messages: this.history,
+        system: systemPrompt(),
+        tools: TOOLS,
+      })
+    );
+  }
+
+  /**
+   * Straight to Anthropic from the browser. Needs the dangerous-direct-browser-access
+   * header — without it the API rejects requests carrying an Origin.
+   */
+  private async requestDirect(): Promise<AssistantResponse> {
+    const key = this.settings.apiKey().trim();
+    if (key === '') {
+      throw new Error('No API key set. Add one on the Settings tab.');
+    }
+
+    const headers = new HttpHeaders({
+      'content-type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    });
+
+    const res = await firstValueFrom(
+      this.http.post<{ content?: ContentBlock[]; stop_reason?: string | null }>(
+        ANTHROPIC_URL,
+        {
+          ...DIRECT_CONFIG,
+          system: systemPrompt(),
+          messages: this.history,
+          tools: TOOLS,
+        },
+        { headers }
+      )
+    );
+
+    return { content: res.content ?? [], stop_reason: res.stop_reason ?? null };
   }
 
   // ---------------- tool execution ----------------

@@ -1,12 +1,63 @@
 # Hosting Guide
 
-Two pieces to deploy: the Angular frontend (static, GitHub Pages) and the C# backend (needs
-a server, any free web service host). Do the backend first — the frontend needs its URL.
+Two ways to put this on the web, both free. Pick one:
 
-## Part 1 — Backend
+| | GitHub Pages only | Pages + backend |
+| --- | --- | --- |
+| **Transport mode** | `direct` | `backend` |
+| **What you deploy** | The Angular frontend, nothing else | The frontend, plus the .NET API on a separate host |
+| **Where your key lives** | This browser's `localStorage` | The backend's environment variables |
+| **Exposure** | Readable by anything running in this browser | Never touches the browser |
+| **Setup time** | Minutes | A bit longer — a second service to configure |
 
-The backend holds your Anthropic API key. It must **never** be committed to the repo; set it
-as an environment variable on the host.
+If you're not sure, start with **Option A**. It's live in minutes and you can switch to
+Option B later without losing anything — mode is a runtime setting, not a rebuild.
+
+## Option A — GitHub Pages only (direct mode)
+
+The frontend calls Anthropic straight from the browser. No backend, no second host, nothing
+else to deploy.
+
+1. **Merge this branch to `main`** — the deploy workflow only triggers there.
+2. Repo **Settings → Pages → Source: GitHub Actions**.
+3. Push lands the site at `https://YOUR-USERNAME.github.io/<repo-name>/`. The workflow at
+   `.github/workflows/deploy-assistant-pages.yml` passes `--base-href` automatically from
+   the repo name.
+4. Open the site, go to **Settings**, choose **Direct from browser**, paste your Anthropic
+   API key.
+
+That's the whole deployment. Nothing in `environment.prod.ts` needs to be correct for this
+path — direct mode never calls the backend URL there.
+
+### ⚠️ Read this before choosing Option A
+
+Your key sits in this browser's `localStorage`. Anything that runs in this browser can read
+it — a malicious extension, anyone else with access to this machine, or any script that ever
+gets injected into the page (XSS). This is not a bug in how it's stored; it's the inherent
+trade-off of calling an API from client-side code with a secret key. The Settings tab states
+this before you can enter a key, and it's worth repeating here because it's the whole reason
+Option B exists.
+
+Reasonable when:
+- It's your own machine, not shared with people you don't trust with your Anthropic budget.
+- You've set a **spend limit** on the key in the Anthropic console, so a leak has a ceiling.
+
+Not reasonable when:
+- The page might be opened on a public or shared computer.
+- You want to share the deployed link with someone else — each visitor would need their own
+  key anyway, since the key lives per-browser, not per-deployment.
+
+If a key leaks, revoke it in the Anthropic console. Nothing in this repo needs to change —
+just paste the replacement into Settings.
+
+## Option B — Pages + a free backend host (backend mode)
+
+Do the backend first; the frontend needs its URL.
+
+### Part 1 — Backend
+
+The backend holds your Anthropic API key server-side. It must **never** be committed to the
+repo; set it as an environment variable on the host.
 
 Any host that builds a Dockerfile works. Using Render as the example:
 
@@ -32,7 +83,7 @@ Any host that builds a Dockerfile works. Using Render as the example:
 **Free tiers sleep when idle.** The first message after a quiet spell may take 30–60 seconds
 while the service wakes. That is the host, not the agent.
 
-## Part 2 — Frontend
+### Part 2 — Frontend
 
 1. Put your backend URL into `assistant/frontend/src/environments/environment.prod.ts`:
 
@@ -48,10 +99,13 @@ while the service wakes. That is the host, not the agent.
 
 3. In the repository settings, under **Pages**, set the source to **GitHub Actions**.
 
-4. The site lands at `https://YOUR-USERNAME.github.io/<repo-name>/`. The workflow passes
-   `--base-href` automatically from the repo name.
+4. The site lands at `https://YOUR-USERNAME.github.io/<repo-name>/`.
 
-### ⚠️ One Pages site per repository
+5. On the deployed site, **Settings** tab already defaults to backend mode — nothing further
+   to do there. (If you'd previously tried direct mode in the same browser, switch back to
+   **Via backend**.)
+
+## ⚠️ One Pages site per repository (applies to both options)
 
 GitHub Pages publishes a single site per repo. This repo already has static files at its
 root, and **the assistant workflow will replace whatever is currently published** the first
@@ -67,18 +121,23 @@ time it runs. Options, in rough order of least surprise:
 Decide before the first push to `main`. Nothing is lost either way — the files stay in git —
 but the published URL changes.
 
-## Cost
+## Cost (both options)
 
-GitHub Pages is free. The backend's free tier is free. You pay only for Anthropic API usage,
-per token — see the current rates at <https://platform.claude.com/docs/en/pricing>. Each
-message costs more than a plain chat would, because a tool-using turn makes several model
-calls: one to decide on the tool, one to respond to its result. The agent runs at `medium`
-effort to keep that reasonable; raise it in `Program.cs` if you want more thorough reasoning.
+GitHub Pages is free. Option B's backend free tier is free. You pay only for Anthropic API
+usage, per token — see the current rates at <https://platform.claude.com/docs/en/pricing>.
+Each message costs more than a plain chat would, because a tool-using turn makes several
+model calls: one to decide on the tool, one to respond to its result. The agent runs at
+`medium` effort to keep that reasonable — raise it in `Program.cs` (backend mode) or
+`DIRECT_CONFIG` in `agent.service.ts` (direct mode) if you want more thorough reasoning.
 
 ## Security notes
 
-- The key lives only in the host's environment. Rotate it in the Anthropic console if it
-  ever leaks; nothing in this repo needs changing.
-- `FRONTEND_ORIGINS` is what stops arbitrary sites from spending your API budget through
-  your backend. Keep it narrow — never `*`.
-- Your tasks and notes stay in your browser. The backend is stateless and stores nothing.
+- **Backend mode:** the key lives only in the host's environment. Rotate it in the Anthropic
+  console if it ever leaks; nothing in this repo needs changing. `FRONTEND_ORIGINS` is what
+  stops arbitrary sites from spending your API budget through your backend — keep it narrow,
+  never `*`.
+- **Direct mode:** the key lives in this browser's `localStorage` and is exposed to anything
+  that runs on the page — see the warning under Option A. Set a spend limit on the key as a
+  backstop, and don't use this mode on a shared computer.
+- **Both modes:** your tasks and notes stay in your browser regardless of transport. Only
+  chat messages ever leave the machine.
