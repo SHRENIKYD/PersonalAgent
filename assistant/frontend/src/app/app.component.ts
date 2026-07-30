@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BootComponent } from './components/boot/boot.component';
+import { ContextRailComponent } from './components/context-rail/context-rail.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { ChatComponent } from './components/chat/chat.component';
@@ -25,6 +26,7 @@ const BOOT_SEEN_KEY = 'jarvis-boot-seen';
   imports: [
     CommonModule,
     BootComponent,
+    ContextRailComponent,
     SidebarComponent,
     DashboardComponent,
     ChatComponent,
@@ -76,6 +78,7 @@ const BOOT_SEEN_KEY = 'jarvis-boot-seen';
           &middot; {{ state.saveStatus() }}
         </div>
       </main>
+      <app-context-rail></app-context-rail>
     </div>
   `,
 })
