@@ -243,6 +243,31 @@ export class StateService {
     return { total, done, pct: total === 0 ? 0 : Math.round((done / total) * 100) };
   });
 
+  /**
+   * Fills in only the still-empty goal slots with the suggested starter plan — never
+   * overwrites anything already typed, and never touches the checked/unchecked state.
+   * Exists because `defaultRoadmap()`'s seed only ever reaches a brand-new profile; anyone
+   * with an existing (even entirely blank) saved roadmap needs an explicit way to pull it in.
+   */
+  applySuggestedRoadmap() {
+    this.roadmap.update(s => {
+      const next = structuredClone(s);
+      next.months.forEach((m, mi) => {
+        const seed = MONTH_SEEDS[mi];
+        if (!seed) return;
+        if (m.theme.trim() === '') m.theme = seed.theme;
+        (['career', 'health', 'habits', 'balance'] as TrackKey[]).forEach(key => {
+          const seedPair = seed[key];
+          m.tracks[key].forEach((goal, gi) => {
+            if (goal.text.trim() === '' && seedPair[gi]) goal.text = seedPair[gi];
+          });
+        });
+      });
+      return next;
+    });
+    this.scheduleSave();
+  }
+
   monthComplete(m: MonthPlan): boolean {
     let has = false, all = true;
     TRACKS.forEach(t => m.tracks[t.key].forEach(g => {

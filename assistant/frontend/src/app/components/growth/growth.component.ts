@@ -10,11 +10,16 @@ import { GOAL_PLACEHOLDERS, TRACKS } from '../../growth-data';
   imports: [CommonModule, FormsModule],
   template: `
     <section class="panel">
-      <h1 class="page-title">Growth</h1>
-      <p class="page-sub">
-        Career, health, habits, and relationships — a six-month plan alongside a weekly
-        habit tracker. Type your own goals; everything saves automatically.
-      </p>
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">Growth</h1>
+          <p class="page-sub">
+            Career, health, habits, and relationships — a six-month plan alongside a weekly
+            habit tracker. Type your own goals; everything saves automatically.
+          </p>
+        </div>
+        <button (click)="state.applySuggestedRoadmap()">Fill empty goals with suggested plan</button>
+      </div>
 
       <div class="trail-col">
         <div class="trail-line"></div>
