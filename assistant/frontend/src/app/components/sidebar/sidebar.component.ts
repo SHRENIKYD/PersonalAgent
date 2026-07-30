@@ -35,6 +35,16 @@ const TABS: Tab[] = [
       <div class="brand">Aide</div>
       <div class="brand-sub">Personal Assistant</div>
 
+      <div class="overall-progress">
+        <div class="overall-progress-top">
+          <span class="overall-progress-tag">Overall</span>
+          <span class="overall-progress-label">{{ state.overallProgress().pct }}%</span>
+        </div>
+        <div class="overall-progress-track">
+          <div class="overall-progress-fill" [style.width.%]="state.overallProgress().pct"></div>
+        </div>
+      </div>
+
       <nav class="tabs">
         <button
           *ngFor="let t of tabs"

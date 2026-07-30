@@ -119,6 +119,22 @@ export class StateService {
     return { total, done, pct: total === 0 ? 0 : Math.round((done / total) * 100) };
   });
 
+  /** Combined total/done across tasks, growth roadmap, all four prep categories, and certs. */
+  overallProgress = computed(() => {
+    const parts = [
+      this.progress(),
+      this.roadmapProgress(),
+      this.categoryProgress('dsa'),
+      this.categoryProgress('cs'),
+      this.categoryProgress('sysdesign'),
+      this.categoryProgress('web'),
+      this.certsProgress(),
+    ];
+    const total = parts.reduce((sum, p) => sum + p.total, 0);
+    const done = parts.reduce((sum, p) => sum + p.done, 0);
+    return { total, done, pct: total === 0 ? 0 : Math.round((done / total) * 100) };
+  });
+
   // ---------------- task mutations ----------------
 
   addTask(title: string, due = '', priority: Priority = 'normal'): Task {

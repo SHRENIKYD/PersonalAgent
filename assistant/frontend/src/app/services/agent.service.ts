@@ -318,6 +318,18 @@ export class AgentService {
     if (e instanceof Error && e.message.startsWith('No API key')) {
       return e.message;
     }
+
+    // Anthropic (and our backend, which passes the body through unchanged) returns
+    // {type, error: {type, message}, request_id} on rejection. Angular's HttpErrorResponse
+    // puts the parsed body on `.error` — prefer that real message over a guess from the
+    // status code alone, since "credit balance too low" and "invalid x-api-key" both land
+    // on different status codes than what a reader would expect.
+    const apiMessage = (e as { error?: { error?: { message?: string } } } | null)?.error?.error
+      ?.message;
+    if (typeof apiMessage === 'string' && apiMessage.trim() !== '') {
+      return direct ? `Anthropic: ${apiMessage}` : `Backend: ${apiMessage}`;
+    }
+
     if (status === 401 || status === 403) {
       return direct
         ? 'Anthropic rejected the API key. Check it on the Settings tab.'
