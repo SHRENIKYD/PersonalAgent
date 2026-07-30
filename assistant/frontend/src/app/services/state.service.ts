@@ -18,6 +18,8 @@ import {
 import { GOALS_PER_TRACK, MONTH_SEEDS, TRACKS, generateMonthNames } from '../growth-data';
 import { DSA_TOPICS } from '../prep-dsa-data';
 import { CS_TOPICS, SYSDESIGN_TOPICS, WEB_TOPICS } from '../prep-concept-data';
+import { JAVA_TOPICS } from '../java-data';
+import { INTERVIEW_TOPICS } from '../interview-data';
 
 const KEYS = {
   tasks: 'assistant-tasks-v1',
@@ -36,9 +38,11 @@ const HABIT_WEEKS = 26;
  */
 const PREP_TOPIC_SIZES: Record<PrepCategoryKey, number[]> = {
   dsa: DSA_TOPICS.map(t => t.narrative?.concepts.length ?? t.problems.length),
+  java: JAVA_TOPICS.map(t => t.narrative?.concepts.length ?? t.items.length),
   cs: CS_TOPICS.map(t => t.narrative?.concepts.length ?? t.items.length),
   sysdesign: SYSDESIGN_TOPICS.map(t => t.narrative?.concepts.length ?? t.items.length),
   web: WEB_TOPICS.map(t => t.narrative?.concepts.length ?? t.items.length),
+  interview: INTERVIEW_TOPICS.map(t => t.narrative?.concepts.length ?? t.items.length),
 };
 
 function seededTrack(triple: [string, string, string]): { text: string; done: boolean }[] {
@@ -87,7 +91,7 @@ function padRoadmapTracks(roadmap: RoadmapState): RoadmapState {
 }
 
 function defaultPrep(): PrepState {
-  return { dsa: {}, cs: {}, sysdesign: {}, web: {} };
+  return { dsa: {}, java: {}, cs: {}, sysdesign: {}, web: {}, interview: {} };
 }
 
 function defaultCerts(): CertsState {
@@ -158,9 +162,11 @@ export class StateService {
       this.progress(),
       this.roadmapProgress(),
       this.categoryProgress('dsa'),
+      this.categoryProgress('java'),
       this.categoryProgress('cs'),
       this.categoryProgress('sysdesign'),
       this.categoryProgress('web'),
+      this.categoryProgress('interview'),
       this.certsProgress(),
       this.fitnessWeekProgress(),
     ];

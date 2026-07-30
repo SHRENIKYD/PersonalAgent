@@ -50,6 +50,10 @@ function key(ti: number, pi: number): string {
                   <p>{{ c.whyThisExists }}</p>
                 </div>
                 <div class="note-section">
+                  <div class="note-label">How to approach this</div>
+                  <p>{{ c.howToApproach }}</p>
+                </div>
+                <div class="note-section">
                   <div class="note-label">Definition — {{ c.definitionLabel }}</div>
                   <p>{{ c.definition }}</p>
                 </div>
