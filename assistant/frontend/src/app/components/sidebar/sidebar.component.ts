@@ -34,7 +34,14 @@ const TABS: Tab[] = [
   imports: [CommonModule],
   template: `
     <aside class="sidebar">
-      <div class="brand">Aide</div>
+      <div class="brand-row">
+        <svg class="brand-reactor" viewBox="0 0 32 32">
+          <circle cx="16" cy="16" r="14" fill="none" stroke="var(--accent-dim)" stroke-width="1.5" opacity="0.6" />
+          <circle cx="16" cy="16" r="9" fill="none" stroke="var(--hud-cyan)" stroke-width="1.5" opacity="0.8" />
+          <circle cx="16" cy="16" r="3.5" fill="var(--accent)" />
+        </svg>
+        <div class="brand">J.A.R.V.I.S.</div>
+      </div>
       <div class="brand-sub">Personal Assistant</div>
 
       <div class="overall-progress">

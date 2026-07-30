@@ -24,7 +24,7 @@ import { UiService } from '../../services/ui.service';
       </div>
 
       <p *ngIf="!settings.ready()" class="chat-warn">
-        No Anthropic API key is set for direct mode.
+        No API key is set for direct mode.
         <a (click)="ui.setTab('settings')">Add one on the Settings tab</a> to use the assistant.
       </p>
 
@@ -39,6 +39,7 @@ import { UiService } from '../../services/ui.service';
           class="chat-msg"
           [ngClass]="m.kind"
           [class.pending]="m.pending">
+          <span *ngIf="m.pending" class="scan-line" aria-hidden="true"></span>
           {{ m.text }}
         </div>
       </div>

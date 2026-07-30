@@ -1,4 +1,4 @@
-# Aide — Personal Assistant Agent
+# J.A.R.V.I.S. — Personal Assistant Agent
 
 A personal assistant that *acts* rather than advises. Tell it "remind me to renew the lease
 on Friday" and a task appears on your task list, dated. Ask "what's due today?" and it reads
