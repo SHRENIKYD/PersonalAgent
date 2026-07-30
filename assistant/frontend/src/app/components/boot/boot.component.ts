@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { VoiceService } from '../../services/voice.service';
 
 const BOOT_LINES = [
   'INITIALIZING J.A.R.V.I.S. CORE...',
@@ -31,6 +32,13 @@ export class BootComponent {
   @Output() done = new EventEmitter<void>();
   lines = BOOT_LINES;
   private timer = setTimeout(() => this.skip(), 2600);
+
+  constructor(private voice: VoiceService) {
+    // Most desktop browsers allow speechSynthesis without a prior user gesture (Chrome's
+    // autoplay-with-sound policy explicitly excludes it); Safari/iOS is the notable
+    // exception and may drop this silently until the user interacts with the page.
+    this.voice.greet();
+  }
 
   skip() {
     clearTimeout(this.timer);

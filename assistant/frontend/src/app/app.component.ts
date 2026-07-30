@@ -17,6 +17,7 @@ import { CertificatesComponent } from './components/certificates/certificates.co
 import { CS_TOPICS, SYSDESIGN_TOPICS, WEB_TOPICS } from './prep-concept-data';
 import { UiService } from './services/ui.service';
 import { StateService } from './services/state.service';
+import { SyncService } from './services/sync.service';
 
 const BOOT_SEEN_KEY = 'jarvis-boot-seen';
 
@@ -90,7 +91,10 @@ export class AppComponent {
   // sessionStorage, not localStorage: replays once per tab/session, not once ever.
   showBoot = signal(sessionStorage.getItem(BOOT_SEEN_KEY) !== '1');
 
-  constructor(public ui: UiService, public state: StateService) {}
+  // Injected purely to instantiate it at app start (providedIn: 'root' services are
+  // otherwise created lazily on first use) — sync needs to kick off its initial pull
+  // immediately, not wait for the Settings tab to be opened.
+  constructor(public ui: UiService, public state: StateService, private sync: SyncService) {}
 
   dismissBoot() {
     sessionStorage.setItem(BOOT_SEEN_KEY, '1');

@@ -202,3 +202,15 @@ export interface CertsState {
   todo: CertTodo[];
   earned: CertEarned[];
 }
+
+// ---------------- cross-device sync ----------------
+
+/** Everything that syncs across devices via SyncService — one device's full data. */
+export interface SyncPayload {
+  tasks: Task[];
+  notes: Note[];
+  roadmap: RoadmapState;
+  prep: PrepState;
+  certs: CertsState;
+  fitnessLog: Record<string, boolean>;
+}

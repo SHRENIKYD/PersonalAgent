@@ -11,6 +11,7 @@ import {
   PrepState,
   Priority,
   RoadmapState,
+  SyncPayload,
   Task,
   TrackKey,
 } from '../models';
@@ -115,6 +116,13 @@ export class StateService {
   /** key = `${YYYY-MM-DD}:${workoutDayName}` or `${YYYY-MM-DD}:diet` -> done */
   fitnessLog = signal<Record<string, boolean>>({});
   saveStatus = signal<string>('');
+
+  /**
+   * Bumped on every local mutation (see scheduleSave). SyncService watches this to know when
+   * to push — a plain counter rather than the data itself, since it only needs to know
+   * "something changed," not what.
+   */
+  lastLocalChange = signal<number>(0);
 
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -491,10 +499,45 @@ export class StateService {
     this.scheduleSave();
   }
 
+  // ---------------- cross-device sync (see SyncService) ----------------
+
+  /** Everything that syncs — the full contents of one device's data. */
+  exportAll(): SyncPayload {
+    return {
+      tasks: this.tasks(),
+      notes: this.notes(),
+      roadmap: this.roadmap(),
+      prep: this.prep(),
+      certs: this.certs(),
+      fitnessLog: this.fitnessLog(),
+    };
+  }
+
+  /**
+   * Applies a remote payload wholesale (this is the "last edit wins" sync model — the whole
+   * blob is replaced, not merged field-by-field). `suppressChangeSignal` is set first so this
+   * doesn't itself look like a local edit and bounce straight back to SyncService as
+   * something to push.
+   */
+  importAll(payload: SyncPayload) {
+    this.suppressChangeSignal = true;
+    this.tasks.set(payload.tasks ?? []);
+    this.notes.set(payload.notes ?? []);
+    this.roadmap.set(payload.roadmap ? padRoadmapTracks(payload.roadmap) : defaultRoadmap());
+    this.prep.set(payload.prep ?? defaultPrep());
+    this.certs.set(payload.certs ?? defaultCerts());
+    this.fitnessLog.set(payload.fitnessLog ?? {});
+    this.scheduleSave();
+    this.suppressChangeSignal = false;
+  }
+
   // ---------------- persistence ----------------
+
+  private suppressChangeSignal = false;
 
   private scheduleSave() {
     this.saveStatus.set('Saving…');
+    if (!this.suppressChangeSignal) this.lastLocalChange.set(Date.now());
     if (this.saveTimer) clearTimeout(this.saveTimer);
     this.saveTimer = setTimeout(() => {
       const ok1 = this.storage.set(KEYS.tasks, this.tasks());
