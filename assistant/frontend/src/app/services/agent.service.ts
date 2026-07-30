@@ -167,7 +167,7 @@ const WEB_SEARCH_TOOL = { type: 'web_search_20250305', name: 'web_search' };
 
 const ALL_TOOLS: unknown[] = [...TOOLS, WEB_SEARCH_TOOL];
 
-function systemPrompt(): string {
+function systemPrompt(hasWebSearch: boolean): string {
   const now = new Date();
   return [
     "You are Aide, the user's personal assistant. You manage their tasks and notes through tools.",
@@ -192,13 +192,18 @@ function systemPrompt(): string {
     'or two) decide sensibly and mention it. Ask only when getting it wrong would mean real',
     'rework. Deleting or completing the wrong thing counts as real rework: if a title fragment',
     'is ambiguous, ask which one.',
-    '',
-    'You also have a web_search tool. Use it when the user asks about something current — a',
-    'live rate, recent news, a company\'s latest interview process — that you cannot know from',
-    'training alone. Do not use it for the DSA/CS/System Design/Web prep content, workout or',
-    'diet plan, or growth roadmap already on screen; read those from the tabs instead. State',
-    'facts from search plainly and note they may change; you are not a substitute for a doctor,',
-    'financial advisor, or other licensed professional on anything health- or money-related.',
+    ...(hasWebSearch
+      ? [
+          '',
+          'You also have a web_search tool. Use it when the user asks about something current —',
+          'a live rate, recent news, a company\'s latest interview process — that you cannot know',
+          'from training alone. Do not use it for the DSA/CS/System Design/Web prep content,',
+          'workout or diet plan, or growth roadmap already on screen; read those from the tabs',
+          'instead. State facts from search plainly and note they may change; you are not a',
+          'substitute for a doctor, financial advisor, or other licensed professional on',
+          'anything health- or money-related.',
+        ]
+      : []),
   ].join('\n');
 }
 
@@ -220,6 +225,104 @@ const DIRECT_CONFIG = {
 } as const;
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+
+/**
+ * Request settings for direct-to-OpenAI mode. Kept separate from DIRECT_CONFIG (Anthropic)
+ * since the two APIs take different shaped bodies entirely.
+ */
+const OPENAI_MODEL = 'gpt-5.1';
+const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
+
+interface OpenAiToolCall {
+  id: string;
+  type: 'function';
+  function: { name: string; arguments: string };
+}
+
+interface OpenAiMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string | null;
+  tool_calls?: OpenAiToolCall[];
+  tool_call_id?: string;
+}
+
+/** Anthropic-shaped tool defs -> OpenAI's { type: 'function', function: {...} } shape. */
+function toOpenAiTools(tools: ToolDefinition[]): unknown[] {
+  return tools.map(t => ({
+    type: 'function',
+    function: { name: t.name, description: t.description, parameters: t.input_schema },
+  }));
+}
+
+/**
+ * Translates our internal Anthropic-shaped history into OpenAI's flat message list. The
+ * history is authored once, provider-agnostic, and reshaped per request — not stored twice —
+ * so switching providers mid-conversation (or the web_search tool, which OpenAI doesn't have
+ * in this shape) degrades gracefully rather than needing a parallel history structure.
+ */
+function toOpenAiMessages(history: ApiMessage[], system: string): OpenAiMessage[] {
+  const out: OpenAiMessage[] = [{ role: 'system', content: system }];
+
+  for (const msg of history) {
+    if (typeof msg.content === 'string') {
+      out.push({ role: msg.role, content: msg.content });
+      continue;
+    }
+
+    if (msg.role === 'assistant') {
+      const text = msg.content
+        .filter((b): b is TextBlock => b.type === 'text')
+        .map(b => b.text)
+        .join('\n\n');
+      const toolUses = msg.content.filter((b): b is ToolUseBlock => b.type === 'tool_use');
+      out.push({
+        role: 'assistant',
+        content: text.trim() === '' ? null : text,
+        ...(toolUses.length > 0
+          ? {
+              tool_calls: toolUses.map(tu => ({
+                id: tu.id,
+                type: 'function' as const,
+                function: { name: tu.name, arguments: JSON.stringify(tu.input ?? {}) },
+              })),
+            }
+          : {}),
+      });
+    } else {
+      // A user-turn content array is always tool results in our internal shape (see
+      // runLoop) — each becomes its own OpenAI "tool" message.
+      for (const block of msg.content) {
+        if (block.type === 'tool_result') {
+          const tr = block as ToolResultBlock;
+          out.push({ role: 'tool', tool_call_id: tr.tool_use_id, content: tr.content });
+        }
+      }
+    }
+  }
+
+  return out;
+}
+
+/** OpenAI's chat.completions response message -> our internal ContentBlock[] shape. */
+function fromOpenAiMessage(message: {
+  content?: string | null;
+  tool_calls?: OpenAiToolCall[];
+}): ContentBlock[] {
+  const blocks: ContentBlock[] = [];
+  if (message.content && message.content.trim() !== '') {
+    blocks.push({ type: 'text', text: message.content } as TextBlock);
+  }
+  for (const tc of message.tool_calls ?? []) {
+    let input: Record<string, unknown> = {};
+    try {
+      input = JSON.parse(tc.function.arguments || '{}');
+    } catch {
+      input = {};
+    }
+    blocks.push({ type: 'tool_use', id: tc.id, name: tc.function.name, input } as ToolUseBlock);
+  }
+  return blocks;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AgentService {
@@ -331,6 +434,7 @@ export class AgentService {
    */
   private explainFailure(e: unknown): string {
     const direct = this.settings.mode() === 'direct';
+    const providerName = direct && this.settings.provider() === 'openai' ? 'OpenAI' : 'Anthropic';
     const status = (e as { status?: number } | null)?.status;
 
     if (e instanceof Error && e.message.startsWith('No API key')) {
@@ -338,36 +442,37 @@ export class AgentService {
     }
 
     // Anthropic (and our backend, which passes the body through unchanged) returns
-    // {type, error: {type, message}, request_id} on rejection. Angular's HttpErrorResponse
-    // puts the parsed body on `.error` — prefer that real message over a guess from the
-    // status code alone, since "credit balance too low" and "invalid x-api-key" both land
-    // on different status codes than what a reader would expect.
-    const apiMessage = (e as { error?: { error?: { message?: string } } } | null)?.error?.error
-      ?.message;
+    // {type, error: {type, message}, request_id} on rejection — the message is nested two
+    // levels deep. OpenAI's shape is flatter: {error: {message, type, param, code}}. Angular's
+    // HttpErrorResponse puts the parsed body on `.error` either way — prefer whichever shape
+    // actually has a message over a guess from the status code alone, since "credit balance
+    // too low" and "invalid api key" both land on different status codes than expected.
+    const err = (e as { error?: { error?: { message?: string }; message?: string } } | null)?.error;
+    const apiMessage = err?.error?.message ?? err?.message;
     if (typeof apiMessage === 'string' && apiMessage.trim() !== '') {
-      return direct ? `Anthropic: ${apiMessage}` : `Backend: ${apiMessage}`;
+      return direct ? `${providerName}: ${apiMessage}` : `Backend: ${apiMessage}`;
     }
 
     if (status === 401 || status === 403) {
       return direct
-        ? 'Anthropic rejected the API key. Check it on the Settings tab.'
+        ? `${providerName} rejected the API key. Check it on the Settings tab.`
         : 'The backend rejected the request — check its ANTHROPIC_API_KEY.';
     }
     if (status === 429) {
-      return 'Rate limited by Anthropic. Wait a moment and try again.';
+      return `Rate limited by ${providerName}. Wait a moment and try again.`;
     }
     if (status === 0) {
       return direct
-        ? 'Could not reach Anthropic. Check your connection.'
+        ? `Could not reach ${providerName}. Check your connection.`
         : `Could not reach the backend at ${environment.apiBaseUrl}. Is it running, and does its FRONTEND_ORIGINS allow this page?`;
     }
     if (typeof status === 'number' && status >= 500) {
       return direct
-        ? 'Anthropic returned a server error. Try again shortly.'
+        ? `${providerName} returned a server error. Try again shortly.`
         : 'The backend returned an error — check its logs.';
     }
     return direct
-      ? 'The request to Anthropic failed. See the browser console for details.'
+      ? `The request to ${providerName} failed. See the browser console for details.`
       : 'Could not reach the assistant. Check that the backend is running, then try again.';
   }
 
@@ -382,17 +487,22 @@ export class AgentService {
     return firstValueFrom(
       this.http.post<AssistantResponse>(`${environment.apiBaseUrl}/api/assistant`, {
         messages: this.history,
-        system: systemPrompt(),
+        system: systemPrompt(true),
         tools: ALL_TOOLS,
       })
     );
+  }
+
+  /** One request to whichever provider direct mode is currently set to. */
+  private requestDirect(): Promise<AssistantResponse> {
+    return this.settings.provider() === 'openai' ? this.requestDirectOpenAi() : this.requestDirectAnthropic();
   }
 
   /**
    * Straight to Anthropic from the browser. Needs the dangerous-direct-browser-access
    * header — without it the API rejects requests carrying an Origin.
    */
-  private async requestDirect(): Promise<AssistantResponse> {
+  private async requestDirectAnthropic(): Promise<AssistantResponse> {
     const key = this.settings.apiKey().trim();
     if (key === '') {
       throw new Error('No API key set. Add one on the Settings tab.');
@@ -410,7 +520,7 @@ export class AgentService {
         ANTHROPIC_URL,
         {
           ...DIRECT_CONFIG,
-          system: systemPrompt(),
+          system: systemPrompt(true),
           messages: this.history,
           tools: ALL_TOOLS,
         },
@@ -419,6 +529,41 @@ export class AgentService {
     );
 
     return { content: res.content ?? [], stop_reason: res.stop_reason ?? null };
+  }
+
+  /**
+   * Straight to OpenAI's Chat Completions API. No dangerous-browser-access header needed —
+   * OpenAI's API is designed to be called with just a Bearer token. web_search is Anthropic's
+   * server tool and has no OpenAI equivalent in this shape, so it's left out here entirely;
+   * the system prompt only claims that capability when it's actually being sent.
+   */
+  private async requestDirectOpenAi(): Promise<AssistantResponse> {
+    const key = this.settings.openaiApiKey().trim();
+    if (key === '') {
+      throw new Error('No API key set. Add one on the Settings tab.');
+    }
+
+    const headers = new HttpHeaders({
+      'content-type': 'application/json',
+      authorization: `Bearer ${key}`,
+    });
+
+    const res = await firstValueFrom(
+      this.http.post<{
+        choices?: { message: { content?: string | null; tool_calls?: OpenAiToolCall[] } }[];
+      }>(
+        OPENAI_URL,
+        {
+          model: OPENAI_MODEL,
+          messages: toOpenAiMessages(this.history, systemPrompt(false)),
+          tools: toOpenAiTools(TOOLS),
+        },
+        { headers }
+      )
+    );
+
+    const message = res.choices?.[0]?.message;
+    return { content: message ? fromOpenAiMessage(message) : [], stop_reason: null };
   }
 
   // ---------------- tool execution ----------------
