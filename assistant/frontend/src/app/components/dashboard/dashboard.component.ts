@@ -87,6 +87,7 @@ export class DashboardComponent {
 
   cards: DashCard[] = [
     { tab: 'growth', label: '6-Month Roadmap', progress: () => this.state.roadmapProgress() },
+    { tab: 'fitness', label: 'Fitness & Diet', progress: () => this.state.fitnessWeekProgress() },
     { tab: 'dsa', label: 'DSA', progress: () => this.state.categoryProgress('dsa') },
     { tab: 'cs', label: 'CS Fundamentals', progress: () => this.state.categoryProgress('cs') },
     { tab: 'sysdesign', label: 'System Design', progress: () => this.state.categoryProgress('sysdesign') },

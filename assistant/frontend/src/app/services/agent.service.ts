@@ -156,6 +156,17 @@ const TOOLS: ToolDefinition[] = [
   },
 ];
 
+/**
+ * Anthropic's server-executed web search tool — not one of ours, so it has no case in
+ * `execute()`. Anthropic runs the search itself and returns `web_search_tool_result` blocks
+ * inline; the browser never sees a `tool_use` for it to answer. Gives the assistant a way to
+ * answer "what's current" questions (rates, news, a company's latest process) on request,
+ * without us standing up any scraping/news infrastructure of our own.
+ */
+const WEB_SEARCH_TOOL = { type: 'web_search_20250305', name: 'web_search' };
+
+const ALL_TOOLS: unknown[] = [...TOOLS, WEB_SEARCH_TOOL];
+
 function systemPrompt(): string {
   const now = new Date();
   return [
@@ -181,6 +192,13 @@ function systemPrompt(): string {
     'or two) decide sensibly and mention it. Ask only when getting it wrong would mean real',
     'rework. Deleting or completing the wrong thing counts as real rework: if a title fragment',
     'is ambiguous, ask which one.',
+    '',
+    'You also have a web_search tool. Use it when the user asks about something current — a',
+    'live rate, recent news, a company\'s latest interview process — that you cannot know from',
+    'training alone. Do not use it for the DSA/CS/System Design/Web prep content, workout or',
+    'diet plan, or growth roadmap already on screen; read those from the tabs instead. State',
+    'facts from search plainly and note they may change; you are not a substitute for a doctor,',
+    'financial advisor, or other licensed professional on anything health- or money-related.',
   ].join('\n');
 }
 
@@ -365,7 +383,7 @@ export class AgentService {
       this.http.post<AssistantResponse>(`${environment.apiBaseUrl}/api/assistant`, {
         messages: this.history,
         system: systemPrompt(),
-        tools: TOOLS,
+        tools: ALL_TOOLS,
       })
     );
   }
@@ -394,7 +412,7 @@ export class AgentService {
           ...DIRECT_CONFIG,
           system: systemPrompt(),
           messages: this.history,
-          tools: TOOLS,
+          tools: ALL_TOOLS,
         },
         { headers }
       )

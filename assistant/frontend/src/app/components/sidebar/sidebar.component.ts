@@ -18,6 +18,7 @@ const TABS: Tab[] = [
   { key: 'tasks', label: 'Tasks' },
   { key: 'notes', label: 'Notes' },
   { key: 'growth', label: 'Growth' },
+  { key: 'fitness', label: 'Fitness & Diet' },
   { key: 'dsa', label: 'DSA' },
   { key: 'cs', label: 'CS Fundamentals' },
   { key: 'sysdesign', label: 'System Design' },
@@ -85,6 +86,10 @@ export class SidebarComponent {
     if (key === 'growth') {
       const p = this.state.roadmapProgress();
       return p.total ? `${p.done}/${p.total}` : '';
+    }
+    if (key === 'fitness') {
+      const p = this.state.fitnessWeekProgress();
+      return `${p.pct}%`;
     }
     if (PREP_TABS.includes(key)) {
       const p = this.state.categoryProgress(key as PrepCategoryKey);

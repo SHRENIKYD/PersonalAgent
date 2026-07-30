@@ -907,3 +907,48 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   font-family: 'IBM Plex Mono', monospace;
   margin-top: 8px;
 }
+
+/* ---------------- fitness ---------------- */
+
+.fit-today-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.fit-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.fit-table-wrap { overflow-x: auto; margin: 8px 0 14px; }
+
+.fit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.fit-table th, .fit-table td {
+  border-bottom: 1px solid var(--line);
+  padding: 7px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.fit-table th {
+  color: var(--accent-dim);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.fit-note { color: var(--muted); font-size: 13px; padding: 10px 14px; margin: 0; }
+
+.fit-list { margin: 0 0 8px; padding-left: 20px; color: var(--text); }
+.fit-list li { margin-bottom: 6px; }
