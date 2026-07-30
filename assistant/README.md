@@ -7,7 +7,8 @@ the actual list rather than guessing from the conversation.
 Built on the same two-project shape as the AEGIS reference:
 
 - **`frontend/`** — Angular 17 (standalone components, signals). Assistant chat, Today
-  dashboard, tasks, notes, and settings.
+  dashboard, tasks, notes, a six-month growth tracker, interview prep (DSA/CS/System
+  Design/Web), a certificates tracker, and settings.
 - **`backend/`** — ASP.NET Core (.NET 8) minimal API. One endpoint, `POST /api/assistant`,
   which forwards one turn of the agent loop to the Anthropic API. It exists purely so your
   Anthropic API key never sits in browser-visible code. **Optional** — see Transport modes
@@ -93,6 +94,31 @@ Three details worth knowing if you extend this:
 
 All state lives in your browser's `localStorage` under `assistant-tasks-v1` and
 `assistant-notes-v1`. Clearing site data clears your tasks.
+
+## Growth, prep, and certificates
+
+Four more tabs, entirely UI-driven (the agent doesn't touch these — they're not exposed as
+tools, since "did I move my body this week" isn't something an assistant should be answering
+on your behalf):
+
+- **Growth** — a six-month roadmap across Career, Health, Habits, and Balance, plus a
+  26-week habit-streak grid. Month labels are computed from today's date
+  (`generateMonthNames()` in `growth-data.ts`), so the tracker never goes stale.
+- **DSA** — 11 topics, 165 problems (15 each), every one with a brute-force approach, an
+  optimized approach with time/space complexity, and a plain-English explanation of why the
+  optimization works. Content lives in `prep-dsa-data.ts`.
+- **CS Fundamentals / System Design / Web** — concept questions (OS, DBMS, networking, OOP,
+  system-design building blocks and case studies, JS/React/Node) with a plain-English
+  explanation each — no brute-force/optimized split, since that doesn't apply to a
+  definition. Content lives in `prep-concept-data.ts`.
+- **Certificates** — a to-do list of certifications you're working toward, and a record of
+  ones you've earned.
+
+Progress checkboxes persist under `assistant-roadmap-v1`, `assistant-prep-v1`, and
+`assistant-certs-v1`. The DSA and concept prep tabs share one UI shell each
+(`PrepDsaComponent` for the brute-force/optimized format, `PrepConceptComponent` — generic,
+parameterized by `category`/`topics` — for the other three) so a new prep category is a data
+file plus one line in `app.component.ts`, not a new component.
 
 ## Quick local run
 

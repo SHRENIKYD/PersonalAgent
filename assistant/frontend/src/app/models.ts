@@ -82,7 +82,18 @@ export interface DisplayEntry {
   pending?: boolean;
 }
 
-export type TabKey = 'chat' | 'tasks' | 'notes' | 'dashboard' | 'settings';
+export type TabKey =
+  | 'chat'
+  | 'tasks'
+  | 'notes'
+  | 'dashboard'
+  | 'growth'
+  | 'dsa'
+  | 'cs'
+  | 'sysdesign'
+  | 'web'
+  | 'certs'
+  | 'settings';
 
 /**
  * 'backend' proxies through the .NET API (key stays server-side).
@@ -90,3 +101,96 @@ export type TabKey = 'chat' | 'tasks' | 'notes' | 'dashboard' | 'settings';
  * deploy, but the key is exposed to anything running in this browser.
  */
 export type TransportMode = 'backend' | 'direct';
+
+// ---------------- Growth tracker (roadmap + habits) ----------------
+
+export type TrackKey = 'career' | 'health' | 'habits' | 'balance';
+
+export interface Goal {
+  text: string;
+  done: boolean;
+}
+
+export type TrackData = Record<TrackKey, Goal[]>;
+
+export interface MonthPlan {
+  name: string;
+  theme: string;
+  tracks: TrackData;
+}
+
+export interface Habit {
+  name: string;
+  weeks: boolean[];
+}
+
+export interface RoadmapState {
+  months: MonthPlan[];
+  habits: Habit[];
+}
+
+// ---------------- Interview prep ----------------
+
+export type PrepCategoryKey = 'dsa' | 'cs' | 'sysdesign' | 'web';
+
+/** dsa[topicIndex][problemIndex] = checked */
+export interface Approach {
+  description: string;
+  time: string;   // Big-O, e.g. "O(n^2)"
+  space: string;  // Big-O, e.g. "O(1)"
+}
+
+export interface DsaProblem {
+  name: string;
+  bruteForce: Approach;
+  optimized: Approach;
+  /** The core insight, in plain English — why the optimized approach works. */
+  explanation: string;
+}
+
+export interface DsaTopic {
+  name: string;
+  problems: DsaProblem[];
+}
+
+/** A concept question — no brute-force/optimized split, just a plain-English explanation. */
+export interface ConceptItem {
+  name: string;
+  explanation: string;
+}
+
+export interface ConceptTopic {
+  name: string;
+  items: ConceptItem[];
+}
+
+/** prep[category][topicIndex][itemIndex] = checked. Shared across DSA and concept topics —
+ *  a DsaTopic's `problems` and a ConceptTopic's `items` are both indexed the same way. */
+export interface PrepState {
+  [category: string]: {
+    [topicIndex: number]: {
+      [itemIndex: number]: boolean;
+    };
+  };
+}
+
+// ---------------- Certificates ----------------
+
+export interface CertTodo {
+  name: string;
+  target: string;
+  link: string;
+  done: boolean;
+}
+
+export interface CertEarned {
+  name: string;
+  issuer: string;
+  date: string;
+  link: string;
+}
+
+export interface CertsState {
+  todo: CertTodo[];
+  earned: CertEarned[];
+}

@@ -1,11 +1,75 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { StorageService } from './storage.service';
-import { Note, Priority, Task } from '../models';
+import {
+  CertEarned,
+  CertTodo,
+  CertsState,
+  Habit,
+  MonthPlan,
+  Note,
+  PrepCategoryKey,
+  PrepState,
+  Priority,
+  RoadmapState,
+  Task,
+  TrackKey,
+} from '../models';
+import { TRACKS, generateMonthNames } from '../growth-data';
+import { DSA_TOPICS } from '../prep-dsa-data';
+import { CS_TOPICS, SYSDESIGN_TOPICS, WEB_TOPICS } from '../prep-concept-data';
 
 const KEYS = {
   tasks: 'assistant-tasks-v1',
   notes: 'assistant-notes-v1',
+  roadmap: 'assistant-roadmap-v1',
+  prep: 'assistant-prep-v1',
+  certs: 'assistant-certs-v1',
 };
+
+const HABIT_WEEKS = 26;
+
+/**
+ * Item counts per topic, used only for progress percentages — DSA topics count problems,
+ * concept topics count items. Both are just "how many checkable rows does this topic have."
+ */
+const PREP_TOPIC_SIZES: Record<PrepCategoryKey, number[]> = {
+  dsa: DSA_TOPICS.map(t => t.problems.length),
+  cs: CS_TOPICS.map(t => t.items.length),
+  sysdesign: SYSDESIGN_TOPICS.map(t => t.items.length),
+  web: WEB_TOPICS.map(t => t.items.length),
+};
+
+function emptyTrack(): [{ text: string; done: boolean }, { text: string; done: boolean }] {
+  return [{ text: '', done: false }, { text: '', done: false }];
+}
+
+function defaultRoadmap(): RoadmapState {
+  const months: MonthPlan[] = generateMonthNames(6).map(name => ({
+    name,
+    theme: '',
+    tracks: {
+      career: emptyTrack(),
+      health: emptyTrack(),
+      habits: emptyTrack(),
+      balance: emptyTrack(),
+    },
+  }));
+  const habits: Habit[] = [
+    { name: 'Sleep 7+ hours', weeks: new Array(HABIT_WEEKS).fill(false) },
+    { name: 'Deep work block', weeks: new Array(HABIT_WEEKS).fill(false) },
+    { name: 'Move your body', weeks: new Array(HABIT_WEEKS).fill(false) },
+    { name: 'Connect with someone', weeks: new Array(HABIT_WEEKS).fill(false) },
+  ];
+  return { months, habits };
+}
+
+function defaultPrep(): PrepState {
+  return { dsa: {}, cs: {}, sysdesign: {}, web: {} };
+}
+
+function defaultCerts(): CertsState {
+  return { todo: [], earned: [] };
+}
 
 function newId(): string {
   return Math.random().toString(36).slice(2, 10);
@@ -23,6 +87,9 @@ function today(): string {
 export class StateService {
   tasks = signal<Task[]>([]);
   notes = signal<Note[]>([]);
+  roadmap = signal<RoadmapState>(defaultRoadmap());
+  prep = signal<PrepState>(defaultPrep());
+  certs = signal<CertsState>(defaultCerts());
   saveStatus = signal<string>('');
 
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -30,6 +97,9 @@ export class StateService {
   constructor(private storage: StorageService) {
     this.tasks.set(this.storage.get<Task[]>(KEYS.tasks, []));
     this.notes.set(this.storage.get<Note[]>(KEYS.notes, []));
+    this.roadmap.set(this.storage.get<RoadmapState>(KEYS.roadmap, defaultRoadmap()));
+    this.prep.set(this.storage.get<PrepState>(KEYS.prep, defaultPrep()));
+    this.certs.set(this.storage.get<CertsState>(KEYS.certs, defaultCerts()));
   }
 
   // ---------------- derived views ----------------
@@ -136,6 +206,195 @@ export class StateService {
     );
   }
 
+  // ---------------- growth tracker (roadmap + habits) ----------------
+
+  roadmapProgress = computed(() => {
+    let total = 0, done = 0;
+    this.roadmap().months.forEach(m => {
+      TRACKS.forEach(t => m.tracks[t.key].forEach(g => {
+        if (g.text.trim() !== '') { total++; if (g.done) done++; }
+      }));
+    });
+    return { total, done, pct: total === 0 ? 0 : Math.round((done / total) * 100) };
+  });
+
+  monthComplete(m: MonthPlan): boolean {
+    let has = false, all = true;
+    TRACKS.forEach(t => m.tracks[t.key].forEach(g => {
+      if (g.text.trim() !== '') { has = true; if (!g.done) all = false; }
+    }));
+    return has && all;
+  }
+
+  updateTheme(monthIndex: number, value: string) {
+    this.roadmap.update(s => {
+      const next = structuredClone(s);
+      next.months[monthIndex].theme = value;
+      return next;
+    });
+    this.scheduleSave();
+  }
+
+  updateGoalText(monthIndex: number, trackKey: TrackKey, goalIndex: number, value: string) {
+    this.roadmap.update(s => {
+      const next = structuredClone(s);
+      next.months[monthIndex].tracks[trackKey][goalIndex].text = value;
+      return next;
+    });
+    this.scheduleSave();
+  }
+
+  toggleGoal(monthIndex: number, trackKey: TrackKey, goalIndex: number, done: boolean) {
+    this.roadmap.update(s => {
+      const next = structuredClone(s);
+      next.months[monthIndex].tracks[trackKey][goalIndex].done = done;
+      return next;
+    });
+    this.scheduleSave();
+  }
+
+  toggleHabitWeek(habitIndex: number, weekIndex: number) {
+    this.roadmap.update(s => {
+      const next = structuredClone(s);
+      next.habits[habitIndex].weeks[weekIndex] = !next.habits[habitIndex].weeks[weekIndex];
+      return next;
+    });
+    this.scheduleSave();
+  }
+
+  updateHabitName(habitIndex: number, value: string) {
+    this.roadmap.update(s => {
+      const next = structuredClone(s);
+      next.habits[habitIndex].name = value;
+      return next;
+    });
+    this.scheduleSave();
+  }
+
+  addHabit() {
+    this.roadmap.update(s => {
+      const next = structuredClone(s);
+      next.habits.push({ name: '', weeks: new Array(HABIT_WEEKS).fill(false) });
+      return next;
+    });
+    this.scheduleSave();
+  }
+
+  removeHabit(i: number) {
+    this.roadmap.update(s => {
+      const next = structuredClone(s);
+      next.habits.splice(i, 1);
+      return next;
+    });
+    this.scheduleSave();
+  }
+
+  // ---------------- interview prep ----------------
+
+  categoryProgress(cat: PrepCategoryKey) {
+    let total = 0, done = 0;
+    const state = this.prep();
+    PREP_TOPIC_SIZES[cat].forEach((size, ti) => {
+      for (let ii = 0; ii < size; ii++) {
+        total++;
+        if (state[cat]?.[ti]?.[ii]) done++;
+      }
+    });
+    return { total, done, pct: total === 0 ? 0 : Math.round((done / total) * 100) };
+  }
+
+  topicProgress(cat: PrepCategoryKey, ti: number) {
+    const size = PREP_TOPIC_SIZES[cat][ti] ?? 0;
+    const state = this.prep();
+    let done = 0;
+    for (let ii = 0; ii < size; ii++) {
+      if (state[cat]?.[ti]?.[ii]) done++;
+    }
+    return { total: size, done };
+  }
+
+  toggleItem(cat: PrepCategoryKey, ti: number, ii: number, checked: boolean) {
+    this.prep.update(s => {
+      const next = structuredClone(s);
+      if (!next[cat][ti]) next[cat][ti] = {};
+      next[cat][ti][ii] = checked;
+      return next;
+    });
+    this.scheduleSave();
+  }
+
+  // ---------------- certificates ----------------
+
+  certsProgress = computed(() => {
+    const c = this.certs();
+    const total = c.todo.filter(x => x.name.trim()).length;
+    const done = c.todo.filter(x => x.done).length;
+    return { total, done };
+  });
+
+  addCertTodo() {
+    this.certs.update(s => {
+      const next = structuredClone(s);
+      next.todo.push({ name: '', target: '', link: '', done: false });
+      return next;
+    });
+    this.scheduleSave();
+  }
+
+  updateCertTodo(i: number, field: keyof Omit<CertTodo, 'done'>, value: string) {
+    this.certs.update(s => {
+      const next = structuredClone(s);
+      next.todo[i][field] = value;
+      return next;
+    });
+    this.scheduleSave();
+  }
+
+  toggleCertTodoDone(i: number, done: boolean) {
+    this.certs.update(s => {
+      const next = structuredClone(s);
+      next.todo[i].done = done;
+      return next;
+    });
+    this.scheduleSave();
+  }
+
+  removeCertTodo(i: number) {
+    this.certs.update(s => {
+      const next = structuredClone(s);
+      next.todo.splice(i, 1);
+      return next;
+    });
+    this.scheduleSave();
+  }
+
+  addCertEarned() {
+    this.certs.update(s => {
+      const next = structuredClone(s);
+      next.earned.push({ name: '', issuer: '', date: '', link: '' });
+      return next;
+    });
+    this.scheduleSave();
+  }
+
+  updateCertEarned(i: number, field: keyof CertEarned, value: string) {
+    this.certs.update(s => {
+      const next = structuredClone(s);
+      next.earned[i][field] = value;
+      return next;
+    });
+    this.scheduleSave();
+  }
+
+  removeCertEarned(i: number) {
+    this.certs.update(s => {
+      const next = structuredClone(s);
+      next.earned.splice(i, 1);
+      return next;
+    });
+    this.scheduleSave();
+  }
+
   // ---------------- persistence ----------------
 
   private scheduleSave() {
@@ -144,7 +403,12 @@ export class StateService {
     this.saveTimer = setTimeout(() => {
       const ok1 = this.storage.set(KEYS.tasks, this.tasks());
       const ok2 = this.storage.set(KEYS.notes, this.notes());
-      this.saveStatus.set(ok1 && ok2 ? 'Saved' : 'Save failed — check browser storage settings');
+      const ok3 = this.storage.set(KEYS.roadmap, this.roadmap());
+      const ok4 = this.storage.set(KEYS.prep, this.prep());
+      const ok5 = this.storage.set(KEYS.certs, this.certs());
+      this.saveStatus.set(
+        ok1 && ok2 && ok3 && ok4 && ok5 ? 'Saved' : 'Save failed — check browser storage settings'
+      );
     }, 400);
   }
 }

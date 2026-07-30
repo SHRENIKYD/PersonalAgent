@@ -3,18 +3,26 @@ import { CommonModule } from '@angular/common';
 import { StateService } from '../../services/state.service';
 import { UiService } from '../../services/ui.service';
 import { SettingsService } from '../../services/settings.service';
-import { TabKey } from '../../models';
+import { PrepCategoryKey, TabKey } from '../../models';
 
 interface Tab {
   key: TabKey;
   label: string;
 }
 
+const PREP_TABS: TabKey[] = ['dsa', 'cs', 'sysdesign', 'web'];
+
 const TABS: Tab[] = [
   { key: 'chat', label: 'Assistant' },
   { key: 'dashboard', label: 'Today' },
   { key: 'tasks', label: 'Tasks' },
   { key: 'notes', label: 'Notes' },
+  { key: 'growth', label: 'Growth' },
+  { key: 'dsa', label: 'DSA' },
+  { key: 'cs', label: 'CS Fundamentals' },
+  { key: 'sysdesign', label: 'System Design' },
+  { key: 'web', label: 'Web & Full-Stack' },
+  { key: 'certs', label: 'Certificates' },
   { key: 'settings', label: 'Settings' },
 ];
 
@@ -63,6 +71,18 @@ export class SidebarComponent {
     }
     if (key === 'settings' && !this.settings.ready()) {
       return '!';
+    }
+    if (key === 'growth') {
+      const p = this.state.roadmapProgress();
+      return p.total ? `${p.done}/${p.total}` : '';
+    }
+    if (PREP_TABS.includes(key)) {
+      const p = this.state.categoryProgress(key as PrepCategoryKey);
+      return p.total ? `${p.done}/${p.total}` : '';
+    }
+    if (key === 'certs') {
+      const p = this.state.certsProgress();
+      return p.total ? `${p.done}/${p.total}` : '';
     }
     return '';
   }
