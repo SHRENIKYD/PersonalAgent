@@ -161,6 +161,10 @@ export interface DsaProblem {
 export interface DsaTopic {
   name: string;
   problems: DsaProblem[];
+  /** When present, the topic renders as a teaching narrative instead of independent problem
+   *  cards — see NarrativeTopic below. `problems` is ignored for progress counting in that
+   *  case (see PREP_TOPIC_SIZES in state.service.ts). */
+  narrative?: NarrativeTopic;
 }
 
 /**
@@ -180,6 +184,46 @@ export interface ConceptItem {
 export interface ConceptTopic {
   name: string;
   items: ConceptItem[];
+  /** Same narrative-teaching-arc shape as DsaTopic's, for concept tabs (CS/SysDesign/Web)
+   *  once they're migrated. `items` is ignored for progress counting in that case. */
+  narrative?: NarrativeTopic;
+}
+
+/**
+ * One concept taught as a step in a progression, not an isolated fact — each one exists to
+ * fix a specific weakness in the one before it, and explicitly sets up the one after it.
+ * Modeled after a real class-notes structure: why this is being introduced, a plain
+ * definition, two concrete numeric/worked walkthroughs, code, and what it unlocks next.
+ */
+export interface NarrativeConcept {
+  name: string;
+  whyThisExists: string;
+  definitionLabel: string;
+  definition: string;
+  inSimpleWords: string;
+  /** Exactly two worked examples, traced through with real numbers/values. */
+  examples: [string, string];
+  /** Pseudocode/code for this step. Omitted for non-code concepts (e.g. a prompting pattern). */
+  code?: string;
+  timeComplexity?: string;
+  spaceComplexity?: string;
+  whatThisUnlocks: string;
+}
+
+export interface NarrativeSummaryRow {
+  concept: string;
+  formula: string;
+}
+
+export interface NarrativeSelfTestItem {
+  question: string;
+  answer: string;
+}
+
+export interface NarrativeTopic {
+  concepts: NarrativeConcept[];
+  summary: NarrativeSummaryRow[];
+  selfTest: NarrativeSelfTestItem[];
 }
 
 /** prep[category][topicIndex][itemIndex] = checked. Shared across DSA and concept topics —
