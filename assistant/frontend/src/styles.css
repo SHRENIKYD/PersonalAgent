@@ -78,9 +78,10 @@ html, body {
   padding: 9px 11px;
   text-align: left;
   width: 100%;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
-.tabs button:hover { background: var(--panel-2); }
+.tabs button:hover { background: var(--panel-2); transform: translateX(2px); }
 
 .tabs button.active {
   background: var(--accent-dim);
@@ -109,7 +110,21 @@ html, body {
   flex-direction: column;
 }
 
-.panel { flex: 1 1 auto; max-width: 860px; }
+.panel {
+  flex: 1 1 auto;
+  max-width: 1100px;
+  width: 100%;
+  animation: panel-in 0.35s ease both;
+}
+
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel { animation: none; }
+}
 
 .page-head {
   display: flex;
@@ -178,9 +193,11 @@ button {
   color: #fff;
   cursor: pointer;
   padding: 9px 15px;
+  transition: filter 0.15s ease, transform 0.1s ease;
 }
 
 button:hover { filter: brightness(1.12); }
+button:active { transform: scale(0.97); }
 button:disabled { opacity: 0.5; cursor: default; filter: none; }
 
 .ghost-btn {
@@ -424,9 +441,11 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
   gap: 4px;
   padding: 13px 15px;
   text-align: left;
+  font-family: 'Orbitron', sans-serif;
+  transition: border-color 0.15s ease, transform 0.15s ease;
 }
 
-.mode-btn:hover { border-color: var(--accent-dim); }
+.mode-btn:hover { border-color: var(--accent-dim); transform: translateY(-2px); }
 
 .mode-btn.active {
   border-color: var(--accent);
@@ -810,7 +829,18 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   stroke: url(#reactorGradient);
   stroke-width: 8;
   stroke-linecap: round;
-  transition: stroke-dashoffset 0.4s ease;
+  transition: stroke-dashoffset 0.6s ease;
+}
+
+.reactor-wrap { animation: reactor-glow 3s ease-in-out infinite; border-radius: 50%; }
+
+@keyframes reactor-glow {
+  0%, 100% { filter: drop-shadow(0 0 3px rgba(215, 169, 74, 0.35)); }
+  50% { filter: drop-shadow(0 0 10px rgba(179, 56, 44, 0.55)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reactor-wrap { animation: none; }
 }
 
 .reactor-label {
@@ -887,10 +917,14 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   cursor: pointer;
   font: inherit;
   color: var(--text);
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.dash-card:hover { border-color: var(--accent-dim); }
+.dash-card:hover {
+  border-color: var(--accent-dim);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
 
 .dash-card-title {
   font-family: 'Orbitron', sans-serif;

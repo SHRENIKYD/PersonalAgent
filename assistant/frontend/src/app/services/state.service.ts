@@ -14,7 +14,7 @@ import {
   Task,
   TrackKey,
 } from '../models';
-import { TRACKS, generateMonthNames } from '../growth-data';
+import { MONTH_SEEDS, TRACKS, generateMonthNames } from '../growth-data';
 import { DSA_TOPICS } from '../prep-dsa-data';
 import { CS_TOPICS, SYSDESIGN_TOPICS, WEB_TOPICS } from '../prep-concept-data';
 
@@ -40,21 +40,24 @@ const PREP_TOPIC_SIZES: Record<PrepCategoryKey, number[]> = {
   web: WEB_TOPICS.map(t => t.items.length),
 };
 
-function emptyTrack(): [{ text: string; done: boolean }, { text: string; done: boolean }] {
-  return [{ text: '', done: false }, { text: '', done: false }];
+function seededTrack(pair: [string, string]): [{ text: string; done: boolean }, { text: string; done: boolean }] {
+  return [{ text: pair[0], done: false }, { text: pair[1], done: false }];
 }
 
 function defaultRoadmap(): RoadmapState {
-  const months: MonthPlan[] = generateMonthNames(6).map(name => ({
-    name,
-    theme: '',
-    tracks: {
-      career: emptyTrack(),
-      health: emptyTrack(),
-      habits: emptyTrack(),
-      balance: emptyTrack(),
-    },
-  }));
+  const months: MonthPlan[] = generateMonthNames(6).map((name, i) => {
+    const seed = MONTH_SEEDS[i];
+    return {
+      name,
+      theme: seed?.theme ?? '',
+      tracks: {
+        career: seededTrack(seed?.career ?? ['', '']),
+        health: seededTrack(seed?.health ?? ['', '']),
+        habits: seededTrack(seed?.habits ?? ['', '']),
+        balance: seededTrack(seed?.balance ?? ['', '']),
+      },
+    };
+  });
   const habits: Habit[] = [
     { name: 'Sleep 7+ hours', weeks: new Array(HABIT_WEEKS).fill(false) },
     { name: 'Deep work block', weeks: new Array(HABIT_WEEKS).fill(false) },
