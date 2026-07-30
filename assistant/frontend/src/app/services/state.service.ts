@@ -75,9 +75,23 @@ export class StateService {
     this.scheduleSave();
   }
 
+  /** Pass '' to clear the date and leave the task undated. */
+  updateTaskDue(id: string, due: string) {
+    this.tasks.update(list => list.map(t => (t.id === id ? { ...t, due } : t)));
+    this.scheduleSave();
+  }
+
   removeTask(id: string) {
     this.tasks.update(list => list.filter(t => t.id !== id));
     this.scheduleSave();
+  }
+
+  /**
+   * Open, dated tasks falling inside an inclusive ISO-date range. Plain string
+   * comparison is correct for YYYY-MM-DD, which is why there's no date library here.
+   */
+  tasksInRange(from: string, to: string): Task[] {
+    return this.openTasks().filter(t => t.due !== '' && t.due >= from && t.due <= to);
   }
 
   /** Case-insensitive title match — how the agent resolves "the lease task". */

@@ -33,25 +33,33 @@ you ──▶ browser ──▶ backend ──▶ Anthropic
                  tool_result fed back, loop continues
 ```
 
-The five tools available to it:
+The nine tools available to it:
 
 | Tool | What it does |
 | --- | --- |
 | `add_task` | Adds a task, with a due date resolved to a concrete day |
 | `list_tasks` | Reads the real list — open, done, all, or due today |
+| `tasks_in_range` | Open dated tasks between two days — answers "what's on this week?" |
 | `complete_task` | Marks one done by id, or by title fragment |
+| `reschedule_task` | Moves a due date, or clears it |
+| `delete_task` | Removes a task permanently — id only, never a title match |
 | `write_note` | Saves something worth remembering |
+| `edit_note` | Corrects or extends an existing note |
 | `search_notes` | Recalls it later, across sessions |
 
-Two details worth knowing if you extend this:
+Three details worth knowing if you extend this:
 
 - **Adaptive thinking stays on.** With tools and thinking disabled, the model can write a
   tool call into its visible text instead of emitting a `tool_use` block — the call silently
   never runs. The browser echoes every content block back verbatim so thinking blocks
   round-trip correctly.
-- **Ambiguity is refused, not guessed.** If `complete_task` gets a title fragment matching
-  several tasks, it changes nothing and returns the candidates so the agent asks which one.
-  Completing the wrong task is real rework.
+- **Ambiguity is refused, not guessed.** If a title fragment matches several tasks, the tool
+  changes nothing and returns the candidates so the agent asks which one. Completing or
+  rescheduling the wrong task is real rework. Both tools share one `resolveTask` helper, so
+  the guarantee holds identically for each.
+- **Destructive tools take an id only.** `delete_task` refuses title fragments outright,
+  forcing a `list_tasks` read first. The asymmetry is deliberate: a wrongly completed task
+  can be un-ticked, a wrongly deleted one cannot.
 
 All state lives in your browser's `localStorage` under `assistant-tasks-v1` and
 `assistant-notes-v1`. Clearing site data clears your tasks.

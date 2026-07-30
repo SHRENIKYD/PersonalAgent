@@ -8,6 +8,7 @@ import {
   AssistantResponse,
   DisplayEntry,
   Priority,
+  Task,
   TextBlock,
   ToolDefinition,
   ToolResultBlock,
@@ -64,6 +65,51 @@ const TOOLS: ToolDefinition[] = [
     },
   },
   {
+    name: 'reschedule_task',
+    description:
+      'Move a task to a different due date. Pass the id from list_tasks, or a title fragment ' +
+      'to match on. Resolve relative dates ("next Tuesday") to a concrete date yourself ' +
+      'before calling. Pass an empty due to clear the date and leave the task undated.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Exact task id from list_tasks.' },
+        title: { type: 'string', description: 'Title fragment, used when no id is known.' },
+        due: { type: 'string', description: 'New due date as YYYY-MM-DD, or empty to clear it.' },
+      },
+      required: ['due'],
+    },
+  },
+  {
+    name: 'delete_task',
+    description:
+      'Delete a task permanently. This takes an id only and will not match on a title — ' +
+      'call list_tasks first and pass the exact id. Deletion cannot be undone, so prefer ' +
+      'complete_task when the user has simply finished something.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Exact task id from list_tasks.' },
+      },
+      required: ['id'],
+    },
+  },
+  {
+    name: 'tasks_in_range',
+    description:
+      'List open, dated tasks falling between two dates, inclusive. Use this for questions ' +
+      'spanning a period — "what\'s on this week?", "anything next month?" — working out the ' +
+      'range yourself from today\'s date.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        from: { type: 'string', description: 'Start of the range as YYYY-MM-DD.' },
+        to: { type: 'string', description: 'End of the range as YYYY-MM-DD.' },
+      },
+      required: ['from', 'to'],
+    },
+  },
+  {
     name: 'write_note',
     description:
       'Save a note for later recall — a decision, a reference, something the user wants ' +
@@ -75,6 +121,22 @@ const TOOLS: ToolDefinition[] = [
         body: { type: 'string', description: 'Full note content.' },
       },
       required: ['title', 'body'],
+    },
+  },
+  {
+    name: 'edit_note',
+    description:
+      'Change an existing note\'s title, body, or both. Call search_notes first to get the id. ' +
+      'Prefer this over write_note when correcting or extending something already saved — do ' +
+      'not create a second note on the same subject. Supply the full replacement body, not a diff.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Exact note id from search_notes.' },
+        title: { type: 'string', description: 'Replacement title. Omit to leave it alone.' },
+        body: { type: 'string', description: 'Replacement body in full. Omit to leave it alone.' },
+      },
+      required: ['id'],
     },
   },
   {
@@ -104,6 +166,10 @@ function systemPrompt(): string {
     'whether they would like you to. Check the actual task list before answering questions about',
     'their commitments; do not guess from the conversation. Search notes when they refer to',
     'something from an earlier session.',
+    '',
+    'Revise what is already there rather than duplicating it: reschedule a task instead of',
+    'adding a second copy, edit a note instead of writing a near-identical one. Deleting a task',
+    'needs an id from list_tasks, and editing a note needs an id from search_notes.',
     '',
     'Keep replies short and conversational — a sentence or two. Say what you did, not what you',
     'are about to do, and never restate a task list the user can already see on screen unless',
@@ -267,41 +333,63 @@ export class AgentService {
         }
 
         case 'complete_task': {
+          const found = this.resolveTask(input, { openOnly: true });
+          if ('label' in found) return found;
+          this.state.toggleTask(found.task.id, true);
+          return {
+            label: `Completed “${found.task.title}”`,
+            result: `Marked "${found.task.title}" done.`,
+          };
+        }
+
+        case 'reschedule_task': {
+          const found = this.resolveTask(input, { openOnly: true });
+          if ('label' in found) return found;
+          const due = String(input['due'] ?? '');
+          this.state.updateTaskDue(found.task.id, due);
+          return {
+            label: due === ''
+              ? `Cleared the date on “${found.task.title}”`
+              : `Moved “${found.task.title}” to ${due}`,
+            result: `"${found.task.title}" is now due ${due || 'nothing (undated)'}.`,
+          };
+        }
+
+        case 'delete_task': {
+          // id only, by design — see the tool description.
           const id = String(input['id'] ?? '').trim();
-          if (id !== '') {
-            const match = this.state.tasks().find(t => t.id === id);
-            if (!match) {
-              return { label: 'Could not find that task', result: `No task with id=${id}`, isError: true };
-            }
-            this.state.toggleTask(match.id, true);
-            return { label: `Completed “${match.title}”`, result: `Marked "${match.title}" done.` };
-          }
-
-          const fragment = String(input['title'] ?? '').trim();
-          if (fragment === '') {
-            return { label: 'Rejected an unidentified task', result: 'id or title is required', isError: true };
-          }
-
-          const matches = this.state.findTasks(fragment).filter(t => !t.done);
-          if (matches.length === 0) {
+          if (id === '') {
             return {
-              label: `No open task matching “${fragment}”`,
-              result: `No open task matches "${fragment}".`,
+              label: 'Refused a delete without an id',
+              result: 'id is required. Call list_tasks first and pass the exact id.',
               isError: true,
             };
           }
-          if (matches.length > 1) {
-            // Ambiguity is the model's to resolve — change nothing.
+          const match = this.state.tasks().find(t => t.id === id);
+          if (!match) {
+            return { label: 'Could not find that task', result: `No task with id=${id}`, isError: true };
+          }
+          this.state.removeTask(match.id);
+          return { label: `Deleted “${match.title}”`, result: `Deleted "${match.title}".` };
+        }
+
+        case 'tasks_in_range': {
+          const from = String(input['from'] ?? '').trim();
+          const to = String(input['to'] ?? '').trim();
+          if (from === '' || to === '') {
             return {
-              label: `“${fragment}” matched ${matches.length} tasks`,
-              result:
-                `Ambiguous — "${fragment}" matches several tasks. Nothing changed. Ask which:\n` +
-                matches.map(t => `id=${t.id} | ${t.title}`).join('\n'),
+              label: 'Rejected an incomplete range',
+              result: 'from and to are both required, as YYYY-MM-DD',
               isError: true,
             };
           }
-          this.state.toggleTask(matches[0].id, true);
-          return { label: `Completed “${matches[0].title}”`, result: `Marked "${matches[0].title}" done.` };
+          const hits = this.state.tasksInRange(from, to);
+          const body = hits.length === 0
+            ? `No open dated tasks between ${from} and ${to}.`
+            : hits
+                .map(t => `id=${t.id} | ${t.title} | due=${t.due} | ${t.priority}`)
+                .join('\n');
+          return { label: `Checked ${from} to ${to} (${hits.length})`, result: body };
         }
 
         case 'write_note': {
@@ -312,6 +400,39 @@ export class AgentService {
           }
           const note = this.state.addNote(title, body);
           return { label: `Saved note “${note.title}”`, result: `Saved note id=${note.id}.` };
+        }
+
+        case 'edit_note': {
+          const id = String(input['id'] ?? '').trim();
+          if (id === '') {
+            return {
+              label: 'Refused a note edit without an id',
+              result: 'id is required. Call search_notes first and pass the exact id.',
+              isError: true,
+            };
+          }
+          const note = this.state.notes().find(n => n.id === id);
+          if (!note) {
+            return { label: 'Could not find that note', result: `No note with id=${id}`, isError: true };
+          }
+
+          // Only apply fields actually supplied, so a title-only edit keeps the body.
+          const fields: { title?: string; body?: string } = {};
+          if (input['title'] !== undefined) fields.title = String(input['title']);
+          if (input['body'] !== undefined) fields.body = String(input['body']);
+          if (fields.title === undefined && fields.body === undefined) {
+            return {
+              label: 'Nothing to change on that note',
+              result: 'Supply title, body, or both.',
+              isError: true,
+            };
+          }
+
+          this.state.updateNote(note.id, fields);
+          return {
+            label: `Updated note “${fields.title ?? note.title}”`,
+            result: `Updated note id=${note.id}.`,
+          };
         }
 
         case 'search_notes': {
@@ -334,6 +455,55 @@ export class AgentService {
         isError: true,
       };
     }
+  }
+
+  /**
+   * Resolves a task from either an exact id or a title fragment.
+   *
+   * An ambiguous fragment resolves to nothing and returns the candidates: acting on the
+   * wrong task is real rework, so the model is made to ask instead. Callers distinguish
+   * the two outcomes with `'label' in result`.
+   */
+  private resolveTask(
+    input: Record<string, unknown>,
+    opts: { openOnly: boolean }
+  ): { task: Task } | { label: string; result: string; isError: true } {
+    const id = String(input['id'] ?? '').trim();
+    if (id !== '') {
+      const match = this.state.tasks().find(t => t.id === id);
+      if (!match) {
+        return { label: 'Could not find that task', result: `No task with id=${id}`, isError: true };
+      }
+      return { task: match };
+    }
+
+    const fragment = String(input['title'] ?? '').trim();
+    if (fragment === '') {
+      return { label: 'Rejected an unidentified task', result: 'id or title is required', isError: true };
+    }
+
+    const matches = this.state
+      .findTasks(fragment)
+      .filter(t => (opts.openOnly ? !t.done : true));
+
+    if (matches.length === 0) {
+      const scope = opts.openOnly ? 'open task' : 'task';
+      return {
+        label: `No ${scope} matching “${fragment}”`,
+        result: `No ${scope} matches "${fragment}".`,
+        isError: true,
+      };
+    }
+    if (matches.length > 1) {
+      return {
+        label: `“${fragment}” matched ${matches.length} tasks`,
+        result:
+          `Ambiguous — "${fragment}" matches several tasks. Nothing changed. Ask which:\n` +
+          matches.map(t => `id=${t.id} | ${t.title}`).join('\n'),
+        isError: true,
+      };
+    }
+    return { task: matches[0] };
   }
 
   // ---------------- transcript helpers ----------------
