@@ -108,7 +108,7 @@ export type TransportMode = 'backend' | 'direct';
  * Which model provider direct mode talks to. Backend mode is always Anthropic — the .NET
  * API only ever proxies to Anthropic's Messages API, so this only matters in direct mode.
  */
-export type ApiProvider = 'anthropic' | 'openai';
+export type ApiProvider = 'anthropic' | 'openai' | 'gemini';
 
 // ---------------- Growth tracker (roadmap + habits) ----------------
 

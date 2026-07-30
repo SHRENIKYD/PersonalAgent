@@ -324,6 +324,101 @@ function fromOpenAiMessage(message: {
   return blocks;
 }
 
+/**
+ * Request settings for direct-to-Gemini mode.
+ */
+const GEMINI_MODEL = 'gemini-2.5-pro';
+const GEMINI_URL = (key: string) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(key)}`;
+
+interface GeminiPart {
+  text?: string;
+  functionCall?: { name: string; args: Record<string, unknown> };
+  functionResponse?: { name: string; response: { content: string } };
+}
+
+interface GeminiContent {
+  role: 'user' | 'model';
+  parts: GeminiPart[];
+}
+
+/** Anthropic-shaped tool defs -> Gemini's { functionDeclarations: [...] } shape. */
+function toGeminiTools(tools: ToolDefinition[]): unknown[] {
+  return [
+    {
+      functionDeclarations: tools.map(t => ({
+        name: t.name,
+        description: t.description,
+        parameters: t.input_schema,
+      })),
+    },
+  ];
+}
+
+/**
+ * Translates our internal Anthropic-shaped history into Gemini's `contents` list. Gemini has
+ * no separate "tool" role — a function result is a `user` turn carrying a `functionResponse`
+ * part — and a `functionResponse` must carry the function's *name*, not just an id, so a
+ * running id -> name map is built as assistant turns are walked (Gemini itself never gives
+ * function calls a stable id the way Anthropic/OpenAI do).
+ */
+function toGeminiContents(history: ApiMessage[]): GeminiContent[] {
+  const out: GeminiContent[] = [];
+  const nameById = new Map<string, string>();
+
+  for (const msg of history) {
+    if (typeof msg.content === 'string') {
+      out.push({ role: msg.role === 'assistant' ? 'model' : 'user', parts: [{ text: msg.content }] });
+      continue;
+    }
+
+    if (msg.role === 'assistant') {
+      const parts: GeminiPart[] = [];
+      for (const block of msg.content) {
+        if (block.type === 'text') {
+          parts.push({ text: (block as TextBlock).text });
+        } else if (block.type === 'tool_use') {
+          const tu = block as ToolUseBlock;
+          nameById.set(tu.id, tu.name);
+          parts.push({ functionCall: { name: tu.name, args: tu.input ?? {} } });
+        }
+      }
+      if (parts.length > 0) out.push({ role: 'model', parts });
+    } else {
+      const parts: GeminiPart[] = [];
+      for (const block of msg.content) {
+        if (block.type === 'tool_result') {
+          const tr = block as ToolResultBlock;
+          const name = nameById.get(tr.tool_use_id) ?? 'unknown_tool';
+          parts.push({ functionResponse: { name, response: { content: tr.content } } });
+        }
+      }
+      if (parts.length > 0) out.push({ role: 'user', parts });
+    }
+  }
+
+  return out;
+}
+
+/** Gemini's generateContent response candidate -> our internal ContentBlock[] shape. */
+function fromGeminiParts(parts: GeminiPart[] | undefined): ContentBlock[] {
+  const blocks: ContentBlock[] = [];
+  let callIndex = 0;
+  for (const part of parts ?? []) {
+    if (part.text) {
+      blocks.push({ type: 'text', text: part.text } as TextBlock);
+    } else if (part.functionCall) {
+      blocks.push({
+        type: 'tool_use',
+        id: `gemini_call_${callIndex++}`,
+        name: part.functionCall.name,
+        input: part.functionCall.args ?? {},
+      } as ToolUseBlock);
+    }
+  }
+  return blocks;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AgentService {
   transcript = signal<DisplayEntry[]>([]);
@@ -434,7 +529,13 @@ export class AgentService {
    */
   private explainFailure(e: unknown): string {
     const direct = this.settings.mode() === 'direct';
-    const providerName = direct && this.settings.provider() === 'openai' ? 'OpenAI' : 'Anthropic';
+    const providerName = !direct
+      ? 'Anthropic'
+      : this.settings.provider() === 'openai'
+      ? 'OpenAI'
+      : this.settings.provider() === 'gemini'
+      ? 'Gemini'
+      : 'Anthropic';
     const status = (e as { status?: number } | null)?.status;
 
     if (e instanceof Error && e.message.startsWith('No API key')) {
@@ -495,7 +596,11 @@ export class AgentService {
 
   /** One request to whichever provider direct mode is currently set to. */
   private requestDirect(): Promise<AssistantResponse> {
-    return this.settings.provider() === 'openai' ? this.requestDirectOpenAi() : this.requestDirectAnthropic();
+    switch (this.settings.provider()) {
+      case 'openai': return this.requestDirectOpenAi();
+      case 'gemini': return this.requestDirectGemini();
+      default: return this.requestDirectAnthropic();
+    }
   }
 
   /**
@@ -564,6 +669,32 @@ export class AgentService {
 
     const message = res.choices?.[0]?.message;
     return { content: message ? fromOpenAiMessage(message) : [], stop_reason: null };
+  }
+
+  /**
+   * Straight to Gemini's generateContent API. The key goes in the URL as a query param —
+   * that's Gemini's own convention, not a choice made here. Same web_search caveat as
+   * OpenAI: no equivalent tool sent, and the system prompt reflects that.
+   */
+  private async requestDirectGemini(): Promise<AssistantResponse> {
+    const key = this.settings.geminiApiKey().trim();
+    if (key === '') {
+      throw new Error('No API key set. Add one on the Settings tab.');
+    }
+
+    const res = await firstValueFrom(
+      this.http.post<{ candidates?: { content?: { parts?: GeminiPart[] } }[] }>(
+        GEMINI_URL(key),
+        {
+          contents: toGeminiContents(this.history),
+          systemInstruction: { parts: [{ text: systemPrompt(false) }] },
+          tools: toGeminiTools(TOOLS),
+        }
+      )
+    );
+
+    const parts = res.candidates?.[0]?.content?.parts;
+    return { content: fromGeminiParts(parts), stop_reason: null };
   }
 
   // ---------------- tool execution ----------------
