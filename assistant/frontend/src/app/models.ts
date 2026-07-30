@@ -1,0 +1,85 @@
+export type Priority = 'low' | 'normal' | 'high';
+
+export interface Task {
+  id: string;
+  title: string;
+  due: string;        // ISO date (YYYY-MM-DD) or '' when undated
+  priority: Priority;
+  done: boolean;
+  created: string;    // ISO timestamp
+}
+
+export interface Note {
+  id: string;
+  title: string;
+  body: string;
+  updated: string;    // ISO timestamp
+}
+
+export interface AssistantState {
+  tasks: Task[];
+  notes: Note[];
+}
+
+// ---------------- Anthropic wire shapes ----------------
+//
+// Content blocks are kept deliberately loose. The agent echoes every block the API
+// returns straight back on the next turn — including thinking blocks, which must
+// round-trip unmodified — so narrowing these to a closed union would mean losing
+// fields we don't model.
+
+export interface ContentBlock {
+  type: string;
+  [key: string]: unknown;
+}
+
+export interface TextBlock extends ContentBlock {
+  type: 'text';
+  text: string;
+}
+
+export interface ToolUseBlock extends ContentBlock {
+  type: 'tool_use';
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+}
+
+export interface ToolResultBlock {
+  type: 'tool_result';
+  tool_use_id: string;
+  content: string;
+  is_error?: boolean;
+}
+
+export interface ApiMessage {
+  role: 'user' | 'assistant';
+  content: string | (ContentBlock | ToolResultBlock)[];
+}
+
+export interface AssistantResponse {
+  content: ContentBlock[];
+  stop_reason: string | null;
+}
+
+export interface ToolDefinition {
+  name: string;
+  description: string;
+  input_schema: {
+    type: 'object';
+    properties: Record<string, unknown>;
+    required?: string[];
+  };
+}
+
+// ---------------- UI shapes ----------------
+
+/** A single entry in the visible transcript. Distinct from ApiMessage: one API turn
+ *  can produce several of these (a thought, some tool activity, then the reply). */
+export interface DisplayEntry {
+  kind: 'user' | 'assistant' | 'action' | 'error';
+  text: string;
+  pending?: boolean;
+}
+
+export type TabKey = 'chat' | 'tasks' | 'notes' | 'dashboard';
