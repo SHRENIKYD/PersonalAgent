@@ -126,7 +126,9 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
       <h2 class="section-title">Voice</h2>
       <p class="setting-note">
         A short spoken greeting plays when the app loads, using your browser's built-in
-        text-to-speech — nothing sent anywhere, no API key involved.
+        text-to-speech — nothing sent anywhere, no API key involved. This isn't the JARVIS
+        voice from the films (that's a copyrighted performance, not something this app can
+        source or synthesize) — pick whichever of your device's own voices sounds closest.
       </p>
       <div class="mode-row">
         <button class="mode-btn" [class.active]="voice.enabled()" (click)="voice.setEnabled(true)">
@@ -138,7 +140,24 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
           <span>Stay silent.</span>
         </button>
       </div>
-      <button class="ghost-btn" (click)="voice.greet()">Test voice</button>
+
+      <div class="add-row" *ngIf="voice.enabled()">
+        <select
+          class="grow"
+          [ngModel]="voice.selectedVoiceURI() ?? ''"
+          (ngModelChange)="voice.setVoice($event)">
+          <option value="">Auto (best available match)</option>
+          <option *ngFor="let v of voice.voices()" [value]="v.voiceURI">
+            {{ v.name }} ({{ v.lang }})
+          </option>
+        </select>
+        <button class="ghost-btn" (click)="voice.greet()">Test voice</button>
+      </div>
+      <p class="setting-note" *ngIf="voice.enabled() && voice.voices().length === 0">
+        No voices reported by this browser yet — try "Test voice" again in a moment, or check
+        another browser if this persists (voice availability is entirely up to the OS/browser,
+        not this app).
+      </p>
 
       <h2 class="section-title">Cross-device sync</h2>
       <p class="setting-note">

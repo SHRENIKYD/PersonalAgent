@@ -58,6 +58,7 @@ function key(ti: number, pi: number): string {
                   <span>Time <code>{{ p.optimized.time }}</code></span>
                   <span>Space <code>{{ p.optimized.space }}</code></span>
                 </div>
+                <pre class="note-code" *ngIf="p.optimized.pseudocode">{{ p.optimized.pseudocode }}</pre>
               </div>
               <div class="explanation">
                 <div class="approach-label">Why it works</div>

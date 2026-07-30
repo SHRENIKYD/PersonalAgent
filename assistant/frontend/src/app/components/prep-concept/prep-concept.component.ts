@@ -43,8 +43,23 @@ function key(ti: number, ii: number): string {
             </div>
 
             <div class="prep-problem-body" *ngIf="isItemOpen(ti, ii)">
-              <div class="explanation">
-                <p>{{ item.explanation }}</p>
+              <div class="note">
+                <div class="note-section">
+                  <div class="note-label">Definition</div>
+                  <p>{{ item.definition }}</p>
+                </div>
+                <div class="note-section">
+                  <div class="note-label">How it works</div>
+                  <p>{{ item.howItWorks }}</p>
+                </div>
+                <div class="note-section" *ngIf="item.example">
+                  <div class="note-label">Example / pseudocode</div>
+                  <pre class="note-code">{{ item.example }}</pre>
+                </div>
+                <div class="note-section">
+                  <div class="note-label">Why it matters</div>
+                  <p>{{ item.whyItMatters }}</p>
+                </div>
               </div>
             </div>
           </div>
