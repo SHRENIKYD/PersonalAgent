@@ -2,6 +2,8 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SettingsService } from '../../services/settings.service';
+import { SyncService } from '../../services/sync.service';
+import { VoiceService } from '../../services/voice.service';
 import { ApiProvider } from '../../models';
 import { environment } from '../../../environments/environment';
 
@@ -121,10 +123,78 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
         </p>
       </ng-container>
 
+      <h2 class="section-title">Voice</h2>
+      <p class="setting-note">
+        A short spoken greeting plays when the app loads, using your browser's built-in
+        text-to-speech — nothing sent anywhere, no API key involved.
+      </p>
+      <div class="mode-row">
+        <button class="mode-btn" [class.active]="voice.enabled()" (click)="voice.setEnabled(true)">
+          <strong>On</strong>
+          <span>Play the greeting on load.</span>
+        </button>
+        <button class="mode-btn" [class.active]="!voice.enabled()" (click)="voice.setEnabled(false)">
+          <strong>Off</strong>
+          <span>Stay silent.</span>
+        </button>
+      </div>
+      <button class="ghost-btn" (click)="voice.greet()">Test voice</button>
+
+      <h2 class="section-title">Cross-device sync</h2>
+      <p class="setting-note">
+        Syncs tasks, notes, growth, prep, certificates, and fitness log across devices via a
+        private GitHub Gist — no separate backend. Whoever has the token below can read and
+        write that data, so treat it like a password. "Last edit wins": whichever device
+        synced most recently wins outright if the same item changed on both.
+      </p>
+
+      <div class="warn-box" *ngIf="!sync.configured()">
+        Setting up sync on a <strong>second</strong> device will replace that device's local
+        data with whatever is already in the Gist. Set it up on the device with the data you
+        want to keep <em>first</em>.
+      </div>
+
+      <div class="add-row">
+        <input
+          class="grow"
+          [type]="revealSyncToken() ? 'text' : 'password'"
+          [(ngModel)]="draftSyncToken"
+          placeholder="GitHub personal access token (gist scope)"
+          autocomplete="off"
+          spellcheck="false" />
+        <button class="ghost-btn" (click)="revealSyncToken.set(!revealSyncToken())">
+          {{ revealSyncToken() ? 'Hide' : 'Show' }}
+        </button>
+      </div>
+      <div class="add-row">
+        <input
+          class="grow"
+          type="text"
+          [(ngModel)]="draftGistId"
+          placeholder="Gist ID (leave blank on the first device — one is created automatically)"
+          autocomplete="off"
+          spellcheck="false" />
+        <button (click)="saveSync()">Save &amp; sync</button>
+      </div>
+
+      <p class="setting-note" *ngIf="sync.configured() && sync.gistId()">
+        Gist ID: <code>{{ sync.gistId() }}</code> — copy this into the same field on your other
+        device, along with the same token.
+      </p>
+      <p class="setting-note" *ngIf="sync.configured()">
+        Status: {{ syncStatusLabel() }}
+        <a (click)="sync.syncNow()">Sync now</a>
+        &middot;
+        <a (click)="clearSync()">Disconnect</a>
+      </p>
+      <p class="setting-note" *ngIf="!sync.configured()">Not set up — data stays on this device only.</p>
+      <p class="setting-note" *ngIf="sync.status() === 'error'">⚠️ {{ sync.errorMessage() }}</p>
+
       <h2 class="section-title">Your data</h2>
       <p class="setting-note">
-        Tasks and notes never leave this browser in either mode — only your chat messages are
-        sent. Clearing site data for this page deletes them.
+        Tasks and notes never leave this browser or the Gist above — only your chat messages
+        are sent to the model provider. Clearing site data for this page deletes local data
+        (synced data stays in the Gist until you delete it on GitHub).
       </p>
     </section>
   `,
@@ -135,7 +205,13 @@ export class SettingsComponent {
   saved = signal(false);
   apiBaseUrl = environment.apiBaseUrl;
 
-  constructor(public settings: SettingsService) {}
+  draftSyncToken = '';
+  draftGistId = '';
+  revealSyncToken = signal(false);
+
+  constructor(public settings: SettingsService, public sync: SyncService, public voice: VoiceService) {
+    this.draftGistId = sync.gistId();
+  }
 
   providerLabel(): string {
     return PROVIDER_LABEL[this.settings.provider()];
@@ -171,5 +247,27 @@ export class SettingsComponent {
   masked(): string {
     const k = this.settings.activeKey();
     return k.length <= 10 ? '••••' : `${k.slice(0, 7)}…${k.slice(-4)}`;
+  }
+
+  saveSync() {
+    if (this.draftSyncToken.trim() === '' && !this.sync.configured()) return;
+    const token = this.draftSyncToken.trim() !== '' ? this.draftSyncToken : this.sync.token();
+    this.sync.setCredentials(token, this.draftGistId);
+    this.draftSyncToken = '';
+    this.revealSyncToken.set(false);
+  }
+
+  clearSync() {
+    this.sync.clearCredentials();
+    this.draftGistId = '';
+  }
+
+  syncStatusLabel(): string {
+    switch (this.sync.status()) {
+      case 'syncing': return 'Syncing…';
+      case 'synced': return this.sync.lastSyncedAt() ? `Synced (${new Date(this.sync.lastSyncedAt()!).toLocaleTimeString()})` : 'Synced';
+      case 'error': return 'Error — see below';
+      default: return 'Idle';
+    }
   }
 }

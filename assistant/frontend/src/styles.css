@@ -1104,3 +1104,152 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 @media (prefers-reduced-motion: reduce) {
   .boot-overlay, .boot-line { animation: none; opacity: 1; }
 }
+
+/* ---------------- ambient HUD background ---------------- */
+
+/*
+ * A faint, slowly-rotating radial grid behind every tab — decorative only, low enough
+ * opacity to never compete with real content. Fixed positioning + a radial-gradient mask
+ * keeps it from ever affecting layout or scroll.
+ */
+.app {
+  position: relative;
+}
+
+.app::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    repeating-conic-gradient(
+      from 0deg,
+      var(--hud-cyan) 0deg 0.6deg,
+      transparent 0.6deg 30deg
+    );
+  background-position: 50% 50%;
+  background-size: 1400px 1400px;
+  background-repeat: no-repeat;
+  opacity: 0.05;
+  mask-image: radial-gradient(circle at 50% 50%, black 0%, transparent 70%);
+  animation: ambient-rotate 90s linear infinite;
+}
+
+@keyframes ambient-rotate {
+  to { transform: rotate(360deg); }
+}
+
+.sidebar, .main, .rail { position: relative; z-index: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .app::before { animation: none; }
+}
+
+/* Extra ambient presence behind the dashboard's reactor hero specifically. */
+.reactor-row { position: relative; }
+
+.reactor-row::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 50%;
+  width: 160px;
+  height: 160px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  border: 1px dashed var(--hud-cyan);
+  opacity: 0.25;
+  animation: ambient-rotate 12s linear infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reactor-row::before { animation: none; }
+}
+
+/* ---------------- context rail ---------------- */
+
+.rail {
+  width: 260px;
+  flex: 0 0 260px;
+  border-left: 1px solid var(--line);
+  padding: 22px 16px;
+  overflow-y: auto;
+}
+
+@media (max-width: 1100px) {
+  .rail { display: none; }
+}
+
+.rail-section {
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rail-section:last-child { border-bottom: none; }
+
+.rail-head {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-dim);
+  margin-bottom: 10px;
+}
+
+.rail-empty { color: var(--muted); font-size: 13px; margin: 0; }
+
+.rail-task {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  padding: 5px 0;
+}
+
+.rail-task-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rail-link {
+  display: inline-block;
+  color: var(--accent);
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 6px;
+  text-decoration: underline;
+}
+
+.rail-reactor-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rail-reactor-wrap { width: 64px; height: 64px; }
+.rail-reactor-wrap .reactor-ring { width: 64px; height: 64px; }
+.rail-reactor-label { font-size: 13px; }
+
+.rail-reactor-copy { color: var(--muted); font-size: 12px; }
+
+.rail-note { margin-bottom: 10px; }
+
+.rail-note-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.rail-note-body {
+  color: var(--muted);
+  font-size: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
