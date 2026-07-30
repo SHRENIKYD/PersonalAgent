@@ -10,7 +10,7 @@ interface Tab {
   label: string;
 }
 
-const PREP_TABS: TabKey[] = ['dsa', 'cs', 'sysdesign', 'web'];
+const PREP_TABS: TabKey[] = ['dsa', 'java', 'cs', 'sysdesign', 'web', 'interview'];
 
 const TABS: Tab[] = [
   { key: 'chat', label: 'Assistant' },
@@ -21,9 +21,11 @@ const TABS: Tab[] = [
   { key: 'fitness', label: 'Fitness & Diet' },
   { key: 'news', label: 'News' },
   { key: 'dsa', label: 'DSA' },
+  { key: 'java', label: 'Java' },
   { key: 'cs', label: 'CS Fundamentals' },
   { key: 'sysdesign', label: 'System Design' },
   { key: 'web', label: 'Web & Full-Stack' },
+  { key: 'interview', label: 'Interview Questions' },
   { key: 'certs', label: 'Certificates' },
   { key: 'settings', label: 'Settings' },
 ];

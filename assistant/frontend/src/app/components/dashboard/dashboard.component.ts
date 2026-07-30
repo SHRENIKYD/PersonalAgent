@@ -89,9 +89,11 @@ export class DashboardComponent {
     { tab: 'growth', label: '6-Month Roadmap', progress: () => this.state.roadmapProgress() },
     { tab: 'fitness', label: 'Fitness & Diet', progress: () => this.state.fitnessWeekProgress() },
     { tab: 'dsa', label: 'DSA', progress: () => this.state.categoryProgress('dsa') },
+    { tab: 'java', label: 'Java', progress: () => this.state.categoryProgress('java') },
     { tab: 'cs', label: 'CS Fundamentals', progress: () => this.state.categoryProgress('cs') },
     { tab: 'sysdesign', label: 'System Design', progress: () => this.state.categoryProgress('sysdesign') },
     { tab: 'web', label: 'Web & Full-Stack', progress: () => this.state.categoryProgress('web') },
+    { tab: 'interview', label: 'Interview Questions', progress: () => this.state.categoryProgress('interview') },
     { tab: 'certs', label: 'Certificates', progress: () => this.state.certsProgress() },
   ];
 }

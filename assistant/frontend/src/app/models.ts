@@ -91,9 +91,11 @@ export type TabKey =
   | 'fitness'
   | 'news'
   | 'dsa'
+  | 'java'
   | 'cs'
   | 'sysdesign'
   | 'web'
+  | 'interview'
   | 'certs'
   | 'settings';
 
@@ -139,7 +141,7 @@ export interface RoadmapState {
 
 // ---------------- Interview prep ----------------
 
-export type PrepCategoryKey = 'dsa' | 'cs' | 'sysdesign' | 'web';
+export type PrepCategoryKey = 'dsa' | 'java' | 'cs' | 'sysdesign' | 'web' | 'interview';
 
 /** dsa[topicIndex][problemIndex] = checked */
 export interface Approach {
@@ -198,6 +200,9 @@ export interface ConceptTopic {
 export interface NarrativeConcept {
   name: string;
   whyThisExists: string;
+  /** The mental checklist before being told the technique — what to notice/ask yourself
+   *  when a problem like this first shows up, distinct from the definition of the fix. */
+  howToApproach: string;
   definitionLabel: string;
   definition: string;
   inSimpleWords: string;

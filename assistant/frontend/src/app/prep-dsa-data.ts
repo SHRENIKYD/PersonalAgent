@@ -11,6 +11,7 @@ const ARRAYS_STRINGS_NARRATIVE: NarrativeTopic = {
     {
       name: 'Sum of All Subarrays — Brute Force',
       whyThisExists: 'Before optimizing anything, we need one working baseline solution to see exactly which work is repeated.',
+      howToApproach: 'When you see "sum of every subarray," resist reaching for a clever trick immediately. Ask: what does a subarray even look like here (a start and an end index)? Write the simplest thing that is obviously correct — even if it is slow — so you have something to compare against and something whose repeated work you can actually point at.',
       definitionLabel: 'Sum of All Subarrays',
       definition: 'Adding up the sum of every single subarray of an array, then adding all those sums together into one final total.',
       inSimpleWords: 'Take every possible contiguous slice of the array, add up each slice, and then add all those slice-totals together. The brute-force way uses three loops: one to pick where a slice starts, one to pick where it ends, and one to actually walk through and add up that slice. Nothing is remembered between slices — every slice is summed completely from scratch, which is wasteful.',
@@ -32,6 +33,7 @@ const ARRAYS_STRINGS_NARRATIVE: NarrativeTopic = {
     {
       name: 'Optimisation #1 — Using Prefix Sum',
       whyThisExists: 'The innermost k-loop is pure repeated work — prefix sum replaces it with one subtraction.',
+      howToApproach: 'Look at the brute force and ask: which loop is doing work that a previous loop already did? Here, the k-loop re-adds numbers the j-loop before it already touched. Whenever you spot "range sum" or "range total" as the repeated operation, that is your signal to precompute running totals once instead of recomputing them per query.',
       definitionLabel: 'Prefix Sum Array (pf)',
       definition: 'An array where pf[i] holds the running total of all elements from index 0 to i. Once built, the sum of any range [L..R] is just pf[R] - pf[L-1] (or pf[R] alone when L = 0).',
       inSimpleWords: 'Instead of re-adding every element of a slice by hand each time, we prepare a running-total array once. Then the sum of any slice [i..j] is found instantly by subtracting two numbers from that running-total array — no re-walking the slice needed. This removes the slowest inner loop and turns O(N) work per subarray into O(1) work per subarray.',
@@ -53,6 +55,7 @@ const ARRAYS_STRINGS_NARRATIVE: NarrativeTopic = {
     {
       name: 'Optimisation #2 — Using Carry Forward',
       whyThisExists: 'Same speed as prefix sum, but without spending extra memory on a whole pf[] array.',
+      howToApproach: 'Once a solution works, ask a second question beyond speed: does it need all this memory? Here the prefix array is only ever used two cells at a time (pf[j] and pf[i-1]), so ask whether you can carry just the running value forward instead of storing every intermediate total.',
       definitionLabel: 'Carry-Forward Running Sum',
       definition: 'A single variable (currSum) that is reset to 0 at each new start index, then grows by adding one new element every time the end index moves forward — instead of rebuilding the sum from scratch.',
       inSimpleWords: 'For each starting point, keep a small running total. As the ending point slides one step to the right, just add that one new element to the running total instead of recomputing the whole slice sum. This gives the same speed as prefix sum, but we never need to build or store a separate array — we only ever remember one number at a time.',
@@ -74,6 +77,7 @@ const ARRAYS_STRINGS_NARRATIVE: NarrativeTopic = {
     {
       name: 'Contribution Technique',
       whyThisExists: 'This is the perspective flip that turns the whole problem from O(N^2) into a single O(N) pass.',
+      howToApproach: 'When both loops still touch every pair and neither can be dropped, stop trying to speed up the loops and instead ask a completely different question: instead of "what is the answer for this subarray," ask "how much does this one element contribute to the final answer, across every subarray it appears in?" That reframing is the whole trick — look for it whenever a brute force is built around enumerating pairs/ranges but the final answer is just one number.',
       definitionLabel: 'Contribution Technique',
       definition: 'Instead of asking "what is the sum of this subarray", we ask "in how many subarrays does this one element appear" — then multiply each element by that count and add everything up. For an array of size N, element A[i] appears in (i+1) × (N-i) subarrays, so its total contribution is A[i] × (i+1) × (N-i).',
       inSimpleWords: 'Every element gets counted once for every subarray it belongs to. An element at index i can be the start of a subarray in (i+1) ways (any start from 0 up to i) and the end of a subarray in (N-i) ways (any end from i up to N-1). Multiplying these gives exactly how many subarrays contain that element. Multiply that count by the element\'s value, and add it up across all elements — no subarrays need to be built at all.',
@@ -92,6 +96,7 @@ const ARRAYS_STRINGS_NARRATIVE: NarrativeTopic = {
     {
       name: 'Counting Subarrays of Fixed Length K',
       whyThisExists: 'Before sliding a window of size K across the array, we need to know exactly how many such windows exist.',
+      howToApproach: 'Before writing any loop, work out the counting on paper first: if a window must be exactly K long, where can it legally start, and where does it run out of room? Getting this boundary right up front (N-K, not N-K-1 or N-K+2) avoids an off-by-one bug that would otherwise only show up once you actually run the window loop.',
       definitionLabel: 'Fixed-Length Subarray',
       definition: 'A subarray whose length is a specific, chosen number K, rather than any length. For an array of size N, valid start positions for a length-K subarray run from index 0 to index N-K, giving N-K+1 possible subarrays of length K.',
       inSimpleWords: 'If a subarray must have exactly K elements, its start index can\'t go past N-K, because there must be enough elements left to reach length K. Counting the valid starting positions (0, 1, 2, ... up to N-K) gives exactly N-K+1 possible subarrays of length K.',
@@ -106,6 +111,7 @@ const ARRAYS_STRINGS_NARRATIVE: NarrativeTopic = {
     {
       name: 'Max Subarray Sum of Length K — Brute Force',
       whyThisExists: 'This is the concrete problem the sliding window pattern is built to solve efficiently.',
+      howToApproach: 'As always, get a correct baseline first: for each possible window position, just add up its K elements directly. While writing it, notice out loud what neighboring windows share — that observation (not a formula) is what tells you there is redundant work here worth removing.',
       definitionLabel: 'Sliding Window (informal)',
       definition: 'A fixed-size "frame" of K consecutive elements that we conceptually move one step at a time across the array, checking a property (like sum) at each position.',
       inSimpleWords: 'We want the single length-K slice with the biggest total. The slow way checks every length-K slice one at a time, adding up all K numbers fresh for each one — even though neighbouring slices share almost all their elements. That repeated re-adding of shared elements is exactly the redundant work we will remove next. Total work is (N-K+1) × K, which becomes close to N²/4 when K ≈ N/2 — so the worst case is O(N²).',
@@ -126,6 +132,7 @@ const ARRAYS_STRINGS_NARRATIVE: NarrativeTopic = {
     {
       name: 'Optimisation — The Sliding Window',
       whyThisExists: 'This is the payoff — turning a per-window O(K) recompute into a per-step O(1) update.',
+      howToApproach: 'Ask precisely what changes between one window and the next, not what stays the same. Here exactly one element leaves (the old left edge) and one enters (the new right edge) — once you can name those two elements exactly, the update formula writes itself as "old total minus the one that left, plus the one that entered."',
       definitionLabel: 'Sliding Window Technique',
       definition: 'Build the sum of the very first window once. Then, to move to the next window, subtract the element that just left the window on the left and add the new element that just entered on the right — never re-summing the whole window.',
       inSimpleWords: 'Picture a physical window frame of width K sliding one step right along the array. Almost everything inside the frame stays the same — only one element leaves on the left and one new element enters on the right. So instead of re-adding all K numbers, we just do sum = sum - (element that left) + (element that entered). This single update replaces an entire K-length loop.',
@@ -149,6 +156,7 @@ const ARRAYS_STRINGS_NARRATIVE: NarrativeTopic = {
     {
       name: 'Smart Prompting Patterns',
       whyThisExists: 'These five prompt patterns turn AI into a thinking partner for optimization problems instead of an answer machine.',
+      howToApproach: 'Before asking an AI anything, decide which of the five situations you\'re actually in: stuck on speed, stuck on which of two solutions to pick, stuck entirely, about to read a spoiler, or just want a tutor. Naming the situation is what makes the resulting prompt specific instead of a generic "help me solve this."',
       definitionLabel: 'Smart Prompting Pattern',
       definition: 'A reusable way of phrasing a question to an AI so it guides your thinking toward an optimization, instead of simply handing you a finished solution. Five patterns: Find Redundancy (code works but is slow), Compare Structurally (unsure which of 2 solutions to use), Flip the Perspective (stuck, brute force isn\'t improving), Predict the Optimisation (about to read an "optimized approach" section), and Meta — Ask First (want a tutor, not an autopilot).',
       inSimpleWords: 'Rather than asking an AI to solve a problem outright, ask it to point at the redundant work in your own solution, or to help you flip your perspective on the problem — the goal is to walk away understanding the technique, not just holding an answer you didn\'t derive.',
