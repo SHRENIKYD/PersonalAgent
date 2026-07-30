@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { BootComponent } from './components/boot/boot.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { ChatComponent } from './components/chat/chat.component';
@@ -16,11 +17,14 @@ import { CS_TOPICS, SYSDESIGN_TOPICS, WEB_TOPICS } from './prep-concept-data';
 import { UiService } from './services/ui.service';
 import { StateService } from './services/state.service';
 
+const BOOT_SEEN_KEY = 'jarvis-boot-seen';
+
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
     CommonModule,
+    BootComponent,
     SidebarComponent,
     DashboardComponent,
     ChatComponent,
@@ -35,6 +39,7 @@ import { StateService } from './services/state.service';
     CertificatesComponent,
   ],
   template: `
+    <app-boot *ngIf="showBoot()" (done)="dismissBoot()"></app-boot>
     <div class="app">
       <app-sidebar></app-sidebar>
       <main class="main">
@@ -79,5 +84,13 @@ export class AppComponent {
   sysdesignTopics = SYSDESIGN_TOPICS;
   webTopics = WEB_TOPICS;
 
+  // sessionStorage, not localStorage: replays once per tab/session, not once ever.
+  showBoot = signal(sessionStorage.getItem(BOOT_SEEN_KEY) !== '1');
+
   constructor(public ui: UiService, public state: StateService) {}
+
+  dismissBoot() {
+    sessionStorage.setItem(BOOT_SEEN_KEY, '1');
+    this.showBoot.set(false);
+  }
 }

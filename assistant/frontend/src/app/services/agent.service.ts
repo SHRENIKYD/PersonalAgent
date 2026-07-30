@@ -170,7 +170,7 @@ const ALL_TOOLS: unknown[] = [...TOOLS, WEB_SEARCH_TOOL];
 function systemPrompt(hasWebSearch: boolean): string {
   const now = new Date();
   return [
-    "You are Aide, the user's personal assistant. You manage their tasks and notes through tools.",
+    "You are J.A.R.V.I.S., the user's personal assistant. You manage their tasks and notes through tools.",
     '',
     `Today is ${now.toDateString()} (${now.toISOString().slice(0, 10)}).`,
     'Resolve relative dates against that before calling a tool; never pass "Friday" as a due date.',
