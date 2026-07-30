@@ -9,10 +9,11 @@ interface Settings {
   provider: ApiProvider;
   apiKey: string;
   openaiApiKey: string;
+  geminiApiKey: string;
 }
 
 function defaults(): Settings {
-  return { mode: 'backend', provider: 'anthropic', apiKey: '', openaiApiKey: '' };
+  return { mode: 'backend', provider: 'anthropic', apiKey: '', openaiApiKey: '', geminiApiKey: '' };
 }
 
 /**
@@ -24,9 +25,10 @@ function defaults(): Settings {
  * any XSS on the page. That trade is the user's to make, so it is a visible setting rather
  * than a build-time flag, and the Settings tab states the risk plainly.
  *
- * Direct mode supports two providers, each with its own stored key so switching back and
- * forth never loses either one: Anthropic (`apiKey`) and OpenAI (`openaiApiKey`). Backend
- * mode is always Anthropic, since that is all `Program.cs` proxies to.
+ * Direct mode supports three providers, each with its own stored key so switching between
+ * them never loses any of the others: Anthropic (`apiKey`), OpenAI (`openaiApiKey`), and
+ * Gemini (`geminiApiKey`). Backend mode is always Anthropic, since that is all `Program.cs`
+ * proxies to.
  */
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
@@ -34,17 +36,27 @@ export class SettingsService {
   provider = signal<ApiProvider>('anthropic');
   apiKey = signal<string>('');
   openaiApiKey = signal<string>('');
+  geminiApiKey = signal<string>('');
 
   constructor(private storage: StorageService) {
     const saved = this.storage.get<Settings>(KEY, defaults());
     this.mode.set(saved.mode === 'direct' ? 'direct' : 'backend');
-    this.provider.set(saved.provider === 'openai' ? 'openai' : 'anthropic');
+    this.provider.set(
+      saved.provider === 'openai' ? 'openai' : saved.provider === 'gemini' ? 'gemini' : 'anthropic'
+    );
     this.apiKey.set(typeof saved.apiKey === 'string' ? saved.apiKey : '');
     this.openaiApiKey.set(typeof saved.openaiApiKey === 'string' ? saved.openaiApiKey : '');
+    this.geminiApiKey.set(typeof saved.geminiApiKey === 'string' ? saved.geminiApiKey : '');
   }
 
   /** The key for whichever provider is currently selected. */
-  activeKey = computed(() => (this.provider() === 'openai' ? this.openaiApiKey() : this.apiKey()));
+  activeKey = computed(() => {
+    switch (this.provider()) {
+      case 'openai': return this.openaiApiKey();
+      case 'gemini': return this.geminiApiKey();
+      default: return this.apiKey();
+    }
+  });
 
   /** Direct mode is unusable without a key for the selected provider; backend mode carries its own. */
   ready = computed(() => this.mode() === 'backend' || this.activeKey().trim() !== '');
@@ -79,12 +91,23 @@ export class SettingsService {
     this.save();
   }
 
+  setGeminiApiKey(key: string) {
+    this.geminiApiKey.set(key.trim());
+    this.save();
+  }
+
+  clearGeminiApiKey() {
+    this.geminiApiKey.set('');
+    this.save();
+  }
+
   private save() {
     this.storage.set<Settings>(KEY, {
       mode: this.mode(),
       provider: this.provider(),
       apiKey: this.apiKey(),
       openaiApiKey: this.openaiApiKey(),
+      geminiApiKey: this.geminiApiKey(),
     });
   }
 }

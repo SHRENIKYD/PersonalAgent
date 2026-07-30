@@ -2,7 +2,20 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SettingsService } from '../../services/settings.service';
+import { ApiProvider } from '../../models';
 import { environment } from '../../../environments/environment';
+
+const PROVIDER_LABEL: Record<ApiProvider, string> = {
+  anthropic: 'Anthropic',
+  openai: 'OpenAI',
+  gemini: 'Gemini',
+};
+
+const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
+  anthropic: 'sk-ant-...',
+  openai: 'sk-...',
+  gemini: 'AIza...',
+};
 
 @Component({
   selector: 'app-settings',
@@ -26,7 +39,7 @@ import { environment } from '../../../environments/environment';
           [class.active]="settings.mode() === 'direct'"
           (click)="settings.setMode('direct')">
           <strong>Direct from browser</strong>
-          <span>No backend. Your key is stored in this browser. Anthropic or OpenAI.</span>
+          <span>No backend. Your key is stored in this browser. Anthropic, OpenAI, or Gemini.</span>
         </button>
       </div>
 
@@ -60,6 +73,13 @@ import { environment } from '../../../environments/environment';
             <strong>OpenAI</strong>
             <span>GPT models, via Chat Completions.</span>
           </button>
+          <button
+            class="mode-btn"
+            [class.active]="settings.provider() === 'gemini'"
+            (click)="settings.setProvider('gemini')">
+            <strong>Gemini</strong>
+            <span>Google models, via generateContent.</span>
+          </button>
         </div>
 
         <h2 class="section-title">API key</h2>
@@ -71,9 +91,8 @@ import { environment } from '../../../environments/environment';
           exposure the backend exists to prevent.
           <br /><br />
           Reasonable on a machine only you use. Do not use direct mode on a shared or public
-          computer, and set a spend limit on the key in the
-          {{ settings.provider() === 'openai' ? 'OpenAI' : 'Anthropic' }} console. Revoke it
-          there if it leaks — nothing in this app needs changing.
+          computer, and set a spend limit on the key in the {{ providerLabel() }} console.
+          Revoke it there if it leaks — nothing in this app needs changing.
         </div>
 
         <div class="add-row">
@@ -81,7 +100,7 @@ import { environment } from '../../../environments/environment';
             class="grow"
             [type]="reveal() ? 'text' : 'password'"
             [(ngModel)]="draftKey"
-            [placeholder]="settings.provider() === 'openai' ? 'sk-...' : 'sk-ant-...'"
+            [placeholder]="providerPlaceholder()"
             autocomplete="off"
             spellcheck="false" />
           <button class="ghost-btn" (click)="reveal.set(!reveal())">
@@ -93,13 +112,12 @@ import { environment } from '../../../environments/environment';
         <p class="setting-note" *ngIf="saved()">Saved to this browser.</p>
 
         <p class="setting-note" *ngIf="settings.activeKey() !== ''">
-          A {{ settings.provider() === 'openai' ? 'OpenAI' : 'Anthropic' }} key is stored
-          ({{ masked() }}).
+          A {{ providerLabel() }} key is stored ({{ masked() }}).
           <a (click)="clear()">Remove it</a>
         </p>
         <p class="setting-note" *ngIf="settings.activeKey() === ''">
-          No {{ settings.provider() === 'openai' ? 'OpenAI' : 'Anthropic' }} key stored — the
-          assistant will not respond until you add one.
+          No {{ providerLabel() }} key stored — the assistant will not respond until you add
+          one.
         </p>
       </ng-container>
 
@@ -119,12 +137,20 @@ export class SettingsComponent {
 
   constructor(public settings: SettingsService) {}
 
+  providerLabel(): string {
+    return PROVIDER_LABEL[this.settings.provider()];
+  }
+
+  providerPlaceholder(): string {
+    return PROVIDER_PLACEHOLDER[this.settings.provider()];
+  }
+
   save() {
     if (this.draftKey.trim() === '') return;
-    if (this.settings.provider() === 'openai') {
-      this.settings.setOpenaiApiKey(this.draftKey);
-    } else {
-      this.settings.setApiKey(this.draftKey);
+    switch (this.settings.provider()) {
+      case 'openai': this.settings.setOpenaiApiKey(this.draftKey); break;
+      case 'gemini': this.settings.setGeminiApiKey(this.draftKey); break;
+      default: this.settings.setApiKey(this.draftKey);
     }
     this.draftKey = '';
     this.reveal.set(false);
@@ -133,10 +159,10 @@ export class SettingsComponent {
   }
 
   clear() {
-    if (this.settings.provider() === 'openai') {
-      this.settings.clearOpenaiApiKey();
-    } else {
-      this.settings.clearApiKey();
+    switch (this.settings.provider()) {
+      case 'openai': this.settings.clearOpenaiApiKey(); break;
+      case 'gemini': this.settings.clearGeminiApiKey(); break;
+      default: this.settings.clearApiKey();
     }
     this.saved.set(false);
   }
