@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AgentService } from '../../services/agent.service';
+import { SettingsService } from '../../services/settings.service';
+import { UiService } from '../../services/ui.service';
 
 @Component({
   selector: 'app-chat',
@@ -20,6 +22,11 @@ import { AgentService } from '../../services/agent.service';
           Clear chat
         </button>
       </div>
+
+      <p *ngIf="!settings.ready()" class="chat-warn">
+        No Anthropic API key is set for direct mode.
+        <a (click)="ui.setTab('settings')">Add one on the Settings tab</a> to use the assistant.
+      </p>
 
       <div class="chat-log">
         <p *ngIf="agent.transcript().length === 0" class="chat-empty">
@@ -52,7 +59,11 @@ import { AgentService } from '../../services/agent.service';
 export class ChatComponent {
   inputText = '';
 
-  constructor(public agent: AgentService) {}
+  constructor(
+    public agent: AgentService,
+    public settings: SettingsService,
+    public ui: UiService
+  ) {}
 
   onEnter(e: Event) {
     const ke = e as KeyboardEvent;

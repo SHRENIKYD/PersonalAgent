@@ -5,6 +5,7 @@ import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { ChatComponent } from './components/chat/chat.component';
 import { TasksComponent } from './components/tasks/tasks.component';
 import { NotesComponent } from './components/notes/notes.component';
+import { SettingsComponent } from './components/settings/settings.component';
 import { UiService } from './services/ui.service';
 import { StateService } from './services/state.service';
 
@@ -18,6 +19,7 @@ import { StateService } from './services/state.service';
     ChatComponent,
     TasksComponent,
     NotesComponent,
+    SettingsComponent,
   ],
   template: `
     <div class="app">
@@ -28,6 +30,7 @@ import { StateService } from './services/state.service';
           <app-dashboard *ngSwitchCase="'dashboard'"></app-dashboard>
           <app-tasks *ngSwitchCase="'tasks'"></app-tasks>
           <app-notes *ngSwitchCase="'notes'"></app-notes>
+          <app-settings *ngSwitchCase="'settings'"></app-settings>
         </ng-container>
 
         <div class="footnote">

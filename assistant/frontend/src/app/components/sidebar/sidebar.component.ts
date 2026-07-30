@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from '../../services/state.service';
 import { UiService } from '../../services/ui.service';
+import { SettingsService } from '../../services/settings.service';
 import { TabKey } from '../../models';
 
 interface Tab {
@@ -14,6 +15,7 @@ const TABS: Tab[] = [
   { key: 'dashboard', label: 'Today' },
   { key: 'tasks', label: 'Tasks' },
   { key: 'notes', label: 'Notes' },
+  { key: 'settings', label: 'Settings' },
 ];
 
 @Component({
@@ -31,7 +33,7 @@ const TABS: Tab[] = [
           [class.active]="ui.activeTab() === t.key"
           (click)="ui.setTab(t.key)">
           <span>{{ t.label }}</span>
-          <span class="frac">{{ countFor(t.key) }}</span>
+          <span class="frac" [class.warn]="t.key === 'settings' && !settings.ready()">{{ countFor(t.key) }}</span>
         </button>
       </nav>
     </aside>
@@ -40,7 +42,11 @@ const TABS: Tab[] = [
 export class SidebarComponent {
   tabs = TABS;
 
-  constructor(public state: StateService, public ui: UiService) {}
+  constructor(
+    public state: StateService,
+    public ui: UiService,
+    public settings: SettingsService
+  ) {}
 
   countFor(key: TabKey): string {
     if (key === 'tasks') {
@@ -54,6 +60,9 @@ export class SidebarComponent {
     if (key === 'dashboard') {
       const d = this.state.dueToday().length;
       return d ? `${d}` : '';
+    }
+    if (key === 'settings' && !this.settings.ready()) {
+      return '!';
     }
     return '';
   }

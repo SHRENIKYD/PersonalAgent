@@ -82,4 +82,11 @@ export interface DisplayEntry {
   pending?: boolean;
 }
 
-export type TabKey = 'chat' | 'tasks' | 'notes' | 'dashboard';
+export type TabKey = 'chat' | 'tasks' | 'notes' | 'dashboard' | 'settings';
+
+/**
+ * 'backend' proxies through the .NET API (key stays server-side).
+ * 'direct' calls Anthropic from the browser with a key in localStorage — no backend to
+ * deploy, but the key is exposed to anything running in this browser.
+ */
+export type TransportMode = 'backend' | 'direct';

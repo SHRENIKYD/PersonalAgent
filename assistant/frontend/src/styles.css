@@ -91,6 +91,8 @@ html, body {
 
 .tabs button.active .frac { color: #dbeeff; }
 
+.frac.warn { color: var(--warn); font-weight: 700; }
+
 /* ---------------- main ---------------- */
 
 .main {
@@ -191,6 +193,18 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
 }
 
 /* ---------------- chat ---------------- */
+
+.chat-warn {
+  background: rgba(232, 163, 77, 0.1);
+  border: 1px solid var(--warn);
+  border-radius: 8px;
+  color: #f0d3a6;
+  font-size: 13px;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+}
+
+.chat-warn a { color: var(--accent); cursor: pointer; text-decoration: underline; }
 
 .chat-log {
   background: var(--panel);
@@ -366,6 +380,70 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-top: 3px;
+}
+
+/* ---------------- settings ---------------- */
+
+.mode-row {
+  display: flex;
+  gap: 11px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.mode-btn {
+  flex: 1 1 220px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 13px 15px;
+  text-align: left;
+}
+
+.mode-btn:hover { border-color: var(--accent-dim); }
+
+.mode-btn.active {
+  border-color: var(--accent);
+  background: var(--panel-2);
+}
+
+.mode-btn span { color: var(--muted); font-size: 13px; }
+
+.setting-note {
+  color: var(--muted);
+  font-size: 13px;
+  max-width: 62ch;
+}
+
+.setting-note code {
+  background: var(--panel-2);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 12px;
+}
+
+.setting-note a { color: var(--accent); cursor: pointer; text-decoration: underline; }
+
+.warn-box {
+  background: rgba(232, 163, 77, 0.1);
+  border: 1px solid var(--warn);
+  border-radius: 9px;
+  color: #f0d3a6;
+  font-size: 13px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  max-width: 62ch;
+}
+
+.warn-box code {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  padding: 1px 5px;
 }
 
 /* ---------------- narrow screens ---------------- */

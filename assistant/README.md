@@ -7,10 +7,11 @@ the actual list rather than guessing from the conversation.
 Built on the same two-project shape as the AEGIS reference:
 
 - **`frontend/`** — Angular 17 (standalone components, signals). Assistant chat, Today
-  dashboard, tasks, and notes.
+  dashboard, tasks, notes, and settings.
 - **`backend/`** — ASP.NET Core (.NET 8) minimal API. One endpoint, `POST /api/assistant`,
   which forwards one turn of the agent loop to the Anthropic API. It exists purely so your
-  Anthropic API key never sits in browser-visible code.
+  Anthropic API key never sits in browser-visible code. **Optional** — see Transport modes
+  below.
 
 ## How the agent works
 
@@ -18,20 +19,49 @@ The interesting difference from AEGIS's Advisor tab: the Advisor is a chat proxy
 request, one text reply. An assistant needs to take actions, so this is a real agent loop
 with tools.
 
-**The browser owns the loop and executes every tool itself.** The backend is stateless: it
-forwards the message history plus tool definitions and hands the raw content blocks back.
+**The browser owns the loop and executes every tool itself**, in both transport modes below.
+It forwards the message history plus tool definitions and hands the raw content blocks back.
 So your tasks and notes never leave your machine — only the conversation does, exactly as
 in AEGIS.
 
 ```
-you ──▶ browser ──▶ backend ──▶ Anthropic
+you ──▶ browser ──▶ backend ──▶ Anthropic       (mode: backend — the default)
              ▲                      │
              │   tool_use ──────────┘
              │        │
              │        ▼
              └── executed locally against localStorage,
                  tool_result fed back, loop continues
+
+you ──▶ browser ─────────────────▶ Anthropic    (mode: direct — no backend to deploy)
+             ▲                        │
+             │   tool_use ────────────┘
+             │        │
+             │        ▼
+             └── same local execution, key stored in this browser's localStorage
 ```
+
+## Transport modes
+
+Set on the **Settings** tab, stored in `localStorage`, switchable any time:
+
+| Mode | Where the key lives | What it needs |
+| --- | --- | --- |
+| **`backend`** (default) | Server environment variable | The `.NET` API deployed somewhere — see `HOSTING_GUIDE.md` |
+| **`direct`** | This browser's `localStorage` | Nothing but a key — no backend, no deploy step |
+
+Direct mode calls `https://api.anthropic.com/v1/messages` straight from the browser with the
+`anthropic-dangerous-direct-browser-access` header. It's the entire trade-off in one
+sentence: **the key becomes readable by anything that runs in this browser** — a malicious
+extension, anyone with access to the profile, or any script that ever gets injected into the
+page. That's exactly what the backend exists to prevent. Reasonable on a machine only you
+use; don't use it on a shared computer, and set a spend limit on the key in the Anthropic
+console as a backstop. The Settings tab states this before you can enter a key.
+
+`AgentService.requestTurn()` is the single place this branches — one method picks
+`requestViaBackend()` or `requestDirect()` per turn based on `SettingsService.mode()`. Both
+return the same `AssistantResponse` shape, so the agent loop itself has no idea which
+transport served it.
 
 The nine tools available to it:
 
@@ -66,23 +96,27 @@ All state lives in your browser's `localStorage` under `assistant-tasks-v1` and
 
 ## Quick local run
 
-**Backend** (needs the .NET 8 SDK)
+**Frontend only, direct mode** — fastest path to trying it:
+```bash
+cd frontend
+npm install
+npm start
+# open http://localhost:4200, go to Settings, choose "Direct from browser", paste your key
+```
+
+**With the backend** (needs the .NET 8 SDK), mode `backend`:
 ```bash
 cd backend
 export ANTHROPIC_API_KEY=sk-ant-...      # Windows PowerShell: $env:ANTHROPIC_API_KEY="sk-ant-..."
 dotnet run
 # listens on http://localhost:5000
 ```
-
-**Frontend**
 ```bash
 cd frontend
 npm install
 npm start
-# open http://localhost:4200
+# open http://localhost:4200 — backend mode is the default
 ```
 
-With both running, the assistant works end to end.
-
-See **`HOSTING_GUIDE.md`** for free deployment (GitHub Pages for the frontend, a free web
-service host for the backend).
+See **`HOSTING_GUIDE.md`** for free deployment — GitHub Pages alone in direct mode, or
+Pages plus a free web service host for the backend.
