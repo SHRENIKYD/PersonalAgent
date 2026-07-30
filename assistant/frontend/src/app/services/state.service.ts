@@ -345,7 +345,7 @@ export class StateService {
     const c = this.certs();
     const total = c.todo.filter(x => x.name.trim()).length;
     const done = c.todo.filter(x => x.done).length;
-    return { total, done };
+    return { total, done, pct: total === 0 ? 0 : Math.round((done / total) * 100) };
   });
 
   addCertTodo() {

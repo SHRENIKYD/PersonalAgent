@@ -870,3 +870,40 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   background: linear-gradient(90deg, var(--accent-dim), var(--accent));
   transition: width 0.4s ease;
 }
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 22px 0;
+}
+
+.dash-card {
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--text);
+  transition: border-color 0.15s ease;
+}
+
+.dash-card:hover { border-color: var(--accent-dim); }
+
+.dash-card-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-dim);
+  margin-bottom: 10px;
+}
+
+.dash-card-stat {
+  color: var(--muted);
+  font-size: 13px;
+  font-family: 'IBM Plex Mono', monospace;
+  margin-top: 8px;
+}
