@@ -13,6 +13,12 @@ const PUSH_DEBOUNCE_MS = 1500;
 interface SyncSettings {
   token: string;
   gistId: string;
+  lastSyncedAt: number | null;
+}
+
+interface GistListEntry {
+  id: string;
+  files: Record<string, unknown>;
 }
 
 interface GistEnvelope {
@@ -21,7 +27,7 @@ interface GistEnvelope {
 }
 
 function defaults(): SyncSettings {
-  return { token: '', gistId: '' };
+  return { token: '', gistId: '', lastSyncedAt: null };
 }
 
 export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
@@ -58,6 +64,7 @@ export class SyncService {
     const saved = this.storage.get<SyncSettings>(KEY, defaults());
     this.token.set(saved.token ?? '');
     this.gistId.set(saved.gistId ?? '');
+    this.lastSyncedAt.set(saved.lastSyncedAt ?? null);
 
     if (this.configured()) {
       void this.pull();
@@ -73,6 +80,19 @@ export class SyncService {
       if (!this.initialPullDone || this.applyingRemote || !this.configured()) return;
       this.schedulePush();
     });
+
+    // A debounced push scheduled just before the tab is backgrounded or closed can lose the
+    // race — mobile browsers in particular may suspend JS before the timer fires. Flush
+    // immediately (best-effort; still not a hard guarantee) whenever the tab goes hidden.
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden' && this.pushTimer) {
+          clearTimeout(this.pushTimer);
+          this.pushTimer = null;
+          void this.push();
+        }
+      });
+    }
   }
 
   configured(): boolean {
@@ -82,6 +102,7 @@ export class SyncService {
   setCredentials(token: string, gistId: string) {
     this.token.set(token.trim());
     this.gistId.set(gistId.trim());
+    this.lastSyncedAt.set(null);
     this.save();
     this.initialPullDone = false;
     void this.pull();
@@ -90,8 +111,28 @@ export class SyncService {
   clearCredentials() {
     this.token.set('');
     this.gistId.set('');
+    this.lastSyncedAt.set(null);
     this.save();
     this.status.set('idle');
+  }
+
+  /**
+   * Finds a gist already carrying our data file under this token's account, so a second
+   * device only needs the same token — not a hand-copied Gist ID — to link up. Without this,
+   * leaving the Gist ID field blank on a second device silently created a brand new, separate
+   * gist instead of joining the first one, which is why sync could look like it was doing
+   * nothing at all.
+   */
+  private async findExistingGist(): Promise<string | null> {
+    try {
+      const list = await firstValueFrom(
+        this.http.get<GistListEntry[]>(`${GIST_API}?per_page=100`, { headers: this.headers() })
+      );
+      const match = list.find(g => GIST_FILENAME in (g.files ?? {}));
+      return match?.id ?? null;
+    } catch {
+      return null;
+    }
   }
 
   /** Manual sync button — same path automatic sync uses, just triggered on demand. */
@@ -126,6 +167,11 @@ export class SyncService {
 
     try {
       if (this.gistId().trim() === '') {
+        const existing = await this.findExistingGist();
+        if (existing) this.gistId.set(existing);
+      }
+
+      if (this.gistId().trim() === '') {
         const res = await firstValueFrom(
           this.http.post<{ id: string }>(
             GIST_API,
@@ -138,7 +184,6 @@ export class SyncService {
           )
         );
         this.gistId.set(res.id);
-        this.save();
       } else {
         await firstValueFrom(
           this.http.patch(
@@ -149,6 +194,7 @@ export class SyncService {
         );
       }
       this.lastSyncedAt.set(envelope.updatedAt);
+      this.save();
       this.status.set('synced');
       this.errorMessage.set('');
     } catch (e) {
@@ -158,11 +204,23 @@ export class SyncService {
   }
 
   async pull(): Promise<void> {
-    if (!this.configured() || this.gistId().trim() === '') {
-      // Nothing to pull yet (first-ever device) — push creates the gist instead.
+    if (!this.configured()) {
       this.initialPullDone = true;
-      if (this.configured()) await this.push();
       return;
+    }
+
+    if (this.gistId().trim() === '') {
+      // No known Gist ID — look for one already tied to this token before assuming this is
+      // a brand-new setup with nothing to join.
+      const existing = await this.findExistingGist();
+      if (existing) {
+        this.gistId.set(existing);
+        this.save();
+      } else {
+        this.initialPullDone = true;
+        await this.push();
+        return;
+      }
     }
 
     this.status.set('syncing');
@@ -181,6 +239,7 @@ export class SyncService {
         this.applyingRemote = true;
         this.state.importAll(remote.data);
         this.lastSyncedAt.set(remote.updatedAt);
+        this.save();
         this.applyingRemote = false;
         this.status.set('synced');
       } else {
@@ -206,6 +265,10 @@ export class SyncService {
   }
 
   private save() {
-    this.storage.set<SyncSettings>(KEY, { token: this.token(), gistId: this.gistId() });
+    this.storage.set<SyncSettings>(KEY, {
+      token: this.token(),
+      gistId: this.gistId(),
+      lastSyncedAt: this.lastSyncedAt(),
+    });
   }
 }
