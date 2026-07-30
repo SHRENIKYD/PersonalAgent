@@ -89,6 +89,7 @@ export type TabKey =
   | 'dashboard'
   | 'growth'
   | 'fitness'
+  | 'news'
   | 'dsa'
   | 'cs'
   | 'sysdesign'
@@ -98,10 +99,16 @@ export type TabKey =
 
 /**
  * 'backend' proxies through the .NET API (key stays server-side).
- * 'direct' calls Anthropic from the browser with a key in localStorage — no backend to
- * deploy, but the key is exposed to anything running in this browser.
+ * 'direct' calls the chosen provider from the browser with a key in localStorage — no
+ * backend to deploy, but the key is exposed to anything running in this browser.
  */
 export type TransportMode = 'backend' | 'direct';
+
+/**
+ * Which model provider direct mode talks to. Backend mode is always Anthropic — the .NET
+ * API only ever proxies to Anthropic's Messages API, so this only matters in direct mode.
+ */
+export type ApiProvider = 'anthropic' | 'openai';
 
 // ---------------- Growth tracker (roadmap + habits) ----------------
 

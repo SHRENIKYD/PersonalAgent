@@ -8,6 +8,7 @@ import { NotesComponent } from './components/notes/notes.component';
 import { SettingsComponent } from './components/settings/settings.component';
 import { GrowthComponent } from './components/growth/growth.component';
 import { FitnessComponent } from './components/fitness/fitness.component';
+import { NewsComponent } from './components/news/news.component';
 import { PrepDsaComponent } from './components/prep-dsa/prep-dsa.component';
 import { PrepConceptComponent } from './components/prep-concept/prep-concept.component';
 import { CertificatesComponent } from './components/certificates/certificates.component';
@@ -28,6 +29,7 @@ import { StateService } from './services/state.service';
     SettingsComponent,
     GrowthComponent,
     FitnessComponent,
+    NewsComponent,
     PrepDsaComponent,
     PrepConceptComponent,
     CertificatesComponent,
@@ -43,6 +45,7 @@ import { StateService } from './services/state.service';
           <app-notes *ngSwitchCase="'notes'"></app-notes>
           <app-growth *ngSwitchCase="'growth'"></app-growth>
           <app-fitness *ngSwitchCase="'fitness'"></app-fitness>
+          <app-news *ngSwitchCase="'news'"></app-news>
           <app-prep-dsa *ngSwitchCase="'dsa'"></app-prep-dsa>
           <app-prep-concept
             *ngSwitchCase="'cs'"
