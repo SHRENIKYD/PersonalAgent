@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from '../../services/state.service';
 import { UiService } from '../../services/ui.service';
@@ -60,7 +60,7 @@ const TAB_GROUPS: TabGroup[] = [
   standalone: true,
   imports: [CommonModule],
   template: `
-    <aside class="sidebar">
+    <aside class="sidebar" [class.expanded]="mobileNavOpen()">
       <div class="brand-row">
         <svg class="brand-reactor" viewBox="0 0 32 32">
           <circle cx="16" cy="16" r="14" fill="none" stroke="var(--accent-dim)" stroke-width="1.5" opacity="0.6" />
@@ -68,42 +68,72 @@ const TAB_GROUPS: TabGroup[] = [
           <circle cx="16" cy="16" r="3.5" fill="var(--accent)" />
         </svg>
         <div class="brand">ECHO</div>
-      </div>
-      <div class="brand-sub">Personal Assistant</div>
-
-      <div class="overall-progress">
-        <div class="overall-progress-top">
-          <span class="overall-progress-tag">Overall</span>
-          <span class="overall-progress-label">{{ state.overallProgress().pct }}%</span>
-        </div>
-        <div class="overall-progress-track">
-          <div class="overall-progress-fill" [style.width.%]="state.overallProgress().pct"></div>
-        </div>
+        <button
+          class="mobile-nav-toggle"
+          (click)="toggleMobileNav()"
+          [attr.aria-expanded]="mobileNavOpen()"
+          aria-label="Toggle navigation">
+          <span>{{ currentTabLabel() }}</span>
+          <span class="mobile-nav-caret" [class.open]="mobileNavOpen()">&#9662;</span>
+        </button>
       </div>
 
-      <nav class="tabs">
-        <ng-container *ngFor="let group of groups">
-          <div class="tab-group-label" *ngIf="group.title">{{ group.title }}</div>
-          <button
-            *ngFor="let t of group.items"
-            [class.active]="ui.activeTab() === t.key"
-            (click)="ui.setTab(t.key)">
-            <span>{{ t.label }}</span>
-            <span class="frac" [class.warn]="t.key === 'settings' && !settings.ready()">{{ countFor(t.key) }}</span>
-          </button>
-        </ng-container>
-      </nav>
+      <div class="sidebar-collapsible">
+        <div class="brand-sub">Personal Assistant</div>
+
+        <div class="overall-progress">
+          <div class="overall-progress-top">
+            <span class="overall-progress-tag">Overall</span>
+            <span class="overall-progress-label">{{ state.overallProgress().pct }}%</span>
+          </div>
+          <div class="overall-progress-track">
+            <div class="overall-progress-fill" [style.width.%]="state.overallProgress().pct"></div>
+          </div>
+        </div>
+
+        <nav class="tabs">
+          <ng-container *ngFor="let group of groups">
+            <div class="tab-group-label" *ngIf="group.title">{{ group.title }}</div>
+            <button
+              *ngFor="let t of group.items"
+              [class.active]="ui.activeTab() === t.key"
+              (click)="selectTab(t.key)">
+              <span>{{ t.label }}</span>
+              <span class="frac" [class.warn]="t.key === 'settings' && !settings.ready()">{{ countFor(t.key) }}</span>
+            </button>
+          </ng-container>
+        </nav>
+      </div>
     </aside>
   `,
 })
 export class SidebarComponent {
   groups = TAB_GROUPS;
+  mobileNavOpen = signal(false);
 
   constructor(
     public state: StateService,
     public ui: UiService,
     public settings: SettingsService
   ) {}
+
+  toggleMobileNav() {
+    this.mobileNavOpen.update(v => !v);
+  }
+
+  /** Selecting a tab on mobile should also close the dropdown, not just switch the view. */
+  selectTab(key: TabKey) {
+    this.ui.setTab(key);
+    this.mobileNavOpen.set(false);
+  }
+
+  currentTabLabel(): string {
+    for (const group of this.groups) {
+      const match = group.items.find(t => t.key === this.ui.activeTab());
+      if (match) return match.label;
+    }
+    return '';
+  }
 
   countFor(key: TabKey): string {
     if (key === 'tasks') {

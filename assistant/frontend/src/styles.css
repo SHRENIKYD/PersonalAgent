@@ -571,19 +571,57 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
 
 /* ---------------- narrow screens ---------------- */
 
+.mobile-nav-toggle { display: none; }
+
 @media (max-width: 720px) {
   .app { flex-direction: column; }
 
   .sidebar {
     width: auto;
     flex: 0 0 auto;
+    max-height: none;
+    overflow-y: visible;
     border-right: 0;
     border-bottom: 1px solid var(--line);
     padding: 14px;
   }
 
-  .tabs { margin-top: 14px; flex-direction: row; flex-wrap: wrap; }
-  .tabs button { width: auto; }
+  /* Collapsed by default: just the brand row + a tap target showing the current tab.
+     Expanding reveals the full vertical nav as normal in-flow content (not an overlay),
+     so the page simply grows/shrinks rather than layering a dropdown on top of it. */
+  .brand-row { position: relative; }
+
+  .mobile-nav-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 6px 10px;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .mobile-nav-caret {
+    display: inline-block;
+    transition: transform 0.15s ease;
+    color: var(--muted);
+  }
+
+  .mobile-nav-caret.open { transform: rotate(180deg); }
+
+  .sidebar-collapsible {
+    display: none;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .sidebar.expanded .sidebar-collapsible { display: block; }
+
+  .tabs { margin-top: 14px; flex-direction: column; }
+  .tabs button { width: 100%; }
   .main { padding: 18px 15px 14px; }
   .chat-msg { max-width: 100%; }
 }
