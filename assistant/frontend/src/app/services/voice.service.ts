@@ -114,7 +114,7 @@ export class VoiceService {
   greet() {
     const hour = new Date().getHours();
     const timeOfDay = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
-    this.speak(`Good ${timeOfDay}. J.A.R.V.I.S. online. All systems are ready.`);
+    this.speak(`Good ${timeOfDay}. ECHO online. All systems are ready.`);
   }
 
   private save() {

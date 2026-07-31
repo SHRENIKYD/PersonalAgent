@@ -126,9 +126,9 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
       <h2 class="section-title">Voice</h2>
       <p class="setting-note">
         A short spoken greeting plays when the app loads, using your browser's built-in
-        text-to-speech — nothing sent anywhere, no API key involved. This isn't the JARVIS
-        voice from the films (that's a copyrighted performance, not something this app can
-        source or synthesize) — pick whichever of your device's own voices sounds closest.
+        text-to-speech — nothing sent anywhere, no API key involved. This isn't a movie AI
+        voice performance (those are copyrighted, not something this app can source or
+        synthesize) — pick whichever of your device's own voices sounds closest.
       </p>
       <div class="mode-row">
         <button class="mode-btn" [class.active]="voice.enabled()" (click)="voice.setEnabled(true)">
