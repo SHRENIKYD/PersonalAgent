@@ -10,24 +10,49 @@ interface Tab {
   label: string;
 }
 
+interface TabGroup {
+  title: string | null;
+  items: Tab[];
+}
+
 const PREP_TABS: TabKey[] = ['dsa', 'java', 'cs', 'sysdesign', 'web', 'interview'];
 
-const TABS: Tab[] = [
-  { key: 'chat', label: 'Assistant' },
-  { key: 'dashboard', label: 'Today' },
-  { key: 'tasks', label: 'Tasks' },
-  { key: 'notes', label: 'Notes' },
-  { key: 'growth', label: 'Growth' },
-  { key: 'fitness', label: 'Fitness & Diet' },
-  { key: 'news', label: 'News' },
-  { key: 'dsa', label: 'DSA' },
-  { key: 'java', label: 'Java' },
-  { key: 'cs', label: 'CS Fundamentals' },
-  { key: 'sysdesign', label: 'System Design' },
-  { key: 'web', label: 'Web & Full-Stack' },
-  { key: 'interview', label: 'Interview Questions' },
-  { key: 'certs', label: 'Certificates' },
-  { key: 'settings', label: 'Settings' },
+const TAB_GROUPS: TabGroup[] = [
+  {
+    title: null,
+    items: [
+      { key: 'chat', label: 'Assistant' },
+      { key: 'dashboard', label: 'Today' },
+      { key: 'tasks', label: 'Tasks' },
+      { key: 'notes', label: 'Notes' },
+    ],
+  },
+  {
+    title: 'Growth & Health',
+    items: [
+      { key: 'growth', label: 'Growth' },
+      { key: 'fitness', label: 'Fitness & Diet' },
+    ],
+  },
+  {
+    title: 'Interview Prep',
+    items: [
+      { key: 'dsa', label: 'DSA' },
+      { key: 'java', label: 'Java' },
+      { key: 'cs', label: 'CS Fundamentals' },
+      { key: 'sysdesign', label: 'System Design' },
+      { key: 'web', label: 'Web & Full-Stack' },
+      { key: 'interview', label: 'Interview Questions' },
+    ],
+  },
+  {
+    title: 'More',
+    items: [
+      { key: 'news', label: 'News' },
+      { key: 'certs', label: 'Certificates' },
+      { key: 'settings', label: 'Settings' },
+    ],
+  },
 ];
 
 @Component({
@@ -57,19 +82,22 @@ const TABS: Tab[] = [
       </div>
 
       <nav class="tabs">
-        <button
-          *ngFor="let t of tabs"
-          [class.active]="ui.activeTab() === t.key"
-          (click)="ui.setTab(t.key)">
-          <span>{{ t.label }}</span>
-          <span class="frac" [class.warn]="t.key === 'settings' && !settings.ready()">{{ countFor(t.key) }}</span>
-        </button>
+        <ng-container *ngFor="let group of groups">
+          <div class="tab-group-label" *ngIf="group.title">{{ group.title }}</div>
+          <button
+            *ngFor="let t of group.items"
+            [class.active]="ui.activeTab() === t.key"
+            (click)="ui.setTab(t.key)">
+            <span>{{ t.label }}</span>
+            <span class="frac" [class.warn]="t.key === 'settings' && !settings.ready()">{{ countFor(t.key) }}</span>
+          </button>
+        </ng-container>
       </nav>
     </aside>
   `,
 })
 export class SidebarComponent {
-  tabs = TABS;
+  groups = TAB_GROUPS;
 
   constructor(
     public state: StateService,
