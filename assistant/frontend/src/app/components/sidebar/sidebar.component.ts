@@ -42,7 +42,7 @@ const TABS: Tab[] = [
           <circle cx="16" cy="16" r="9" fill="none" stroke="var(--hud-cyan)" stroke-width="1.5" opacity="0.8" />
           <circle cx="16" cy="16" r="3.5" fill="var(--accent)" />
         </svg>
-        <div class="brand">J.A.R.V.I.S.</div>
+        <div class="brand">ECHO</div>
       </div>
       <div class="brand-sub">Personal Assistant</div>
 

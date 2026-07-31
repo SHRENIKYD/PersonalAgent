@@ -176,7 +176,7 @@ export class SyncService {
           this.http.post<{ id: string }>(
             GIST_API,
             {
-              description: 'J.A.R.V.I.S. assistant sync data',
+              description: 'ECHO assistant sync data',
               public: false,
               files: { [GIST_FILENAME]: body },
             },

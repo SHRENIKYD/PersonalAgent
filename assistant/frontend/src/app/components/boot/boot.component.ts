@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { VoiceService } from '../../services/voice.service';
 
 const BOOT_LINES = [
-  'INITIALIZING J.A.R.V.I.S. CORE...',
+  'INITIALIZING ECHO CORE...',
   'LOADING TASK MATRIX...',
   'CALIBRATING GROWTH TELEMETRY...',
   'ARC REACTOR ONLINE.',
