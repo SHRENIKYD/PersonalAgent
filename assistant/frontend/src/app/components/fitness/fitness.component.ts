@@ -2,6 +2,7 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from '../../services/state.service';
 import {
+  ABS_PROGRAM,
   DIET_RULES,
   DIET_TARGETS,
   MEDICAL_DISCLAIMER,
@@ -12,6 +13,7 @@ import {
   WORKOUT_DAYS,
   WORKOUT_PROGRESS,
   WORKOUT_RULES,
+  WorkoutDay,
 } from '../../fitness-data';
 
 function todayIso(): string {
@@ -64,13 +66,37 @@ function todayIso(): string {
             <table class="fit-table">
               <thead><tr><th>Exercise</th><th>Sets × Reps</th><th>Rest</th></tr></thead>
               <tbody>
-                <tr *ngFor="let ex of day.exercises">
-                  <td>{{ ex.name }}</td><td>{{ ex.sets }}</td><td>{{ ex.rest }}</td>
-                </tr>
+                <ng-container *ngFor="let ex of day.exercises; let ei = index">
+                  <tr *ngIf="isNewGroup(day, ei)"><td colspan="3" class="fit-group-row">{{ ex.group }}</td></tr>
+                  <tr>
+                    <td>{{ ex.name }}</td><td>{{ ex.sets }}</td><td>{{ ex.rest || '—' }}</td>
+                  </tr>
+                </ng-container>
               </tbody>
             </table>
           </div>
           <p class="fit-note" *ngIf="day.extra">{{ day.extra }}</p>
+        </div>
+      </div>
+
+      <h2 class="section-title">Abs program</h2>
+      <p class="page-sub">One block per training day, paired with that day's session — pick the easier option whenever the main move isn't accessible.</p>
+      <div class="prep-topic" *ngFor="let ad of absProgram; let ai = index">
+        <button class="prep-topic-head" (click)="toggleAbsDay(ai)">
+          <span class="prep-topic-chevron" [class.open]="isAbsDayOpen(ai)">›</span>
+          <span class="prep-topic-name">{{ ad.pairedWith }} — {{ ad.focus }}</span>
+        </button>
+        <div class="prep-problem-list" *ngIf="isAbsDayOpen(ai)">
+          <div class="fit-table-wrap">
+            <table class="fit-table">
+              <thead><tr><th>Exercise</th><th>Sets × Reps</th><th>Easier option</th></tr></thead>
+              <tbody>
+                <tr *ngFor="let ex of ad.exercises">
+                  <td>{{ ex.name }}</td><td>{{ ex.sets }}</td><td>{{ ex.easierOption }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -135,6 +161,7 @@ function todayIso(): string {
 export class FitnessComponent {
   schedule = WEEKLY_SCHEDULE;
   workoutDays = WORKOUT_DAYS;
+  absProgram = ABS_PROGRAM;
   workoutRules = WORKOUT_RULES;
   workoutProgress = WORKOUT_PROGRESS;
   dietTargets = DIET_TARGETS;
@@ -145,6 +172,7 @@ export class FitnessComponent {
   medicalDisclaimer = MEDICAL_DISCLAIMER;
 
   private openDays = signal<Set<number>>(new Set());
+  private openAbsDays = signal<Set<number>>(new Set());
 
   constructor(public state: StateService) {}
 
@@ -162,6 +190,25 @@ export class FitnessComponent {
 
   toggleDay(i: number) {
     this.openDays.update(set => {
+      const next = new Set(set);
+      if (next.has(i)) next.delete(i); else next.add(i);
+      return next;
+    });
+  }
+
+  /** True when this exercise starts a new muscle-group block, so a header row prints once. */
+  isNewGroup(day: WorkoutDay, ei: number): boolean {
+    const ex = day.exercises[ei];
+    if (!ex.group) return false;
+    return ei === 0 || day.exercises[ei - 1].group !== ex.group;
+  }
+
+  isAbsDayOpen(i: number): boolean {
+    return this.openAbsDays().has(i);
+  }
+
+  toggleAbsDay(i: number) {
+    this.openAbsDays.update(set => {
       const next = new Set(set);
       if (next.has(i)) next.delete(i); else next.add(i);
       return next;

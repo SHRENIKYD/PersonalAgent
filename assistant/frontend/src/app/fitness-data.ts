@@ -12,19 +12,22 @@ export interface ScheduleRow {
 }
 
 export const WEEKLY_SCHEDULE: ScheduleRow[] = [
-  { day: 'Monday', time: '5:30–7:00 AM', session: 'Push A (Chest, Shoulders, Triceps)', length: '90 min' },
-  { day: 'Tuesday', time: '6:30–8:45 AM', session: 'Pull A + Abs + Cardio', length: '135 min' },
-  { day: 'Wednesday', time: '5:30–7:00 AM', session: 'Legs A', length: '90 min' },
-  { day: 'Thursday', time: '6:30–8:45 AM', session: 'Push B + Abs + Cardio', length: '135 min' },
-  { day: 'Friday', time: '5:30–7:00 AM', session: 'Pull B', length: '90 min' },
-  { day: 'Saturday', time: '6:30–8:45 AM', session: 'Legs B + Abs + Cardio', length: '135 min' },
-  { day: 'Sunday', time: '—', session: 'Rest + 8,000–10,000 steps', length: '—' },
+  { day: 'Monday', time: '—', session: 'Push A (Upper Chest + Full Triceps)', length: '—' },
+  { day: 'Tuesday', time: '—', session: 'Pull A (Back + Biceps)', length: '—' },
+  { day: 'Wednesday', time: '—', session: 'Legs A', length: '—' },
+  { day: 'Thursday', time: '—', session: 'Push B (Mid/Lower Chest + Shoulders)', length: '—' },
+  { day: 'Friday', time: '—', session: 'Pull B (Back + Arms)', length: '—' },
+  { day: 'Saturday', time: '—', session: 'Legs B', length: '—' },
+  { day: 'Sunday', time: '—', session: 'Rest', length: '—' },
 ];
 
 export interface Exercise {
   name: string;
   sets: string;
-  rest: string;
+  /** Not specified in the current plan for most exercises — omitted rather than guessed. */
+  rest?: string;
+  /** Muscle-group sub-heading this exercise falls under (e.g. "Chest", "Shoulders"). */
+  group?: string;
 }
 
 export interface WorkoutDay {
@@ -35,86 +38,140 @@ export interface WorkoutDay {
 
 export const WORKOUT_DAYS: WorkoutDay[] = [
   {
-    name: 'Monday — Push A',
+    name: 'Push A — Upper Chest + Full Triceps',
     exercises: [
-      { name: 'Barbell bench press', sets: '4 × 6–8', rest: '2–3 min' },
-      { name: 'Incline dumbbell press', sets: '3 × 8–10', rest: '90 sec' },
-      { name: 'Seated dumbbell overhead press', sets: '3 × 8–10', rest: '90 sec' },
-      { name: 'Cable fly or pec-deck', sets: '3 × 12–15', rest: '60 sec' },
-      { name: 'Dumbbell lateral raise', sets: '4 × 12–15', rest: '60 sec' },
-      { name: 'Rope pushdown', sets: '3 × 10–12', rest: '60 sec' },
-      { name: 'Overhead dumbbell extension', sets: '3 × 10–12', rest: '60 sec' },
-    ],
-    extra: 'Finish with 10 min incline walk if time permits.',
-  },
-  {
-    name: 'Tuesday — Pull A + Abs + Cardio',
-    exercises: [
-      { name: 'Deadlift (conventional)', sets: '3 × 5', rest: '3 min' },
-      { name: 'Lat pulldown or pull-ups', sets: '4 × 8–10', rest: '2 min' },
-      { name: 'Barbell bent-over row', sets: '3 × 8–10', rest: '90 sec' },
-      { name: 'Seated cable row', sets: '3 × 10–12', rest: '90 sec' },
-      { name: 'Face pulls', sets: '3 × 15', rest: '60 sec' },
-      { name: 'Barbell or EZ-bar curl', sets: '3 × 10–12', rest: '60 sec' },
-      { name: 'Hammer curls', sets: '3 × 12', rest: '60 sec' },
-    ],
-    extra:
-      'Abs circuit — 3 rounds, minimal rest: hanging knee raises × 12 → cable crunch × 15 → ' +
-      'plank 45–60 sec. Cardio: 20–25 min incline treadmill walk (10–12% incline, 5–5.5 km/h) ' +
-      'or cycling, moderate pace — you should be able to talk.',
-  },
-  {
-    name: 'Wednesday — Legs A',
-    exercises: [
-      { name: 'Barbell back squat', sets: '4 × 6–8', rest: '2–3 min' },
-      { name: 'Romanian deadlift', sets: '3 × 8–10', rest: '2 min' },
-      { name: 'Leg press', sets: '3 × 10–12', rest: '90 sec' },
-      { name: 'Walking lunges', sets: '3 × 10 per leg', rest: '90 sec' },
-      { name: 'Lying leg curl', sets: '3 × 12', rest: '60 sec' },
-      { name: 'Standing calf raise', sets: '4 × 15', rest: '60 sec' },
+      { group: 'Chest', name: 'Incline barbell bench press', sets: '4 × 6–8' },
+      { group: 'Chest', name: 'Flat dumbbell press', sets: '3 × 8–10' },
+      { group: 'Chest', name: 'Low-to-high cable fly', sets: '3 × 12–15' },
+      { group: 'Shoulders', name: 'Seated dumbbell shoulder press', sets: '4 × 6–10' },
+      { group: 'Shoulders', name: 'Dumbbell lateral raise', sets: '4 × 12–15' },
+      { group: 'Triceps', name: 'Overhead cable extension (long head)', sets: '3 × 10–12' },
+      { group: 'Triceps', name: 'EZ-bar skull crusher (medial)', sets: '3 × 8–10' },
+      { group: 'Triceps', name: 'Cable pushdown (lateral)', sets: '3 × 12–15' },
     ],
   },
   {
-    name: 'Thursday — Push B + Abs + Cardio',
+    name: 'Pull A — Back + Biceps',
     exercises: [
-      { name: 'Incline barbell press', sets: '4 × 6–8', rest: '2–3 min' },
-      { name: 'Flat dumbbell press', sets: '3 × 8–10', rest: '90 sec' },
-      { name: 'Machine shoulder press', sets: '3 × 8–10', rest: '90 sec' },
-      { name: 'Dips (assisted if needed)', sets: '3 × max reps', rest: '90 sec' },
-      { name: 'Cable lateral raise', sets: '3 × 12–15', rest: '60 sec' },
-      { name: 'Skull crushers', sets: '3 × 10–12', rest: '60 sec' },
-      { name: 'Single-arm cable pushdown', sets: '2 × 12–15', rest: '60 sec' },
+      { group: 'Back', name: 'Wide-grip pull-ups / pulldown', sets: '4 × 6–10' },
+      { group: 'Back', name: 'Single-arm lat pulldown', sets: '3 × 10–12' },
+      { group: 'Back', name: 'Chest-supported row', sets: '4 × 8–12' },
+      { group: 'Rear delts', name: 'Face pulls', sets: '4 × 12–15' },
+      { group: 'Biceps', name: 'Incline dumbbell curl (long head)', sets: '3 × 8–12' },
+      { group: 'Biceps', name: 'Preacher curl (short head)', sets: '3 × 10–12' },
+      { group: 'Forearms', name: 'Hammer curl', sets: '3 × 10–12' },
     ],
-    extra:
-      'Abs circuit — 3 rounds: decline crunches × 15 → Russian twists × 20 → side plank 30 ' +
-      'sec each side. Cardio: 20–25 min, same as Tuesday.',
   },
   {
-    name: 'Friday — Pull B',
+    name: 'Legs A',
     exercises: [
-      { name: 'Weighted or assisted pull-ups', sets: '4 × 6–8', rest: '2 min' },
-      { name: 'T-bar row or chest-supported row', sets: '3 × 8–10', rest: '90 sec' },
-      { name: 'Single-arm dumbbell row', sets: '3 × 10 per side', rest: '90 sec' },
-      { name: 'Straight-arm pulldown', sets: '3 × 12–15', rest: '60 sec' },
-      { name: 'Rear delt fly (machine or DB)', sets: '3 × 15', rest: '60 sec' },
-      { name: 'Preacher curl', sets: '3 × 10–12', rest: '60 sec' },
-      { name: 'Cable curl', sets: '2 × 12–15', rest: '60 sec' },
+      { group: 'Quads', name: 'Back squat', sets: '4 × 5–8' },
+      { group: 'Quads', name: 'Hack squat / leg press', sets: '4 × 10–12' },
+      { group: 'Quads', name: 'Leg extension', sets: '3 × 12–15' },
+      { group: 'Hamstrings', name: 'Seated leg curl', sets: '4 × 10–12' },
+      { group: 'Hamstrings', name: 'Romanian deadlift (light–moderate)', sets: '3 × 8–10' },
+      { group: 'Calves', name: 'Standing calf raise', sets: '5 × 10–15' },
     ],
-    extra: 'Finish with 10 min incline walk if time permits.',
   },
   {
-    name: 'Saturday — Legs B + Abs + Cardio',
+    name: 'Push B — Mid/Lower Chest + Shoulders',
     exercises: [
-      { name: 'Front squat or hack squat', sets: '4 × 8–10', rest: '2 min' },
-      { name: 'Bulgarian split squat', sets: '3 × 8–10 per leg', rest: '90 sec' },
-      { name: 'Leg extension', sets: '3 × 12–15', rest: '60 sec' },
-      { name: 'Seated leg curl', sets: '3 × 12–15', rest: '60 sec' },
-      { name: 'Hip thrust', sets: '3 × 10–12', rest: '90 sec' },
-      { name: 'Seated calf raise', sets: '4 × 15–20', rest: '60 sec' },
+      { group: 'Chest', name: 'Flat barbell bench press', sets: '4 × 5–8' },
+      { group: 'Chest', name: 'Decline dumbbell press', sets: '3 × 8–10' },
+      { group: 'Chest', name: 'Cable fly (mid)', sets: '3 × 12–15' },
+      { group: 'Shoulders', name: 'Barbell overhead press (front delt)', sets: '4 × 5–8' },
+      { group: 'Shoulders', name: 'Cable lateral raise (side delt)', sets: '4 × 12–15' },
+      { group: 'Shoulders', name: 'Reverse pec-deck (rear delt)', sets: '4 × 12–15' },
+      { group: 'Triceps', name: 'Close-grip bench press', sets: '3 × 6–8' },
+      { group: 'Triceps', name: 'Rope overhead extension', sets: '3 × 10–12' },
     ],
-    extra:
-      'Abs circuit — 3 rounds: hanging leg raises × 10 → ab-wheel or plank walkout × 10 → ' +
-      'plank 60 sec. Cardio: 25–30 min incline walk or cycle.',
+  },
+  {
+    name: 'Pull B — Back + Arms',
+    exercises: [
+      { group: 'Back', name: 'Barbell row', sets: '4 × 6–8' },
+      { group: 'Back', name: 'T-bar row', sets: '4 × 8–10' },
+      { group: 'Back', name: 'Neutral-grip cable row', sets: '3 × 10–12' },
+      { group: 'Rear delts', name: 'Cable rear-delt fly', sets: '4 × 12–15' },
+      { group: 'Biceps', name: 'EZ-bar curl', sets: '3 × 8–10' },
+      { group: 'Biceps', name: 'Spider curl', sets: '3 × 10–12' },
+      { group: 'Forearms', name: 'Reverse curl', sets: '3 × 12–15' },
+    ],
+  },
+  {
+    name: 'Legs B',
+    exercises: [
+      { group: 'Hamstrings & glutes', name: 'Romanian deadlift (heavy)', sets: '4 × 6–10' },
+      { group: 'Hamstrings & glutes', name: 'Hip thrust', sets: '4 × 8–12' },
+      { group: 'Hamstrings & glutes', name: 'Lying leg curl', sets: '3 × 10–12' },
+      { group: 'Quads', name: 'Front squat or narrow-stance hack squat', sets: '3 × 6–10' },
+      { group: 'Quads', name: 'Walking lunges', sets: '3 × 10–12 per leg' },
+      { group: 'Calves', name: 'Seated calf raise', sets: '5 × 12–15' },
+    ],
+  },
+];
+
+export interface AbsExercise {
+  name: string;
+  sets: string;
+  easierOption: string;
+}
+
+export interface AbsDay {
+  /** Which PPL day this abs block pairs with. */
+  pairedWith: string;
+  focus: string;
+  exercises: AbsExercise[];
+}
+
+export const ABS_PROGRAM: AbsDay[] = [
+  {
+    pairedWith: 'Push A',
+    focus: 'Upper abs',
+    exercises: [
+      { name: 'Cable crunch', sets: '4 × 12–15', easierOption: 'Resistance-band crunch / floor crunch' },
+      { name: 'Weighted decline crunch', sets: '3 × 12–15', easierOption: 'Decline crunch (bodyweight)' },
+    ],
+  },
+  {
+    pairedWith: 'Pull A',
+    focus: 'Lower abs',
+    exercises: [
+      { name: 'Hanging leg raises', sets: '4 × 8–12', easierOption: 'Hanging knee raises' },
+      { name: 'Captain\'s chair knee raises', sets: '3 × 12–15', easierOption: 'Lying leg raises on mat' },
+    ],
+  },
+  {
+    pairedWith: 'Legs A',
+    focus: 'Core stability',
+    exercises: [
+      { name: 'Ab wheel rollout', sets: '3 × 8–12', easierOption: 'Barbell rollout / stability-ball rollout' },
+      { name: 'Front plank', sets: '3 × 30–45 sec', easierOption: 'Knees-down plank' },
+    ],
+  },
+  {
+    pairedWith: 'Push B',
+    focus: 'Upper abs',
+    exercises: [
+      { name: 'Machine crunch', sets: '4 × 12–15', easierOption: 'Cable crunch' },
+      { name: 'Cable crunch (different stance)', sets: '3 × 12–15', easierOption: 'Seated band crunch' },
+    ],
+  },
+  {
+    pairedWith: 'Pull B',
+    focus: 'Lower abs + control',
+    exercises: [
+      { name: 'Reverse crunch (bench or mat)', sets: '4 × 12–15', easierOption: 'Bent-knee reverse crunch' },
+      { name: 'Hanging knee raises (slow)', sets: '3 × 12–15', easierOption: 'Bench knee tucks' },
+    ],
+  },
+  {
+    pairedWith: 'Legs B',
+    focus: 'Deep core (optional — pick one)',
+    exercises: [
+      { name: 'Vacuum holds', sets: '3 × 20–30 sec', easierOption: 'Stomach bracing while standing' },
+      { name: 'Dead bug', sets: '3 × 10 reps per side', easierOption: 'Heel taps' },
+    ],
   },
 ];
 
