@@ -161,7 +161,7 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
 
       <h2 class="section-title">Cross-device sync</h2>
       <p class="setting-note">
-        Syncs tasks, notes, growth, prep, certificates, and fitness log across devices via a
+        Syncs tasks, notes, growth, and fitness log across devices via a
         private GitHub Gist — no separate backend. Whoever has the token below can read and
         write that data, so treat it like a password. "Last edit wins": whichever device
         synced most recently wins outright if the same item changed on both.

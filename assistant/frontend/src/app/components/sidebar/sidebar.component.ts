@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { StateService } from '../../services/state.service';
 import { UiService } from '../../services/ui.service';
 import { SettingsService } from '../../services/settings.service';
-import { PrepCategoryKey, TabKey } from '../../models';
+import { TabKey } from '../../models';
 
 interface Tab {
   key: TabKey;
@@ -14,8 +14,6 @@ interface TabGroup {
   title: string | null;
   items: Tab[];
 }
-
-const PREP_TABS: TabKey[] = ['dsa', 'java', 'cs', 'sysdesign', 'web', 'interview'];
 
 const TAB_GROUPS: TabGroup[] = [
   {
@@ -35,21 +33,9 @@ const TAB_GROUPS: TabGroup[] = [
     ],
   },
   {
-    title: 'Interview Prep',
-    items: [
-      { key: 'dsa', label: 'DSA' },
-      { key: 'java', label: 'Java' },
-      { key: 'cs', label: 'CS Fundamentals' },
-      { key: 'sysdesign', label: 'System Design' },
-      { key: 'web', label: 'Web & Full-Stack' },
-      { key: 'interview', label: 'Interview Questions' },
-    ],
-  },
-  {
     title: 'More',
     items: [
       { key: 'news', label: 'News' },
-      { key: 'certs', label: 'Certificates' },
       { key: 'settings', label: 'Settings' },
     ],
   },
@@ -158,14 +144,6 @@ export class SidebarComponent {
     if (key === 'fitness') {
       const p = this.state.fitnessWeekProgress();
       return `${p.pct}%`;
-    }
-    if (PREP_TABS.includes(key)) {
-      const p = this.state.categoryProgress(key as PrepCategoryKey);
-      return p.total ? `${p.done}/${p.total}` : '';
-    }
-    if (key === 'certs') {
-      const p = this.state.certsProgress();
-      return p.total ? `${p.done}/${p.total}` : '';
     }
     return '';
   }

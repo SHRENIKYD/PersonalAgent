@@ -165,7 +165,7 @@ export const MONTH_SEEDS: MonthSeed[] = [
   {
     theme: 'Close it out',
     career: [
-      'Certificates: finish whichever is closest to done (see Certificates tab)',
+      'Finish whichever certification you have closest to done',
       'Do a full review pass — DSA/CS/System Design/Web — of anything still shaky',
       'Negotiate or evaluate any offer against your own baseline, not just the number',
     ],
