@@ -90,13 +90,6 @@ export type TabKey =
   | 'growth'
   | 'fitness'
   | 'news'
-  | 'dsa'
-  | 'java'
-  | 'cs'
-  | 'sysdesign'
-  | 'web'
-  | 'interview'
-  | 'certs'
   | 'settings';
 
 /**
@@ -139,129 +132,6 @@ export interface RoadmapState {
   habits: Habit[];
 }
 
-// ---------------- Interview prep ----------------
-
-export type PrepCategoryKey = 'dsa' | 'java' | 'cs' | 'sysdesign' | 'web' | 'interview';
-
-/** dsa[topicIndex][problemIndex] = checked */
-export interface Approach {
-  description: string;
-  time: string;   // Big-O, e.g. "O(n^2)"
-  space: string;  // Big-O, e.g. "O(1)"
-  /** Optional pseudocode for this approach — shown as a code block under the description. */
-  pseudocode?: string;
-}
-
-export interface DsaProblem {
-  name: string;
-  bruteForce: Approach;
-  optimized: Approach;
-  /** The core insight, in plain English — why the optimized approach works. */
-  explanation: string;
-}
-
-export interface DsaTopic {
-  name: string;
-  problems: DsaProblem[];
-  /** When present, the topic renders as a teaching narrative instead of independent problem
-   *  cards — see NarrativeTopic below. `problems` is ignored for progress counting in that
-   *  case (see PREP_TOPIC_SIZES in state.service.ts). */
-  narrative?: NarrativeTopic;
-}
-
-/**
- * A concept question — no brute-force/optimized split, just clean study notes: what it is,
- * how it actually works, a concrete example or pseudocode where one clarifies the mechanism,
- * and why it's the kind of thing interviewers actually ask about.
- */
-export interface ConceptItem {
-  name: string;
-  definition: string;
-  howItWorks: string;
-  /** Pseudocode, a code snippet, or a worked example — omitted when prose alone is clearer. */
-  example?: string;
-  whyItMatters: string;
-}
-
-export interface ConceptTopic {
-  name: string;
-  items: ConceptItem[];
-  /** Same narrative-teaching-arc shape as DsaTopic's, for concept tabs (CS/SysDesign/Web)
-   *  once they're migrated. `items` is ignored for progress counting in that case. */
-  narrative?: NarrativeTopic;
-}
-
-/**
- * One concept taught as a step in a progression, not an isolated fact — each one exists to
- * fix a specific weakness in the one before it, and explicitly sets up the one after it.
- * Modeled after a real class-notes structure: why this is being introduced, a plain
- * definition, two concrete numeric/worked walkthroughs, code, and what it unlocks next.
- */
-export interface NarrativeConcept {
-  name: string;
-  whyThisExists: string;
-  /** The mental checklist before being told the technique — what to notice/ask yourself
-   *  when a problem like this first shows up, distinct from the definition of the fix. */
-  howToApproach: string;
-  definitionLabel: string;
-  definition: string;
-  inSimpleWords: string;
-  /** Exactly two worked examples, traced through with real numbers/values. */
-  examples: [string, string];
-  /** Pseudocode/code for this step. Omitted for non-code concepts (e.g. a prompting pattern). */
-  code?: string;
-  timeComplexity?: string;
-  spaceComplexity?: string;
-  whatThisUnlocks: string;
-}
-
-export interface NarrativeSummaryRow {
-  concept: string;
-  formula: string;
-}
-
-export interface NarrativeSelfTestItem {
-  question: string;
-  answer: string;
-}
-
-export interface NarrativeTopic {
-  concepts: NarrativeConcept[];
-  summary: NarrativeSummaryRow[];
-  selfTest: NarrativeSelfTestItem[];
-}
-
-/** prep[category][topicIndex][itemIndex] = checked. Shared across DSA and concept topics —
- *  a DsaTopic's `problems` and a ConceptTopic's `items` are both indexed the same way. */
-export interface PrepState {
-  [category: string]: {
-    [topicIndex: number]: {
-      [itemIndex: number]: boolean;
-    };
-  };
-}
-
-// ---------------- Certificates ----------------
-
-export interface CertTodo {
-  name: string;
-  target: string;
-  link: string;
-  done: boolean;
-}
-
-export interface CertEarned {
-  name: string;
-  issuer: string;
-  date: string;
-  link: string;
-}
-
-export interface CertsState {
-  todo: CertTodo[];
-  earned: CertEarned[];
-}
-
 // ---------------- cross-device sync ----------------
 
 /** Everything that syncs across devices via SyncService — one device's full data. */
@@ -269,7 +139,5 @@ export interface SyncPayload {
   tasks: Task[];
   notes: Note[];
   roadmap: RoadmapState;
-  prep: PrepState;
-  certs: CertsState;
   fitnessLog: Record<string, boolean>;
 }

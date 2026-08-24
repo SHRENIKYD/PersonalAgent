@@ -1,14 +1,9 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { StorageService } from './storage.service';
 import {
-  CertEarned,
-  CertTodo,
-  CertsState,
   Habit,
   MonthPlan,
   Note,
-  PrepCategoryKey,
-  PrepState,
   Priority,
   RoadmapState,
   SyncPayload,
@@ -16,34 +11,15 @@ import {
   TrackKey,
 } from '../models';
 import { GOALS_PER_TRACK, MONTH_SEEDS, TRACKS, generateMonthNames } from '../growth-data';
-import { DSA_TOPICS } from '../prep-dsa-data';
-import { CS_TOPICS, SYSDESIGN_TOPICS, WEB_TOPICS } from '../prep-concept-data';
-import { JAVA_TOPICS } from '../java-data';
-import { INTERVIEW_TOPICS } from '../interview-data';
 
 const KEYS = {
   tasks: 'assistant-tasks-v1',
   notes: 'assistant-notes-v1',
   roadmap: 'assistant-roadmap-v1',
-  prep: 'assistant-prep-v1',
-  certs: 'assistant-certs-v1',
   fitness: 'assistant-fitness-v1',
 };
 
 const HABIT_WEEKS = 26;
-
-/**
- * Item counts per topic, used only for progress percentages — DSA topics count problems,
- * concept topics count items. Both are just "how many checkable rows does this topic have."
- */
-const PREP_TOPIC_SIZES: Record<PrepCategoryKey, number[]> = {
-  dsa: DSA_TOPICS.map(t => t.narrative?.concepts.length ?? t.problems.length),
-  java: JAVA_TOPICS.map(t => t.narrative?.concepts.length ?? t.items.length),
-  cs: CS_TOPICS.map(t => t.narrative?.concepts.length ?? t.items.length),
-  sysdesign: SYSDESIGN_TOPICS.map(t => t.narrative?.concepts.length ?? t.items.length),
-  web: WEB_TOPICS.map(t => t.narrative?.concepts.length ?? t.items.length),
-  interview: INTERVIEW_TOPICS.map(t => t.narrative?.concepts.length ?? t.items.length),
-};
 
 function seededTrack(triple: [string, string, string]): { text: string; done: boolean }[] {
   return triple.map(text => ({ text, done: false }));
@@ -90,14 +66,6 @@ function padRoadmapTracks(roadmap: RoadmapState): RoadmapState {
   return roadmap;
 }
 
-function defaultPrep(): PrepState {
-  return { dsa: {}, java: {}, cs: {}, sysdesign: {}, web: {}, interview: {} };
-}
-
-function defaultCerts(): CertsState {
-  return { todo: [], earned: [] };
-}
-
 function newId(): string {
   return Math.random().toString(36).slice(2, 10);
 }
@@ -115,8 +83,6 @@ export class StateService {
   tasks = signal<Task[]>([]);
   notes = signal<Note[]>([]);
   roadmap = signal<RoadmapState>(defaultRoadmap());
-  prep = signal<PrepState>(defaultPrep());
-  certs = signal<CertsState>(defaultCerts());
   /** key = `${YYYY-MM-DD}:${workoutDayName}` or `${YYYY-MM-DD}:diet` -> done */
   fitnessLog = signal<Record<string, boolean>>({});
   saveStatus = signal<string>('');
@@ -134,8 +100,6 @@ export class StateService {
     this.tasks.set(this.storage.get<Task[]>(KEYS.tasks, []));
     this.notes.set(this.storage.get<Note[]>(KEYS.notes, []));
     this.roadmap.set(padRoadmapTracks(this.storage.get<RoadmapState>(KEYS.roadmap, defaultRoadmap())));
-    this.prep.set(this.storage.get<PrepState>(KEYS.prep, defaultPrep()));
-    this.certs.set(this.storage.get<CertsState>(KEYS.certs, defaultCerts()));
     this.fitnessLog.set(this.storage.get<Record<string, boolean>>(KEYS.fitness, {}));
   }
 
@@ -156,18 +120,11 @@ export class StateService {
     return { total, done, pct: total === 0 ? 0 : Math.round((done / total) * 100) };
   });
 
-  /** Combined total/done across tasks, growth roadmap, all four prep categories, and certs. */
+  /** Combined total/done across tasks, the growth roadmap, and fitness adherence. */
   overallProgress = computed(() => {
     const parts = [
       this.progress(),
       this.roadmapProgress(),
-      this.categoryProgress('dsa'),
-      this.categoryProgress('java'),
-      this.categoryProgress('cs'),
-      this.categoryProgress('sysdesign'),
-      this.categoryProgress('web'),
-      this.categoryProgress('interview'),
-      this.certsProgress(),
       this.fitnessWeekProgress(),
     ];
     const total = parts.reduce((sum, p) => sum + p.total, 0);
@@ -370,40 +327,6 @@ export class StateService {
     this.scheduleSave();
   }
 
-  // ---------------- interview prep ----------------
-
-  categoryProgress(cat: PrepCategoryKey) {
-    let total = 0, done = 0;
-    const state = this.prep();
-    PREP_TOPIC_SIZES[cat].forEach((size, ti) => {
-      for (let ii = 0; ii < size; ii++) {
-        total++;
-        if (state[cat]?.[ti]?.[ii]) done++;
-      }
-    });
-    return { total, done, pct: total === 0 ? 0 : Math.round((done / total) * 100) };
-  }
-
-  topicProgress(cat: PrepCategoryKey, ti: number) {
-    const size = PREP_TOPIC_SIZES[cat][ti] ?? 0;
-    const state = this.prep();
-    let done = 0;
-    for (let ii = 0; ii < size; ii++) {
-      if (state[cat]?.[ti]?.[ii]) done++;
-    }
-    return { total: size, done };
-  }
-
-  toggleItem(cat: PrepCategoryKey, ti: number, ii: number, checked: boolean) {
-    this.prep.update(s => {
-      const next = structuredClone(s);
-      if (!next[cat][ti]) next[cat][ti] = {};
-      next[cat][ti][ii] = checked;
-      return next;
-    });
-    this.scheduleSave();
-  }
-
   // ---------------- fitness (workout + diet adherence) ----------------
 
   isFitnessLogged(key: string): boolean {
@@ -433,78 +356,6 @@ export class StateService {
     return { total, done, pct: total === 0 ? 0 : Math.round((done / total) * 100) };
   });
 
-  // ---------------- certificates ----------------
-
-  certsProgress = computed(() => {
-    const c = this.certs();
-    const total = c.todo.filter(x => x.name.trim()).length;
-    const done = c.todo.filter(x => x.done).length;
-    return { total, done, pct: total === 0 ? 0 : Math.round((done / total) * 100) };
-  });
-
-  addCertTodo() {
-    this.certs.update(s => {
-      const next = structuredClone(s);
-      next.todo.push({ name: '', target: '', link: '', done: false });
-      return next;
-    });
-    this.scheduleSave();
-  }
-
-  updateCertTodo(i: number, field: keyof Omit<CertTodo, 'done'>, value: string) {
-    this.certs.update(s => {
-      const next = structuredClone(s);
-      next.todo[i][field] = value;
-      return next;
-    });
-    this.scheduleSave();
-  }
-
-  toggleCertTodoDone(i: number, done: boolean) {
-    this.certs.update(s => {
-      const next = structuredClone(s);
-      next.todo[i].done = done;
-      return next;
-    });
-    this.scheduleSave();
-  }
-
-  removeCertTodo(i: number) {
-    this.certs.update(s => {
-      const next = structuredClone(s);
-      next.todo.splice(i, 1);
-      return next;
-    });
-    this.scheduleSave();
-  }
-
-  addCertEarned() {
-    this.certs.update(s => {
-      const next = structuredClone(s);
-      next.earned.push({ name: '', issuer: '', date: '', link: '' });
-      return next;
-    });
-    this.scheduleSave();
-  }
-
-  updateCertEarned(i: number, field: keyof CertEarned, value: string) {
-    this.certs.update(s => {
-      const next = structuredClone(s);
-      next.earned[i][field] = value;
-      return next;
-    });
-    this.scheduleSave();
-  }
-
-  removeCertEarned(i: number) {
-    this.certs.update(s => {
-      const next = structuredClone(s);
-      next.earned.splice(i, 1);
-      return next;
-    });
-    this.scheduleSave();
-  }
-
   // ---------------- cross-device sync (see SyncService) ----------------
 
   /** Everything that syncs — the full contents of one device's data. */
@@ -513,8 +364,6 @@ export class StateService {
       tasks: this.tasks(),
       notes: this.notes(),
       roadmap: this.roadmap(),
-      prep: this.prep(),
-      certs: this.certs(),
       fitnessLog: this.fitnessLog(),
     };
   }
@@ -530,8 +379,6 @@ export class StateService {
     this.tasks.set(payload.tasks ?? []);
     this.notes.set(payload.notes ?? []);
     this.roadmap.set(payload.roadmap ? padRoadmapTracks(payload.roadmap) : defaultRoadmap());
-    this.prep.set(payload.prep ?? defaultPrep());
-    this.certs.set(payload.certs ?? defaultCerts());
     this.fitnessLog.set(payload.fitnessLog ?? {});
     this.scheduleSave();
     this.suppressChangeSignal = false;
@@ -549,11 +396,9 @@ export class StateService {
       const ok1 = this.storage.set(KEYS.tasks, this.tasks());
       const ok2 = this.storage.set(KEYS.notes, this.notes());
       const ok3 = this.storage.set(KEYS.roadmap, this.roadmap());
-      const ok4 = this.storage.set(KEYS.prep, this.prep());
-      const ok5 = this.storage.set(KEYS.certs, this.certs());
-      const ok6 = this.storage.set(KEYS.fitness, this.fitnessLog());
+      const ok4 = this.storage.set(KEYS.fitness, this.fitnessLog());
       this.saveStatus.set(
-        ok1 && ok2 && ok3 && ok4 && ok5 && ok6
+        ok1 && ok2 && ok3 && ok4
           ? 'Saved'
           : 'Save failed — check browser storage settings'
       );

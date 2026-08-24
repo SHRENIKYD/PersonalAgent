@@ -11,12 +11,6 @@ import { SettingsComponent } from './components/settings/settings.component';
 import { GrowthComponent } from './components/growth/growth.component';
 import { FitnessComponent } from './components/fitness/fitness.component';
 import { NewsComponent } from './components/news/news.component';
-import { PrepDsaComponent } from './components/prep-dsa/prep-dsa.component';
-import { PrepConceptComponent } from './components/prep-concept/prep-concept.component';
-import { CertificatesComponent } from './components/certificates/certificates.component';
-import { CS_TOPICS, SYSDESIGN_TOPICS, WEB_TOPICS } from './prep-concept-data';
-import { JAVA_TOPICS } from './java-data';
-import { INTERVIEW_TOPICS } from './interview-data';
 import { UiService } from './services/ui.service';
 import { StateService } from './services/state.service';
 import { SyncService } from './services/sync.service';
@@ -39,9 +33,6 @@ const BOOT_SEEN_KEY = 'jarvis-boot-seen';
     GrowthComponent,
     FitnessComponent,
     NewsComponent,
-    PrepDsaComponent,
-    PrepConceptComponent,
-    CertificatesComponent,
   ],
   template: `
     <app-boot *ngIf="showBoot()" (done)="dismissBoot()"></app-boot>
@@ -56,33 +47,6 @@ const BOOT_SEEN_KEY = 'jarvis-boot-seen';
           <app-growth *ngSwitchCase="'growth'"></app-growth>
           <app-fitness *ngSwitchCase="'fitness'"></app-fitness>
           <app-news *ngSwitchCase="'news'"></app-news>
-          <app-prep-dsa *ngSwitchCase="'dsa'"></app-prep-dsa>
-          <app-prep-concept
-            *ngSwitchCase="'java'"
-            category="java" title="Java"
-            subtitle="Syntax, OOP, collections, exceptions, generics, streams, concurrency, and the JVM — beginner to advanced, in plain English."
-            [topics]="javaTopics"></app-prep-concept>
-          <app-prep-concept
-            *ngSwitchCase="'cs'"
-            category="cs" title="CS Fundamentals"
-            subtitle="The concept questions that come up in every core/CS round: OS, DBMS, Networks, OOP."
-            [topics]="csTopics"></app-prep-concept>
-          <app-prep-concept
-            *ngSwitchCase="'sysdesign'"
-            category="sysdesign" title="System Design"
-            subtitle="Building blocks first, then the classic case-study questions."
-            [topics]="sysdesignTopics"></app-prep-concept>
-          <app-prep-concept
-            *ngSwitchCase="'web'"
-            category="web" title="Web & Full-Stack"
-            subtitle="JavaScript core, React, and Node/API questions."
-            [topics]="webTopics"></app-prep-concept>
-          <app-prep-concept
-            *ngSwitchCase="'interview'"
-            category="interview" title="Interview Questions"
-            subtitle="The non-technical side: behavioral questions, openers, and how to talk about your career."
-            [topics]="interviewTopics"></app-prep-concept>
-          <app-certificates *ngSwitchCase="'certs'"></app-certificates>
           <app-settings *ngSwitchCase="'settings'"></app-settings>
         </ng-container>
 
@@ -96,12 +60,6 @@ const BOOT_SEEN_KEY = 'jarvis-boot-seen';
   `,
 })
 export class AppComponent {
-  csTopics = CS_TOPICS;
-  sysdesignTopics = SYSDESIGN_TOPICS;
-  webTopics = WEB_TOPICS;
-  javaTopics = JAVA_TOPICS;
-  interviewTopics = INTERVIEW_TOPICS;
-
   // sessionStorage, not localStorage: replays once per tab/session, not once ever.
   showBoot = signal(sessionStorage.getItem(BOOT_SEEN_KEY) !== '1');
 

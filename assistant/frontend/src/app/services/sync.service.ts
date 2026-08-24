@@ -41,7 +41,7 @@ export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
  * each write stamps `updatedAt`; on pull, whichever side — local or remote — is newer wins
  * outright and replaces the other side entirely. That can occasionally lose a same-moment
  * edit made on the losing device, but matches what was actually asked for, and a per-field
- * merge across six different data shapes (tasks, notes, roadmap, prep, certs, fitness log)
+ * merge across each different data shape (tasks, notes, roadmap, fitness log)
  * would be a much larger, harder-to-verify piece of code for a single-user tool.
  */
 @Injectable({ providedIn: 'root' })

@@ -197,9 +197,9 @@ function systemPrompt(hasWebSearch: boolean): string {
           '',
           'You also have a web_search tool. Use it when the user asks about something current —',
           'a live rate, recent news, a company\'s latest interview process — that you cannot know',
-          'from training alone. Do not use it for the DSA/CS/System Design/Web prep content,',
-          'workout or diet plan, or growth roadmap already on screen; read those from the tabs',
-          'instead. State facts from search plainly and note they may change; you are not a',
+          'from training alone. Do not use it for the workout or diet plan, or the growth',
+          'roadmap already on screen; read those from the tabs instead. State facts from',
+          'search plainly and note they may change; you are not a',
           'substitute for a doctor, financial advisor, or other licensed professional on',
           'anything health- or money-related.',
         ]
