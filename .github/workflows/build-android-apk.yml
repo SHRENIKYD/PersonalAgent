@@ -21,9 +21,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Capacitor 8's CLI refuses to run on anything below Node 22. Angular 17 predates
+      # Node 22 and warns about it, but only hard-fails on odd-numbered majors, so a
+      # single Node 22 step serves both the web build and cap sync.
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: assistant/frontend/package-lock.json
 
