@@ -231,17 +231,30 @@ const OPENERS: { label: string; prompt: string; icon: string }[] = [
       </div>
 
       <div class="composer">
+        <!--
+          Deliberately not disabled while thinking. Disabling a focused element drops focus,
+          which un-hides the bottom bar and shifts the composer 87px mid-conversation, and
+          drafting the next message while a reply is in flight is worth having. agent.send
+          already refuses to start a second turn, so the guard bought nothing.
+        -->
         <textarea
           #composerInput
           [(ngModel)]="inputText"
           rows="1"
           placeholder="Ask your assistant…"
-          [disabled]="agent.thinking()"
           (focus)="ui.composerFocused.set(true)"
           (blur)="ui.composerFocused.set(false)"
           (keydown.enter)="onEnter($event)"></textarea>
 
+        <!--
+          Keeping focus in the textarea is what makes one tap enough. Without this, pressing
+          a composer button blurs the input, which un-hides the bottom bar, which moves the
+          composer up by the height of the bar — out from under the finger mid-tap, so the
+          first press only ever repositioned the button.
+        -->
         <button *ngIf="dictation.supported()" class="mic-btn"
+                (pointerdown)="keepFocus($event)"
+                (mousedown)="keepFocus($event)"
                 [class.live]="dictation.listening()"
                 [disabled]="agent.thinking()"
                 (click)="toggleMic()"
@@ -254,6 +267,8 @@ const OPENERS: { label: string; prompt: string; icon: string }[] = [
         </button>
 
         <button class="send-btn" [disabled]="agent.thinking() || !inputText.trim()"
+                (pointerdown)="keepFocus($event)"
+                (mousedown)="keepFocus($event)"
                 (click)="send()" aria-label="Send">
           <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -283,6 +298,16 @@ export class ChatComponent {
    * An opener ending in a space is the start of a sentence rather than a whole question, so
    * it goes into the composer for you to finish instead of being sent as-is.
    */
+  /**
+   * Stops a composer button taking focus off the input, which would reflow the composer.
+   *
+   * Both events, not just pointerdown: preventing pointerdown does not suppress the
+   * compatibility mousedown that follows, and mousedown is what actually moves focus.
+   */
+  keepFocus(event: Event) {
+    event.preventDefault();
+  }
+
   ask(prompt: string) {
     if (prompt.endsWith(' ')) {
       this.inputText = prompt;
