@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, effect } from '@angular/core';
+import { Component, ElementRef, ViewChild, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AgentService } from '../../services/agent.service';
@@ -6,7 +6,14 @@ import { SettingsService } from '../../services/settings.service';
 import { UiService } from '../../services/ui.service';
 import { DictationService } from '../../services/dictation.service';
 import { MarkdownComponent } from '../markdown/markdown.component';
-import { WorkoutCard, DietCard } from '../../models';
+import { WorkoutCard, DietCard, DisplayEntry } from '../../models';
+
+/** One bubble's worth of transcript: a user message, or a run of ECHO entries. */
+interface Group {
+  kind: 'user' | 'echo';
+  at: number;
+  entries: DisplayEntry[];
+}
 
 @Component({
   selector: 'app-chat',
@@ -42,14 +49,14 @@ import { WorkoutCard, DietCard } from '../../models';
           “note that the wifi password is hunter2”.
         </p>
 
-        <ng-container *ngFor="let m of agent.transcript()">
+        <ng-container *ngFor="let g of groups()">
 
           <!-- you -->
-          <div class="bubble-row me" *ngIf="m.kind === 'user'">
+          <div class="bubble-row me" *ngIf="g.kind === 'user'">
             <div class="bubble me">
-              <span class="bubble-text">{{ m.text }}</span>
+              <span class="bubble-text">{{ g.entries[0].text }}</span>
               <span class="bubble-meta">
-                {{ m.at | date:'h:mm a' }}
+                {{ g.at | date:'h:mm a' }}
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
                      stroke-linecap="round" stroke-linejoin="round" class="tick" aria-hidden="true">
                   <path d="M1 13l4 4L14 8M10 13l3 3 9-9" />
@@ -58,8 +65,12 @@ import { WorkoutCard, DietCard } from '../../models';
             </div>
           </div>
 
-          <!-- ECHO: card, reply, action, or error -->
-          <div class="echo-row" *ngIf="m.kind !== 'user'">
+          <!--
+            One header for a whole run of ECHO entries. A single answer is often a card plus
+            a sentence of judgement on top of it; giving each its own name and timestamp made
+            one reply look like two.
+          -->
+          <div class="echo-row" *ngIf="g.kind === 'echo'">
             <div class="echo-head">
               <span class="echo-mark" aria-hidden="true">
                 <svg viewBox="0 0 200 200">
@@ -71,76 +82,79 @@ import { WorkoutCard, DietCard } from '../../models';
               </span>
               <b>ECHO</b>
               <span class="dot">·</span>
-              <span class="echo-time">{{ m.at | date:'h:mm a' }}</span>
+              <span class="echo-time">{{ g.at | date:'h:mm a' }}</span>
             </div>
 
-            <!-- workout card -->
-            <div class="echo-card" *ngIf="m.kind === 'card' && asWorkout(m.card) as w">
-              <h3 class="card-title">
-                {{ w.title }}<ng-container *ngIf="w.when"> — {{ w.when }}</ng-container>
-              </h3>
-              <p class="card-sub" *ngIf="w.muscles.length">{{ w.muscles.join(", ") | titlecase }}</p>
+            <ng-container *ngFor="let m of g.entries">
 
-              <ul class="ex-list">
-                <li *ngFor="let e of w.exercises">
-                  <span class="ex-dot" aria-hidden="true"></span>
-                  <span class="ex-name">
-                    {{ e.name }}<span class="ex-note" *ngIf="e.note"> ({{ e.note }})</span>
-                  </span>
-                  <span class="ex-sets">{{ e.sets }}</span>
-                </li>
-              </ul>
+              <!-- workout card -->
+              <div class="echo-card" *ngIf="m.kind === 'card' && asWorkout(m.card) as w">
+                <h3 class="card-title">
+                  {{ w.title }}<ng-container *ngIf="w.when"> — {{ w.when }}</ng-container>
+                </h3>
+                <p class="card-sub" *ngIf="w.muscles.length">{{ w.muscles.join(", ") | titlecase }}</p>
 
-              <div class="core-block" *ngIf="w.core">
-                <div class="core-head">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-dim)" stroke-width="2"
-                       class="core-ico" aria-hidden="true">
-                    <circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" />
-                  </svg>
-                  <b>Core</b> <span class="ex-note">({{ w.core.focus }})</span>
-                </div>
                 <ul class="ex-list">
-                  <li *ngFor="let e of w.core.exercises">
+                  <li *ngFor="let e of w.exercises">
+                    <span class="ex-dot" aria-hidden="true"></span>
                     <span class="ex-name">
                       {{ e.name }}<span class="ex-note" *ngIf="e.note"> ({{ e.note }})</span>
                     </span>
                     <span class="ex-sets">{{ e.sets }}</span>
                   </li>
                 </ul>
+
+                <div class="core-block" *ngIf="w.core">
+                  <div class="core-head">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-dim)" stroke-width="2"
+                         class="core-ico" aria-hidden="true">
+                      <circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" />
+                    </svg>
+                    <b>Core</b> <span class="ex-note">({{ w.core.focus }})</span>
+                  </div>
+                  <ul class="ex-list">
+                    <li *ngFor="let e of w.core.exercises">
+                      <span class="ex-name">
+                        {{ e.name }}<span class="ex-note" *ngIf="e.note"> ({{ e.note }})</span>
+                      </span>
+                      <span class="ex-sets">{{ e.sets }}</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
-            </div>
 
-            <!-- diet card -->
-            <div class="echo-card" *ngIf="m.kind === 'card' && asDiet(m.card) as d">
-              <h3 class="card-title">{{ d.title }}</h3>
-              <p class="card-sub">{{ d.targets }}</p>
-              <ul class="ex-list">
-                <li *ngFor="let meal of d.meals">
-                  <span class="ex-dot" aria-hidden="true"></span>
-                  <span class="ex-name">
-                    <b>{{ meal.meal }}</b>
-                    <span class="ex-note"> {{ meal.food }}</span>
-                  </span>
-                  <span class="ex-sets">{{ meal.calories }} kcal</span>
-                </li>
-              </ul>
-            </div>
+              <!-- diet card -->
+              <div class="echo-card" *ngIf="m.kind === 'card' && asDiet(m.card) as d">
+                <h3 class="card-title">{{ d.title }}</h3>
+                <p class="card-sub">{{ d.targets }}</p>
+                <ul class="ex-list">
+                  <li *ngFor="let meal of d.meals">
+                    <span class="ex-dot" aria-hidden="true"></span>
+                    <span class="ex-name">
+                      <b>{{ meal.meal }}</b>
+                      <span class="ex-note"> {{ meal.food }}</span>
+                    </span>
+                    <span class="ex-sets">{{ meal.calories }} kcal</span>
+                  </li>
+                </ul>
+              </div>
 
-            <div class="echo-body" *ngIf="m.kind === 'assistant'" [class.pending]="m.pending">
-              <span *ngIf="m.pending" class="scan-line" aria-hidden="true"></span>
-              <span *ngIf="m.pending">{{ m.text }}</span>
-              <app-markdown *ngIf="!m.pending" [text]="m.text" />
-            </div>
+              <div class="echo-body" *ngIf="m.kind === 'assistant'" [class.pending]="m.pending">
+                <span *ngIf="m.pending" class="scan-line" aria-hidden="true"></span>
+                <span *ngIf="m.pending">{{ m.text }}</span>
+                <app-markdown *ngIf="!m.pending" [text]="m.text" />
+              </div>
 
-            <div class="echo-action" *ngIf="m.kind === 'action'">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
-                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M20 6 9 17l-5-5" />
-              </svg>
-              {{ m.text }}
-            </div>
+              <div class="echo-action" *ngIf="m.kind === 'action'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+                {{ m.text }}
+              </div>
 
-            <div class="echo-error" *ngIf="m.kind === 'error'">⚠️ {{ m.text }}</div>
+              <div class="echo-error" *ngIf="m.kind === 'error'">⚠️ {{ m.text }}</div>
+            </ng-container>
           </div>
 
         </ng-container>
@@ -184,6 +198,23 @@ import { WorkoutCard, DietCard } from '../../models';
 })
 export class ChatComponent {
   inputText = '';
+
+  /**
+   * Consecutive ECHO entries collapse into one group. A single answer is frequently a card
+   * plus a line of judgement on top of it, and rendering each with its own name and
+   * timestamp made one reply read as two separate ones.
+   */
+  groups = computed<Group[]>(() => {
+    const out: Group[] = [];
+    for (const m of this.agent.transcript()) {
+      const kind: Group['kind'] = m.kind === 'user' ? 'user' : 'echo';
+      const last = out[out.length - 1];
+      // Only ECHO runs merge — two user messages in a row are genuinely two messages.
+      if (last && last.kind === 'echo' && kind === 'echo') last.entries.push(m);
+      else out.push({ kind, at: m.at ?? Date.now(), entries: [m] });
+    }
+    return out;
+  });
   @ViewChild('log') log?: ElementRef<HTMLElement>;
 
   constructor(

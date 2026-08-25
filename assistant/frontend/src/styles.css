@@ -1906,3 +1906,13 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 }
 
 .echo-body a { color: var(--accent); }
+
+/* Stacked blocks inside one ECHO group read as parts of a single reply, so they sit
+   closer together than separate replies do. */
+.echo-row > * + * { margin-top: 0; }
+.echo-row .echo-card + .echo-body,
+.echo-row .echo-body + .echo-card,
+.echo-row .echo-card + .echo-card { margin-top: 8px; }
+.echo-row .echo-action + .echo-card,
+.echo-row .echo-card + .echo-action,
+.echo-row .echo-body + .echo-action { margin-top: 6px; }
