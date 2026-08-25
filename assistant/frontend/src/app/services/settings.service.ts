@@ -1,5 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { StorageService } from './storage.service';
+import { Capacitor } from '@capacitor/core';
 import { ApiProvider, TransportMode } from '../models';
 
 const KEY = 'assistant-settings-v1';
@@ -13,7 +14,17 @@ interface Settings {
 }
 
 function defaults(): Settings {
-  return { mode: 'backend', provider: 'anthropic', apiKey: '', openaiApiKey: '', geminiApiKey: '' };
+  // Backend mode points at a localhost API, which cannot exist on a phone — the installed
+  // app has no such server and never will, so defaulting to it there guarantees a confusing
+  // "could not reach the backend at http://localhost:5000" on the very first message.
+  // Direct mode is the only default that can work natively.
+  return {
+    mode: Capacitor.isNativePlatform() ? 'direct' : 'backend',
+    provider: 'anthropic',
+    apiKey: '',
+    openaiApiKey: '',
+    geminiApiKey: '',
+  };
 }
 
 /**
@@ -39,8 +50,10 @@ export class SettingsService {
   geminiApiKey = signal<string>('');
 
   constructor(private storage: StorageService) {
-    const saved = this.storage.get<Settings>(KEY, defaults());
-    this.mode.set(saved.mode === 'direct' ? 'direct' : 'backend');
+    const fallback = defaults();
+    const saved = this.storage.get<Settings>(KEY, fallback);
+    // An explicit stored choice still wins — this only decides what an untouched install does.
+    this.mode.set(saved.mode === 'direct' || saved.mode === 'backend' ? saved.mode : fallback.mode);
     this.provider.set(
       saved.provider === 'openai' ? 'openai' : saved.provider === 'gemini' ? 'gemini' : 'anthropic'
     );

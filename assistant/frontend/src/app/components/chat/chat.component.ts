@@ -12,7 +12,7 @@ import { WorkoutCard, DietCard } from '../../models';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <section class="panel">
+    <section class="panel chat-panel">
       <div class="page-head">
         <div>
           <h1 class="page-title">Assistant</h1>

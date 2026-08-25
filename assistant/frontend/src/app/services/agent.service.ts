@@ -2,6 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { Capacitor } from '@capacitor/core';
 import { StateService } from './state.service';
 import { SettingsService } from './settings.service';
 import {
@@ -716,7 +717,11 @@ export class AgentService {
     if (status === 0) {
       return direct
         ? `Could not reach ${providerName}. Check your connection.`
-        : `Could not reach the backend at ${environment.apiBaseUrl}. Is it running, and does its FRONTEND_ORIGINS allow this page?`;
+        : Capacitor.isNativePlatform()
+          ? `This app is set to Backend mode, which expects a server at ${environment.apiBaseUrl} — ` +
+            'a localhost address that cannot exist on a phone. Open Settings and switch to ' +
+            '"Direct from browser", then add an API key.'
+          : `Could not reach the backend at ${environment.apiBaseUrl}. Is it running, and does its FRONTEND_ORIGINS allow this page?`;
     }
     if (typeof status === 'number' && status >= 500) {
       return direct

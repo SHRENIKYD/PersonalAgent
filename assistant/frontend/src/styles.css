@@ -1788,3 +1788,54 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 /* Kept on one line: wrapped to "Clear / chat" it reads as two controls. */
 .clear-btn { white-space: nowrap; flex: 0 0 auto; }
+
+/* ---------------- full-height chat ---------------- */
+
+/*
+ * The chat is the one tab that should fill the window rather than flow: a conversation has
+ * no natural end, and the composer belongs at the bottom of the screen, not at the bottom
+ * of the content. Everything else still scrolls the page normally.
+ *
+ * min-height: 0 on the scrolling child is load-bearing — a flex item defaults to
+ * min-height: auto, which refuses to shrink below its content, so the log would push the
+ * composer off-screen instead of scrolling inside itself.
+ */
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.chat-panel .chat-log {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+
+.chat-panel .composer,
+.chat-panel .chat-hint { flex: 0 0 auto; }
+
+/*
+ * The flex child of .main is the <app-chat> element, not the .panel inside it — ng-container
+ * renders nothing, so the component's own host element is what participates in the layout.
+ * A custom element is display:inline by default, so without this the height simply stops
+ * here and .panel collapses to its content no matter what flex rules it carries.
+ */
+.main > app-chat {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* The shell has to stop growing for any of the above to mean anything. */
+.app:has(.chat-panel) { height: 100vh; height: 100dvh; }
+.app:has(.chat-panel) .main { min-height: 0; overflow: hidden; }
+.app:has(.chat-panel) .main > .footnote { display: none; }
+
+@media (max-width: 720px) {
+  /* Reclaim the description on a phone: on a small screen the conversation is worth more
+     than a standing explanation of what the assistant does. */
+  .chat-panel .page-sub { display: none; }
+  .chat-panel .chat-log { max-height: none; }
+}
