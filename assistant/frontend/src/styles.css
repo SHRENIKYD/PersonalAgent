@@ -1633,3 +1633,14 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .macro.over { border-color: var(--warn); }
 .macro.over .macro-bar i { background: linear-gradient(90deg, var(--accent-dim), var(--warn)); }
 .macro-note { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+
+.fit-focus-session {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  color: var(--accent);
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}

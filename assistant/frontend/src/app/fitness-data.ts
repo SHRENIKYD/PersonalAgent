@@ -297,13 +297,19 @@ export type MuscleGroup =
 const GROUP_TO_MUSCLES: Record<string, MuscleGroup[]> = {
   Chest: ['chest'],
   Shoulders: ['delts', 'traps'],
+  'Rear delts': ['delts', 'traps'],
   Triceps: ['triceps'],
   Back: ['lats', 'traps'],
-  Biceps: ['biceps', 'forearms'],
+  Biceps: ['biceps'],
+  Forearms: ['forearms'],
   Arms: ['biceps', 'triceps', 'forearms'],
   Legs: ['quads', 'hams', 'glutes', 'calves'],
   Quads: ['quads'],
+  // The plan distinguishes these two itself — Legs A's hamstring block is a seated curl
+  // plus a light RDL, Legs B's is heavy RDL and hip thrusts — so the map keeps the
+  // distinction rather than assuming every hinge is a glute movement.
   Hamstrings: ['hams'],
+  'Hamstrings & glutes': ['hams', 'glutes'],
   Glutes: ['glutes'],
   Calves: ['calves'],
   Core: ['abs', 'obliques'],
@@ -313,9 +319,25 @@ const GROUP_TO_MUSCLES: Record<string, MuscleGroup[]> = {
 export function musclesFor(day: WorkoutDay): MuscleGroup[] {
   const out = new Set<MuscleGroup>();
   day.exercises.forEach(e => {
-    (GROUP_TO_MUSCLES[e.group ?? ''] ?? []).forEach(m => out.add(m));
+    const group = e.group ?? '';
+    if (group === '') return;
+    const mapped = GROUP_TO_MUSCLES[group];
+    if (!mapped) {
+      // A sub-heading with no entry here would light nothing and look like a deliberately
+      // unworked muscle rather than a gap in the mapping. Fail loudly instead of silently.
+      console.warn(`musclesFor: no muscle mapping for group "${group}" — figure will under-report.`);
+      return;
+    }
+    mapped.forEach(m => out.add(m));
   });
   return [...out];
+}
+
+/** Every group label used anywhere in the plan, for the mapping self-check below. */
+export function unmappedGroups(): string[] {
+  const seen = new Set<string>();
+  WORKOUT_DAYS.forEach(d => d.exercises.forEach(e => { if (e.group) seen.add(e.group); }));
+  return [...seen].filter(g => !GROUP_TO_MUSCLES[g]);
 }
 
 /**

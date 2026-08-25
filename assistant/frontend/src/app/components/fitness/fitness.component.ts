@@ -53,13 +53,22 @@ function todayIso(): string {
         <img class="fit-hero-art" src="assets/hero-athlete.webp" alt="" aria-hidden="true" />
       </div>
 
-      <h2 class="section-title">Muscle focus</h2>
+      <div class="section-head">
+        <h2 class="section-title">Muscle focus</h2>
+        <button class="ghost-btn" *ngIf="previewing()" (click)="showToday()">Back to today</button>
+      </div>
       <div class="fit-focus">
         <app-muscle-map [active]="todayMuscles()" />
         <div class="fit-focus-side">
+          <p class="fit-focus-session">
+            {{ mapLabel() }}
+            <span class="pill" *ngIf="previewing()">preview</span>
+          </p>
           <p class="fit-focus-lede">
             {{ todayMuscles().length
-                ? 'Lit groups are what today actually loads, read from the session below.'
+                ? (previewing()
+                    ? 'Lit groups are what this session loads. Open another day below to compare.'
+                    : 'Lit groups are what today actually loads. Open any day below to preview it.')
                 : 'Rest day — nothing scheduled. The map stays dark on purpose.' }}
           </p>
           <ul class="fit-key">
@@ -251,17 +260,35 @@ export class FitnessComponent {
 
   vegDay = signal(false);
 
+  /**
+   * Which day the muscle map is showing. null means "follow today"; opening a day in the
+   * split below pins it here so the figure previews that session instead. Kept separate
+   * from openDays because several days can be expanded at once but the map shows one.
+   */
+  private focusedDay = signal<number | null>(null);
+
   /** Today's session, or null on the rest day. */
   todaySession = computed<WorkoutDay | null>(() => workoutForDate());
 
+  /** The session the map is currently drawing — a pinned day, else today. */
+  mapSession = computed<WorkoutDay | null>(() => {
+    const i = this.focusedDay();
+    return i === null ? this.todaySession() : this.workoutDays[i] ?? null;
+  });
+
+  /** True when the map is previewing a day other than today's. */
+  previewing = computed(() => this.focusedDay() !== null);
+
   todayMuscles = computed(() => {
-    const day = this.todaySession();
+    const day = this.mapSession();
     return day ? musclesFor(day) : [];
   });
 
-  todayExerciseCount = computed(() => this.todaySession()?.exercises.length ?? 0);
+  todayExerciseCount = computed(() => this.mapSession()?.exercises.length ?? 0);
 
   todayLabel = computed(() => this.todaySession()?.name ?? 'Rest day');
+
+  mapLabel = computed(() => this.mapSession()?.name ?? 'Rest day');
 
   todaySub = computed(() =>
     this.todaySession()
@@ -335,12 +362,19 @@ export class FitnessComponent {
   }
 
   toggleDay(i: number) {
+    let opened = false;
     this.openDays.update(set => {
       const next = new Set(set);
-      if (next.has(i)) next.delete(i); else next.add(i);
+      if (next.has(i)) next.delete(i); else { next.add(i); opened = true; }
       return next;
     });
+    // Opening a day previews it on the map; closing the day the map is showing hands the
+    // map back to today rather than leaving it stuck on a collapsed session.
+    if (opened) this.focusedDay.set(i);
+    else if (this.focusedDay() === i) this.focusedDay.set(null);
   }
+
+  showToday() { this.focusedDay.set(null); }
 
   /** True when this exercise starts a new muscle-group block, so a header row prints once. */
   isNewGroup(day: WorkoutDay, ei: number): boolean {
