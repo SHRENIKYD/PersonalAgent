@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { BootComponent } from './components/boot/boot.component';
 import { ContextRailComponent } from './components/context-rail/context-rail.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
+import { BottomNavComponent } from './components/bottom-nav/bottom-nav.component';
+import { SectionNavComponent } from './components/section-nav/section-nav.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { ChatComponent } from './components/chat/chat.component';
 import { TasksComponent } from './components/tasks/tasks.component';
@@ -27,6 +29,8 @@ const BOOT_SEEN_KEY = 'jarvis-boot-seen';
     BootComponent,
     ContextRailComponent,
     SidebarComponent,
+    BottomNavComponent,
+    SectionNavComponent,
     DashboardComponent,
     ChatComponent,
     TasksComponent,
@@ -42,6 +46,7 @@ const BOOT_SEEN_KEY = 'jarvis-boot-seen';
     <div class="app">
       <app-sidebar></app-sidebar>
       <main class="main">
+        <app-section-nav></app-section-nav>
         <ng-container [ngSwitch]="ui.activeTab()">
           <app-chat *ngSwitchCase="'chat'"></app-chat>
           <app-dashboard *ngSwitchCase="'dashboard'"></app-dashboard>
@@ -61,6 +66,7 @@ const BOOT_SEEN_KEY = 'jarvis-boot-seen';
         <div class="exit-hint" *ngIf="back.exitArmed()" role="status">Press back again to exit</div>
       </main>
       <app-context-rail></app-context-rail>
+      <app-bottom-nav></app-bottom-nav>
     </div>
   `,
 })

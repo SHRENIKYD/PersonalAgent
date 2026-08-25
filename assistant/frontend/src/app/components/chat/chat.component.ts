@@ -184,6 +184,8 @@ interface Group {
           rows="1"
           placeholder="Ask your assistant…"
           [disabled]="agent.thinking()"
+          (focus)="ui.composerFocused.set(true)"
+          (blur)="ui.composerFocused.set(false)"
           (keydown.enter)="onEnter($event)"></textarea>
 
         <button *ngIf="dictation.supported()" class="mic-btn"

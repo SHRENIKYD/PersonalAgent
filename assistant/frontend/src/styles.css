@@ -2025,3 +2025,124 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 }
 
 @media (prefers-reduced-motion: reduce) { .hands-free.live { animation: none; } }
+
+/* ---------------- bottom navigation (narrow screens) ---------------- */
+
+/* Sticky, not fixed: the bar keeps its place in the layout, so the chat panel's
+   full-height maths still resolves and nothing needs a spacer to clear it. */
+.bottom-nav {
+  display: none;
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  flex: 0 0 auto;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--line);
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+}
+
+.bn-item {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 6px 2px;
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.bn-item.active { color: var(--accent); }
+
+.bn-icon { position: relative; display: block; line-height: 0; }
+.bn-icon svg { width: 24px; height: 24px; display: block; }
+
+.bn-label {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The assistant is the app's main action, so it reads as a button rather than a peer. */
+.bn-item.primary .bn-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-top: -12px;
+  border-radius: 50%;
+  border: 1px solid var(--accent-dim);
+  background: var(--panel-2);
+  color: var(--accent);
+}
+
+.bn-item.primary.active .bn-icon {
+  background: linear-gradient(160deg, var(--accent), var(--ember-deep));
+  border-color: transparent;
+  color: #1a0d02;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.bn-badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--accent-dim);
+  color: #1a0d02;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------- segmented control for grouped tabs ---------------- */
+
+.section-nav {
+  display: none;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.section-nav button {
+  flex: 1 1 0;
+  padding: 8px 6px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.section-nav button.active {
+  background: var(--panel-2);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+@media (max-width: 720px) {
+  .bottom-nav { display: flex; }
+  .bottom-nav.hidden { display: none; }
+  .section-nav { display: flex; }
+
+  /* The bottom bar replaces the collapsed dropdown that used to live in the header. */
+  .mobile-nav-toggle, .sidebar-collapsible { display: none !important; }
+  .sidebar { padding: 10px 14px; }
+}
