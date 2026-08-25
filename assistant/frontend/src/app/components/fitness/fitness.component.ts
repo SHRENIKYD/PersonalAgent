@@ -255,29 +255,28 @@ export class FitnessComponent {
   dietRules = DIET_RULES;
   medicalDisclaimer = MEDICAL_DISCLAIMER;
 
-  private openDays = signal<Set<number>>(new Set());
-  private openAbsDays = signal<Set<number>>(new Set());
+  /**
+   * One open day at a time. A Set here would let every session expand at once, which on a
+   * phone means scrolling past six full exercise tables to reach the one you are actually
+   * doing. It also collapses the map's focus and the open panel into a single piece of
+   * state, so the figure can never disagree with what is on screen.
+   */
+  private openDay = signal<number | null>(null);
+  private openAbsDay = signal<number | null>(null);
 
   vegDay = signal(false);
-
-  /**
-   * Which day the muscle map is showing. null means "follow today"; opening a day in the
-   * split below pins it here so the figure previews that session instead. Kept separate
-   * from openDays because several days can be expanded at once but the map shows one.
-   */
-  private focusedDay = signal<number | null>(null);
 
   /** Today's session, or null on the rest day. */
   todaySession = computed<WorkoutDay | null>(() => workoutForDate());
 
   /** The session the map is currently drawing — a pinned day, else today. */
   mapSession = computed<WorkoutDay | null>(() => {
-    const i = this.focusedDay();
+    const i = this.openDay();
     return i === null ? this.todaySession() : this.workoutDays[i] ?? null;
   });
 
   /** True when the map is previewing a day other than today's. */
-  previewing = computed(() => this.focusedDay() !== null);
+  previewing = computed(() => this.openDay() !== null);
 
   todayMuscles = computed(() => {
     const day = this.mapSession();
@@ -358,23 +357,15 @@ export class FitnessComponent {
   }
 
   isDayOpen(i: number): boolean {
-    return this.openDays().has(i);
+    return this.openDay() === i;
   }
 
+  /** Opening a day closes whichever was open, and drives the map with the same signal. */
   toggleDay(i: number) {
-    let opened = false;
-    this.openDays.update(set => {
-      const next = new Set(set);
-      if (next.has(i)) next.delete(i); else { next.add(i); opened = true; }
-      return next;
-    });
-    // Opening a day previews it on the map; closing the day the map is showing hands the
-    // map back to today rather than leaving it stuck on a collapsed session.
-    if (opened) this.focusedDay.set(i);
-    else if (this.focusedDay() === i) this.focusedDay.set(null);
+    this.openDay.update(cur => (cur === i ? null : i));
   }
 
-  showToday() { this.focusedDay.set(null); }
+  showToday() { this.openDay.set(null); }
 
   /** True when this exercise starts a new muscle-group block, so a header row prints once. */
   isNewGroup(day: WorkoutDay, ei: number): boolean {
@@ -384,14 +375,10 @@ export class FitnessComponent {
   }
 
   isAbsDayOpen(i: number): boolean {
-    return this.openAbsDays().has(i);
+    return this.openAbsDay() === i;
   }
 
   toggleAbsDay(i: number) {
-    this.openAbsDays.update(set => {
-      const next = new Set(set);
-      if (next.has(i)) next.delete(i); else next.add(i);
-      return next;
-    });
+    this.openAbsDay.update(cur => (cur === i ? null : i));
   }
 }
