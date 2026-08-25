@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, computed, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -776,6 +776,15 @@ export class AgentService {
   }
 
   // ---------------- transport ----------------
+
+  /**
+   * Whether the assistant can answer at all. A loaded on-device model counts: it needs no
+   * key, so gating on the key alone told the user to add one while a working model sat
+   * loaded on the phone.
+   */
+  ready = computed(() =>
+    (this.local.available && this.local.loaded()) || this.settings.ready()
+  );
 
   /** One request to the model, via whichever transport is configured. */
   private requestTurn(): Promise<AssistantResponse> {

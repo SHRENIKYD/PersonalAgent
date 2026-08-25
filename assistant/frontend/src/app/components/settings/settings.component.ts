@@ -312,9 +312,10 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
       <ng-container *ngIf="local.available">
         <h2 class="section-title">On-device model</h2>
         <p class="setting-note">
-          Runs a model on the phone itself, so no API key and no network. It is slower and
-          weaker than the cloud models — this section only proves it works; the assistant
-          still uses your chosen provider above.
+          Runs a model on the phone itself, so no API key and no network. While it is
+          <strong>loaded</strong>, the assistant uses it instead of the provider above —
+          unload it to go back to the cloud. It is slower and weaker than the cloud models,
+          and is at its worst on requests needing more than one step.
         </p>
 
         <p class="setting-note" *ngIf="!local.modelPresent()">

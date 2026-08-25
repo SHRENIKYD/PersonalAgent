@@ -6,6 +6,7 @@ import { SettingsService } from '../../services/settings.service';
 import { UiService } from '../../services/ui.service';
 import { DictationService } from '../../services/dictation.service';
 import { VoiceModeService } from '../../services/voice-mode.service';
+import { LocalLlmService } from '../../services/local-llm.service';
 import { MarkdownComponent } from '../markdown/markdown.component';
 import { WorkoutCard, DietCard, DisplayEntry } from '../../models';
 
@@ -71,9 +72,9 @@ const OPENERS: { label: string; prompt: string; icon: string }[] = [
       </div>
       <p class="chat-warn" *ngIf="voiceMode.error()">⚠️ {{ voiceMode.error() }}</p>
 
-      <p *ngIf="!settings.ready()" class="chat-warn">
+      <p *ngIf="!agent.ready()" class="chat-warn">
         No API key is set for direct mode.
-        <a (click)="ui.setTab('settings')">Add one on the Settings tab</a> to use the assistant.
+        <a (click)="ui.setTab('settings')">Add one on the Settings tab</a> to use the assistant{{ local.available ? ', or load an on-device model there' : '' }}.
       </p>
 
       <div class="chat-log" #log>
@@ -325,7 +326,8 @@ export class ChatComponent {
     public settings: SettingsService,
     public ui: UiService,
     public dictation: DictationService,
-    public voiceMode: VoiceModeService
+    public voiceMode: VoiceModeService,
+    public local: LocalLlmService
   ) {
     // Follow the conversation as it grows. Reading the signal inside the effect is what
     // subscribes it, so this runs on every transcript change.
