@@ -1916,3 +1916,29 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .echo-row .echo-action + .echo-card,
 .echo-row .echo-card + .echo-action,
 .echo-row .echo-body + .echo-action { margin-top: 6px; }
+
+/* Transient confirmation that the next back press leaves the app. Fixed rather than in
+   flow so it cannot shift the layout underneath it as it appears and goes. */
+.exit-hint {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 9px 18px;
+  font-size: 13px;
+  color: var(--text);
+  box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.9);
+  z-index: 60;
+  pointer-events: none;
+  animation: exit-hint-in 0.18s ease both;
+}
+
+@keyframes exit-hint-in {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) { .exit-hint { animation: none; } }

@@ -15,6 +15,7 @@ import { NewsComponent } from './components/news/news.component';
 import { UiService } from './services/ui.service';
 import { StateService } from './services/state.service';
 import { SyncService } from './services/sync.service';
+import { BackButtonService } from './services/back-button.service';
 
 const BOOT_SEEN_KEY = 'jarvis-boot-seen';
 
@@ -57,6 +58,7 @@ const BOOT_SEEN_KEY = 'jarvis-boot-seen';
           Tasks and notes stay in this browser &middot; only your chat messages are sent anywhere
           &middot; {{ state.saveStatus() }}
         </div>
+        <div class="exit-hint" *ngIf="back.exitArmed()" role="status">Press back again to exit</div>
       </main>
       <app-context-rail></app-context-rail>
     </div>
@@ -69,7 +71,14 @@ export class AppComponent {
   // Injected purely to instantiate it at app start (providedIn: 'root' services are
   // otherwise created lazily on first use) — sync needs to kick off its initial pull
   // immediately, not wait for the Settings tab to be opened.
-  constructor(public ui: UiService, public state: StateService, private sync: SyncService) {}
+  constructor(
+    public ui: UiService,
+    public state: StateService,
+    private sync: SyncService,
+    // Injected purely so it is constructed — it wires the back gesture on creation and has
+    // no API the template needs.
+    public back: BackButtonService,
+  ) {}
 
   dismissBoot() {
     sessionStorage.setItem(BOOT_SEEN_KEY, '1');
