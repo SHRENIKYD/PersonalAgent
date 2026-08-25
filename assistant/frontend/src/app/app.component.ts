@@ -9,7 +9,8 @@ import { TasksComponent } from './components/tasks/tasks.component';
 import { NotesComponent } from './components/notes/notes.component';
 import { SettingsComponent } from './components/settings/settings.component';
 import { GrowthComponent } from './components/growth/growth.component';
-import { FitnessComponent } from './components/fitness/fitness.component';
+import { WorkoutComponent } from './components/workout/workout.component';
+import { DietComponent } from './components/diet/diet.component';
 import { NewsComponent } from './components/news/news.component';
 import { UiService } from './services/ui.service';
 import { StateService } from './services/state.service';
@@ -31,7 +32,8 @@ const BOOT_SEEN_KEY = 'jarvis-boot-seen';
     NotesComponent,
     SettingsComponent,
     GrowthComponent,
-    FitnessComponent,
+    WorkoutComponent,
+    DietComponent,
     NewsComponent,
   ],
   template: `
@@ -45,7 +47,8 @@ const BOOT_SEEN_KEY = 'jarvis-boot-seen';
           <app-tasks *ngSwitchCase="'tasks'"></app-tasks>
           <app-notes *ngSwitchCase="'notes'"></app-notes>
           <app-growth *ngSwitchCase="'growth'"></app-growth>
-          <app-fitness *ngSwitchCase="'fitness'"></app-fitness>
+          <app-workout *ngSwitchCase="'workout'"></app-workout>
+          <app-diet *ngSwitchCase="'diet'"></app-diet>
           <app-news *ngSwitchCase="'news'"></app-news>
           <app-settings *ngSwitchCase="'settings'"></app-settings>
         </ng-container>

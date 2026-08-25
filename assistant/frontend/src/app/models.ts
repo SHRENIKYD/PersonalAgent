@@ -88,7 +88,8 @@ export type TabKey =
   | 'notes'
   | 'dashboard'
   | 'growth'
-  | 'fitness'
+  | 'workout'
+  | 'diet'
   | 'news'
   | 'settings';
 

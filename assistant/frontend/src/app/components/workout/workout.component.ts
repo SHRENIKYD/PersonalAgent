@@ -5,19 +5,11 @@ import { MuscleMapComponent } from '../muscle-map/muscle-map.component';
 import { RestTimerComponent } from '../rest-timer/rest-timer.component';
 import {
   ABS_PROGRAM,
-  DIET_RULES,
-  DIET_TARGETS,
-  MEDICAL_DISCLAIMER,
-  NONVEG_MEALS,
-  SUPPLEMENTS,
-  VEG_MEALS,
   WEEKLY_SCHEDULE,
   WORKOUT_DAYS,
   WORKOUT_PROGRESS,
   WORKOUT_RULES,
-  MACRO_TARGETS,
   WorkoutDay,
-  mealTotals,
   musclesFor,
   workoutForDate,
 } from '../../fitness-data';
@@ -26,15 +18,21 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/**
+ * Training only. Split from the old combined Fitness tab because the two halves are used at
+ * different times — you open this mid-set with one hand, and the diet tab when planning a
+ * meal — and scrolling past seven meal tables to reach the set you are logging was the cost
+ * of keeping them together.
+ */
 @Component({
-  selector: 'app-fitness',
+  selector: 'app-workout',
   standalone: true,
   imports: [CommonModule, MuscleMapComponent, RestTimerComponent],
   template: `
     <section class="panel">
       <div class="fit-hero">
         <div class="fit-hero-copy">
-          <h1 class="page-title">Fitness &amp; Diet</h1>
+          <h1 class="page-title">Workout</h1>
           <p class="fit-hero-session">{{ todayLabel() }}</p>
           <p class="page-sub">{{ todaySub() }}</p>
 
@@ -42,10 +40,6 @@ function todayIso(): string {
             <label class="fit-check">
               <input type="checkbox" [checked]="checked('workout')" (change)="toggle('workout', $any($event.target).checked)" />
               Workout done
-            </label>
-            <label class="fit-check">
-              <input type="checkbox" [checked]="checked('diet')" (change)="toggle('diet', $any($event.target).checked)" />
-              On-plan with diet
             </label>
             <span class="pill complete">{{ state.fitnessWeekProgress().pct }}% this week</span>
           </div>
@@ -84,29 +78,6 @@ function todayIso(): string {
 
       <h2 class="section-title">Rest timer</h2>
       <app-rest-timer />
-
-      <h2 class="section-title">Today's macros</h2>
-      <p class="page-sub">
-        Targets from the plan, against what the {{ vegDay() ? 'veg' : 'non-veg' }} day adds up
-        to as written — not what you actually ate, which the app doesn't track per meal.
-      </p>
-      <div class="macro-grid">
-        <div class="macro" *ngFor="let m of macroRows()" [class.over]="m.over">
-          <div class="macro-head">
-            <b>{{ m.label }}</b>
-            <span *ngIf="m.tracked">{{ m.have }} / {{ m.target }}{{ m.unit }}</span>
-            <span *ngIf="!m.tracked">target {{ m.target }}{{ m.unit }}</span>
-          </div>
-          <div class="macro-bar" *ngIf="m.tracked"><i [style.width.%]="m.pct"></i></div>
-          <p class="macro-note" *ngIf="m.over">
-            Plan as written runs {{ m.have - m.target }}{{ m.unit }} over target.
-          </p>
-          <p class="macro-note" *ngIf="!m.tracked">Not itemised per meal in the plan.</p>
-        </div>
-      </div>
-      <button class="ghost-btn" (click)="vegDay.set(!vegDay())">
-        Show {{ vegDay() ? 'non-veg' : 'veg' }} day
-      </button>
 
       <h2 class="section-title">Weekly split</h2>
       <div class="fit-table-wrap">
@@ -194,99 +165,38 @@ function todayIso(): string {
         <li *ngFor="let p of workoutProgress">{{ p }}</li>
       </ul>
 
-      <h2 class="section-title">Daily targets</h2>
-      <p class="page-sub">{{ dietTargets }}</p>
-
-      <h2 class="section-title">Non-veg day</h2>
-      <div class="fit-table-wrap">
-        <table class="fit-table">
-          <thead><tr><th>Meal</th><th>Food &amp; quantity</th><th>Protein</th><th>Calories</th></tr></thead>
-          <tbody>
-            <tr *ngFor="let m of nonvegMeals">
-              <td>{{ m.meal }}</td><td>{{ m.food }}</td><td>{{ m.protein }}</td><td>{{ m.calories }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <h2 class="section-title">Veg day</h2>
-      <div class="fit-table-wrap">
-        <table class="fit-table">
-          <thead><tr><th>Meal</th><th>Food &amp; quantity</th><th>Protein</th><th>Calories</th></tr></thead>
-          <tbody>
-            <tr *ngFor="let m of vegMeals">
-              <td>{{ m.meal }}</td><td>{{ m.food }}</td><td>{{ m.protein }}</td><td>{{ m.calories }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <h2 class="section-title">Supplement schedule</h2>
-      <div class="fit-table-wrap">
-        <table class="fit-table">
-          <thead><tr><th>Supplement</th><th>When</th><th>Notes</th></tr></thead>
-          <tbody>
-            <tr *ngFor="let s of supplements">
-              <td>{{ s.supplement }}</td><td>{{ s.when }}</td><td>{{ s.notes }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <h2 class="section-title">Diet rules</h2>
-      <ul class="fit-list">
-        <li *ngFor="let r of dietRules">{{ r }}</li>
-      </ul>
-
-      <p class="footnote">{{ medicalDisclaimer }}</p>
     </section>
   `,
 })
-export class FitnessComponent {
+export class WorkoutComponent {
   schedule = WEEKLY_SCHEDULE;
   workoutDays = WORKOUT_DAYS;
   absProgram = ABS_PROGRAM;
   workoutRules = WORKOUT_RULES;
   workoutProgress = WORKOUT_PROGRESS;
-  dietTargets = DIET_TARGETS;
-  nonvegMeals = NONVEG_MEALS;
-  vegMeals = VEG_MEALS;
-  supplements = SUPPLEMENTS;
-  dietRules = DIET_RULES;
-  medicalDisclaimer = MEDICAL_DISCLAIMER;
 
   /**
    * One open day at a time. A Set here would let every session expand at once, which on a
-   * phone means scrolling past six full exercise tables to reach the one you are actually
-   * doing. It also collapses the map's focus and the open panel into a single piece of
-   * state, so the figure can never disagree with what is on screen.
+   * phone means scrolling past six full exercise tables to reach the one you are doing. It
+   * also folds the map's focus and the open panel into a single piece of state, so the
+   * figure can never disagree with what is on screen.
    */
   private openDay = signal<number | null>(null);
   private openAbsDay = signal<number | null>(null);
 
-  vegDay = signal(false);
-
   /** Today's session, or null on the rest day. */
   todaySession = computed<WorkoutDay | null>(() => workoutForDate());
 
-  /** The session the map is currently drawing — a pinned day, else today. */
+  /** The session the map is drawing — the open day, else today. */
   mapSession = computed<WorkoutDay | null>(() => {
     const i = this.openDay();
     return i === null ? this.todaySession() : this.workoutDays[i] ?? null;
   });
 
-  /** True when the map is previewing a day other than today's. */
   previewing = computed(() => this.openDay() !== null);
-
-  todayMuscles = computed(() => {
-    const day = this.mapSession();
-    return day ? musclesFor(day) : [];
-  });
-
+  todayMuscles = computed(() => { const d = this.mapSession(); return d ? musclesFor(d) : []; });
   todayExerciseCount = computed(() => this.mapSession()?.exercises.length ?? 0);
-
   todayLabel = computed(() => this.todaySession()?.name ?? 'Rest day');
-
   mapLabel = computed(() => this.mapSession()?.name ?? 'Rest day');
 
   todaySub = computed(() =>
@@ -295,58 +205,9 @@ export class FitnessComponent {
       : 'Nothing scheduled today. Recovery is part of the program, not a gap in it.'
   );
 
-  /**
-   * Macro progress against target. `have` is what the day's plan totals as written rather
-   * than what was actually eaten — the app tracks adherence as a single daily tick, not
-   * per-meal, so claiming to know real intake would be a lie. Protein and calories come
-   * from the meal table; carbs and fat are not itemised per meal in the plan, so they show
-   * the target as the figure and no progress claim.
-   */
-  macroRows = computed(() => {
-    const meals = this.vegDay() ? this.vegMeals : this.nonvegMeals;
-    const totals = mealTotals(meals);
-    const row = (label: string, have: number, target: number, unit: string) => ({
-      label, have, target, unit,
-      pct: Math.min(100, Math.round((have / target) * 100)),
-      over: have > target,
-      tracked: true,
-    });
-    return [
-      row('Calories', totals.calories, MACRO_TARGETS.kcal, ' kcal'),
-      row('Protein', totals.protein, MACRO_TARGETS.protein, ' g'),
-      // Carbs and fat are not itemised per meal anywhere in the plan, so there is no honest
-      // "have" to show. These render as the target alone rather than a bar that would imply
-      // a measurement nobody took.
-      { label: 'Carbs', have: 0, target: MACRO_TARGETS.carbs, unit: ' g', pct: 0, over: false, tracked: false },
-      { label: 'Fat', have: 0, target: MACRO_TARGETS.fat, unit: ' g', pct: 0, over: false, tracked: false },
-    ];
-  });
-
   constructor(public state: StateService) {}
 
   today(): string { return todayIso(); }
-
-  setsToday(exercise: string) {
-    return this.state.setsFor(todayIso(), exercise);
-  }
-
-  /** "60 kg × 7, 60 × 6" from the previous session, or null when there isn't one. */
-  lastFor(exercise: string): string | null {
-    const prev = this.state.lastSession(exercise, todayIso());
-    if (!prev) return null;
-    return prev.sets.map(s => `${s.weight}×${s.reps}`).join(', ');
-  }
-
-  add(exercise: string, w: HTMLInputElement, r: HTMLInputElement) {
-    const weight = Number(w.value);
-    const reps = Number(r.value);
-    if (!Number.isFinite(weight) || !Number.isFinite(reps) || reps <= 0) return;
-    this.state.logSet(todayIso(), exercise, weight, reps);
-    // Reps usually repeat across sets while weight holds; clearing only reps means the
-    // common case (same weight, next set) is one number to type instead of two.
-    r.value = '';
-    r.focus();
-  }
 
   checked(kind: 'workout' | 'diet'): boolean {
     return this.state.isFitnessLogged(`${todayIso()}:${kind}`);
@@ -356,14 +217,10 @@ export class FitnessComponent {
     this.state.toggleFitnessLog(`${todayIso()}:${kind}`, value);
   }
 
-  isDayOpen(i: number): boolean {
-    return this.openDay() === i;
-  }
+  isDayOpen(i: number): boolean { return this.openDay() === i; }
 
   /** Opening a day closes whichever was open, and drives the map with the same signal. */
-  toggleDay(i: number) {
-    this.openDay.update(cur => (cur === i ? null : i));
-  }
+  toggleDay(i: number) { this.openDay.update(cur => (cur === i ? null : i)); }
 
   showToday() { this.openDay.set(null); }
 
@@ -374,11 +231,25 @@ export class FitnessComponent {
     return ei === 0 || day.exercises[ei - 1].group !== ex.group;
   }
 
-  isAbsDayOpen(i: number): boolean {
-    return this.openAbsDay() === i;
+  isAbsDayOpen(i: number): boolean { return this.openAbsDay() === i; }
+  toggleAbsDay(i: number) { this.openAbsDay.update(cur => (cur === i ? null : i)); }
+
+  setsToday(exercise: string) { return this.state.setsFor(todayIso(), exercise); }
+
+  /** "60x7, 60x6" from the previous session, or null when there isn't one. */
+  lastFor(exercise: string): string | null {
+    const prev = this.state.lastSession(exercise, todayIso());
+    return prev ? prev.sets.map(s => `${s.weight}\u00d7${s.reps}`).join(', ') : null;
   }
 
-  toggleAbsDay(i: number) {
-    this.openAbsDay.update(cur => (cur === i ? null : i));
+  add(exercise: string, w: HTMLInputElement, r: HTMLInputElement) {
+    const weight = Number(w.value);
+    const reps = Number(r.value);
+    if (!Number.isFinite(weight) || !Number.isFinite(reps) || reps <= 0) return;
+    this.state.logSet(todayIso(), exercise, weight, reps);
+    // Reps usually repeat across sets while weight holds, so clearing only reps means the
+    // common case is one number to type instead of two.
+    r.value = '';
+    r.focus();
   }
 }

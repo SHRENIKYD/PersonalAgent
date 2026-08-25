@@ -63,8 +63,8 @@ html, body {
 }
 
 .brand-reactor {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   flex: 0 0 auto;
   animation: reactor-glow 3s ease-in-out infinite;
 }

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="ECHO">
+  <defs>
+    <linearGradient id="echoG" gradientUnits="userSpaceOnUse" x1="40" y1="30" x2="165" y2="175">
+      <stop offset="0%" stop-color="#ffb020"/>
+      <stop offset="55%" stop-color="#ff6b1a"/>
+      <stop offset="100%" stop-color="#e8503a"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="url(#echoG)" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="100" cy="100" r="78" stroke-width="5"/>
+    <path d="M22 100C25.0 98.7 35.0 90.7 40 92C45.0 93.3 48.3 110.3 52 108C55.7 105.7 58.3 74.7 62 78C65.7 81.3 70.0 126.7 74 128C78.0 129.3 83.0 90.0 86 86C89.0 82.0 89.7 111.3 92 104C94.3 96.7 97.3 39.0 100 42C102.7 45.0 105.3 117.3 108 122C110.7 126.7 113.0 67.3 116 70C119.0 72.7 122.7 135.7 126 138C129.3 140.3 132.7 88.3 136 84C139.3 79.7 142.7 110.7 146 112C149.3 113.3 152.7 93.3 156 92C159.3 90.7 162.3 102.7 166 104C169.7 105.3 176.0 100.7 178 100" stroke-width="5"/>
+  </g>
+</svg>

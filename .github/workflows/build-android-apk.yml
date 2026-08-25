@@ -33,6 +33,16 @@ jobs:
       # Capacitor loads the app from the APK's own assets over https://localhost, not from
       # a subpath, so this build must NOT use the /PersonalAgent/ base-href the Pages
       # workflow sets — with that in place every asset would 404 inside the app.
+      # Stamped before the build so it is bundled into the APK's own assets, and published
+      # alongside the APK so the installed app can compare the two. Without a build stamp
+      # inside the app there is nothing to compare a release against — "is there an update"
+      # needs to know what you are already running.
+      - name: Stamp the build
+        run: |
+          printf '{"sha":"%s","builtAt":"%s"}\n' \
+            "${{ github.sha }}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            | tee src/assets/build-info.json version.json
+
       - name: Install and build web assets
         run: |
           npm ci
@@ -83,7 +93,9 @@ jobs:
       - name: Publish the APK as a release asset
         uses: softprops/action-gh-release@v2
         with:
-          files: assistant/frontend/echo.apk
+          files: |
+            assistant/frontend/echo.apk
+            assistant/frontend/version.json
           tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'android-latest' }}
           name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'ECHO — latest Android build' }}
           body: |

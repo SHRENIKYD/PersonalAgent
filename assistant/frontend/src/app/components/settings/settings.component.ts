@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { SettingsService } from '../../services/settings.service';
 import { SyncService } from '../../services/sync.service';
 import { VoiceService } from '../../services/voice.service';
+import { UpdateService } from '../../services/update.service';
 import { ApiProvider } from '../../models';
 import { environment } from '../../../environments/environment';
 
@@ -209,6 +210,47 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
       <p class="setting-note" *ngIf="!sync.configured()">Not set up — data stays on this device only.</p>
       <p class="setting-note" *ngIf="sync.status() === 'error'">⚠️ {{ sync.errorMessage() }}</p>
 
+      <h2 class="section-title">App version</h2>
+      <ng-container *ngIf="update.isApp; else webVersion">
+        <p class="setting-note" *ngIf="update.local() as l">
+          Installed build <code>{{ l.sha.slice(0, 7) }}</code>, {{ l.builtAt | date:'d MMM y, HH:mm' }}.
+        </p>
+        <p class="setting-note" *ngIf="!update.local()">
+          This build carries no version stamp, so it can't be compared against the latest release.
+        </p>
+
+        <div class="add-row">
+          <button (click)="update.check()" [disabled]="update.checking()">
+            {{ update.checking() ? 'Checking…' : 'Check for updates' }}
+          </button>
+          <button class="cta-sweep" *ngIf="update.updateAvailable()" (click)="update.download()">
+            Download update
+          </button>
+        </div>
+
+        <p class="setting-note" *ngIf="update.error()">⚠️ {{ update.error() }}</p>
+        <p class="setting-note" *ngIf="update.updateAvailable() && update.remote() as r">
+          A newer build is available — <code>{{ r.sha.slice(0, 7) }}</code>,
+          {{ r.builtAt | date:'d MMM y, HH:mm' }}. Download it, then open the file to install.
+          Android may ask you to uninstall this copy first: each build is signed with its own
+          key, so it can't upgrade the previous install in place.
+        </p>
+        <p class="setting-note" *ngIf="update.remote() && !update.updateAvailable() && !update.error()">
+          You're on the latest build.
+        </p>
+        <p class="setting-note" *ngIf="update.lastChecked() as t">
+          Last checked {{ t | date:'d MMM y, HH:mm' }}.
+        </p>
+      </ng-container>
+
+      <ng-template #webVersion>
+        <p class="setting-note">
+          You're on the web version, which updates itself — a new build is fetched in the
+          background and applied next time you open the page. The update check is only
+          shown in the Android app, where installing a new build is a manual step.
+        </p>
+      </ng-template>
+
       <h2 class="section-title">Your data</h2>
       <p class="setting-note">
         Tasks and notes never leave this browser or the Gist above — only your chat messages
@@ -228,7 +270,12 @@ export class SettingsComponent {
   draftGistId = '';
   revealSyncToken = signal(false);
 
-  constructor(public settings: SettingsService, public sync: SyncService, public voice: VoiceService) {
+  constructor(
+    public settings: SettingsService,
+    public sync: SyncService,
+    public voice: VoiceService,
+    public update: UpdateService,
+  ) {
     this.draftGistId = sync.gistId();
   }
 

@@ -56,7 +56,7 @@ const REACTOR_CIRCUMFERENCE = 2 * Math.PI * REACTOR_RADIUS;
         <div class="overall-progress-track">
           <div class="overall-progress-fill" [style.width.%]="state.fitnessWeekProgress().pct"></div>
         </div>
-        <a class="rail-link" (click)="ui.setTab('fitness')">Log today &rarr;</a>
+        <a class="rail-link" (click)="ui.setTab('workout')">Log today &rarr;</a>
       </div>
 
       <div class="rail-section">

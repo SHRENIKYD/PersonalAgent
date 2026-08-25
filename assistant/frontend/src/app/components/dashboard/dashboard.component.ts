@@ -88,6 +88,10 @@ export class DashboardComponent {
 
   cards: DashCard[] = [
     { tab: 'growth', label: '6-Month Roadmap', progress: () => this.state.roadmapProgress() },
-    { tab: 'fitness', label: 'Fitness & Diet', progress: () => this.state.fitnessWeekProgress() },
+    // Both cards read the same 7-day adherence: the log tracks one workout tick and one
+    // diet tick per day and rolls them into a single figure, so splitting the tabs did not
+    // split the number behind them.
+    { tab: 'workout', label: 'Workout', progress: () => this.state.fitnessWeekProgress() },
+    { tab: 'diet', label: 'Diet', progress: () => this.state.fitnessWeekProgress() },
   ];
 }

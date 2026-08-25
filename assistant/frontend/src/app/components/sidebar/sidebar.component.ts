@@ -29,7 +29,8 @@ const TAB_GROUPS: TabGroup[] = [
     title: 'Growth & Health',
     items: [
       { key: 'growth', label: 'Growth' },
-      { key: 'fitness', label: 'Fitness & Diet' },
+      { key: 'workout', label: 'Workout' },
+      { key: 'diet', label: 'Diet' },
     ],
   },
   {
@@ -48,10 +49,21 @@ const TAB_GROUPS: TabGroup[] = [
   template: `
     <aside class="sidebar" [class.expanded]="mobileNavOpen()">
       <div class="brand-row">
-        <svg class="brand-reactor" viewBox="0 0 32 32">
-          <circle cx="16" cy="16" r="14" fill="none" stroke="var(--accent-dim)" stroke-width="1.5" opacity="0.6" />
-          <circle cx="16" cy="16" r="9" fill="none" stroke="var(--hud-cyan)" stroke-width="1.5" opacity="0.8" />
-          <circle cx="16" cy="16" r="3.5" fill="var(--accent)" />
+        <!-- The ECHO waveform mark, inlined rather than an <img> so it inherits the theme
+             tokens and animates with the rest of the brand row. Same geometry as
+             assets/echo-mark.svg, which the app icons are rendered from. -->
+        <svg class="brand-reactor" viewBox="0 0 200 200" aria-hidden="true">
+          <defs>
+            <linearGradient id="brandG" gradientUnits="userSpaceOnUse" x1="40" y1="30" x2="165" y2="175">
+              <stop offset="0%" stop-color="var(--accent)" />
+              <stop offset="55%" stop-color="var(--accent-dim)" />
+              <stop offset="100%" stop-color="#e8503a" />
+            </linearGradient>
+          </defs>
+          <g fill="none" stroke="url(#brandG)" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="100" cy="100" r="78" stroke-width="7" />
+            <path stroke-width="7" d="M22 100C25 98.7 34.7 90.7 40 92C45.3 93.3 46.3 103.3 52 108C57.7 112.7 58.3 79.7 62 78C65.7 76.3 68.7 122.7 74 128C79.3 133.3 82.3 90 86 86C89.7 82 89.7 96.7 92 104C94.3 111.3 94 44.7 100 42C106 39.3 105.3 116 108 122C110.7 128 112.3 72 116 70C119.7 68 121.3 130.7 126 138C130.7 145.3 132.3 86 136 84C139.7 82 143 108.7 146 112C149 115.3 152.3 93 156 92C159.7 91 163 102 166 104C169 106 175 101.3 178 100" />
+          </g>
         </svg>
         <div class="brand">ECHO</div>
         <button
@@ -141,7 +153,7 @@ export class SidebarComponent {
       const p = this.state.roadmapProgress();
       return p.total ? `${p.done}/${p.total}` : '';
     }
-    if (key === 'fitness') {
+    if (key === 'workout' || key === 'diet') {
       const p = this.state.fitnessWeekProgress();
       return `${p.pct}%`;
     }
