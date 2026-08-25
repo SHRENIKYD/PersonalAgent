@@ -1,0 +1,80 @@
+name: Build ECHO Android APK
+
+# Runs on demand, or on a v* tag. Not on every push to main: an APK build is slow and
+# nobody wants a new install prompt for a one-line CSS change.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: assistant/frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: assistant/frontend/package-lock.json
+
+      # Capacitor loads the app from the APK's own assets over https://localhost, not from
+      # a subpath, so this build must NOT use the /PersonalAgent/ base-href the Pages
+      # workflow sets — with that in place every asset would 404 inside the app.
+      - name: Install and build web assets
+        run: |
+          npm ci
+          npx ng build --configuration production --base-href /
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Sync web assets into the Android project
+        run: npx cap sync android
+
+      - name: Build release APK
+        run: ./gradlew assembleRelease --no-daemon
+        working-directory: assistant/frontend/android
+
+      # An unsigned release APK will not install. Signing with a generated keystore makes
+      # it installable by sideload; it is NOT the Play Store path, which needs a stable
+      # keystore you keep — a fresh key each run means each build reads as a different app
+      # and cannot upgrade the last one in place.
+      - name: Sign the APK
+        run: |
+          keytool -genkey -v -keystore echo.keystore -alias echo \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass echo1234 -keypass echo1234 \
+            -dname "CN=ECHO, OU=Personal, O=Personal, L=NA, S=NA, C=IN"
+          BT=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)
+          "$ANDROID_HOME/build-tools/$BT/zipalign" -p -f 4 \
+            android/app/build/outputs/apk/release/app-release-unsigned.apk echo-aligned.apk
+          "$ANDROID_HOME/build-tools/$BT/apksigner" sign \
+            --ks echo.keystore --ks-pass pass:echo1234 --key-pass pass:echo1234 \
+            --out echo.apk echo-aligned.apk
+          "$ANDROID_HOME/build-tools/$BT/apksigner" verify --verbose echo.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: echo-apk
+          path: assistant/frontend/echo.apk
+          if-no-files-found: error
+
+      - name: Attach the APK to the release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: assistant/frontend/echo.apk
