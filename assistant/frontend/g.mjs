@@ -1,0 +1,13 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const p = await (await b.newContext({ serviceWorkers:'block', viewport:{width:412,height:900} })).newPage();
+await p.goto('http://127.0.0.1:8803/',{waitUntil:'networkidle'});
+await p.evaluate(()=>document.activeElement&&document.activeElement.blur());
+await p.locator('.bn-item',{hasText:'Profile'}).click(); await p.waitForTimeout(400);
+await p.evaluate(()=>scrollTo(0,300)); await p.waitForTimeout(300);
+await p.screenshot({ path:'fade-a.png', clip:{x:0,y:0,width:412,height:300} });
+await p.locator('.bn-item',{hasText:'Body'}).click(); await p.waitForTimeout(400);
+await p.evaluate(()=>scrollTo(0,240)); await p.waitForTimeout(300);
+await p.screenshot({ path:'fade-b.png', clip:{x:0,y:0,width:412,height:300} });
+console.log('captured');
+await b.close();

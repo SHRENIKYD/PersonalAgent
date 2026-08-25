@@ -2281,9 +2281,17 @@ app-bottom-nav {
     top: 100%;
     left: 0;
     right: 0;
-    height: 26px;
+    height: 44px;
     pointer-events: none;
-    background: linear-gradient(to bottom, var(--bg), transparent);
+    /* Three stops, not two: a straight gradient dissolves fastest at the start and leaves a
+       visible edge where it ends. Holding the ground colour briefly, then easing out through
+       a midpoint, thins the text away gradually instead. */
+    background: linear-gradient(
+      to bottom,
+      var(--bg) 0%,
+      color-mix(in srgb, var(--bg) 72%, transparent) 45%,
+      transparent 100%
+    );
   }
 
   /* Chat scrolls inside its own box rather than moving the page, so the same effect comes
