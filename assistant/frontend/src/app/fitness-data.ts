@@ -252,6 +252,92 @@ export const DIET_RULES: string[] = [
   'Eating out: tandoori/grilled chicken, egg dishes, dal + roti are safe orders. Avoid cream/butter-heavy gravies.',
 ];
 
+
+// ---------------- structured targets and mappings ----------------
+//
+// DIET_TARGETS above is prose for the user to read. These are the same numbers in a form
+// code can do arithmetic on — the macro bars and the assistant's "you're 620 kcal short"
+// both need to subtract, and parsing that sentence at runtime would be absurd.
+
+export interface MacroTargets {
+  kcal: number;
+  protein: number;   // g
+  carbs: number;     // g
+  fat: number;       // g
+}
+
+export const MACRO_TARGETS: MacroTargets = {
+  kcal: 2000,
+  protein: 135,
+  carbs: 220,
+  fat: 58,
+};
+
+/** Numeric protein/calorie totals per meal, parsed once from the tables above. */
+export function mealTotals(meals: MealRow[]): { protein: number; calories: number } {
+  return meals.reduce(
+    (sum, m) => ({
+      protein: sum.protein + (parseInt(m.protein, 10) || 0),
+      calories: sum.calories + (parseInt(m.calories, 10) || 0),
+    }),
+    { protein: 0, calories: 0 }
+  );
+}
+
+/**
+ * Which muscle groups each session actually loads, keyed by the `group` labels already on
+ * the exercises. This drives the anatomical map: the highlight is derived from the plan
+ * rather than hand-maintained, so editing a workout day cannot leave the figure lying.
+ */
+export type MuscleGroup =
+  | 'traps' | 'delts' | 'chest' | 'biceps' | 'triceps' | 'forearms'
+  | 'abs' | 'obliques' | 'lats' | 'glutes' | 'quads' | 'hams' | 'calves';
+
+/** Maps a plan sub-heading ("Chest", "Back") onto the shapes in the body map. */
+const GROUP_TO_MUSCLES: Record<string, MuscleGroup[]> = {
+  Chest: ['chest'],
+  Shoulders: ['delts', 'traps'],
+  Triceps: ['triceps'],
+  Back: ['lats', 'traps'],
+  Biceps: ['biceps', 'forearms'],
+  Arms: ['biceps', 'triceps', 'forearms'],
+  Legs: ['quads', 'hams', 'glutes', 'calves'],
+  Quads: ['quads'],
+  Hamstrings: ['hams'],
+  Glutes: ['glutes'],
+  Calves: ['calves'],
+  Core: ['abs', 'obliques'],
+  Abs: ['abs', 'obliques'],
+};
+
+export function musclesFor(day: WorkoutDay): MuscleGroup[] {
+  const out = new Set<MuscleGroup>();
+  day.exercises.forEach(e => {
+    (GROUP_TO_MUSCLES[e.group ?? ''] ?? []).forEach(m => out.add(m));
+  });
+  return [...out];
+}
+
+/**
+ * Today's session, resolved from WEEKLY_SCHEDULE by weekday. Returns null on the rest day
+ * rather than an empty WorkoutDay, so callers must decide what "rest" reads like instead
+ * of silently rendering a session with no exercises.
+ */
+export function workoutForDate(date = new Date()): WorkoutDay | null {
+  const row = WEEKLY_SCHEDULE[(date.getDay() + 6) % 7];   // WEEKLY_SCHEDULE starts Monday
+  if (!row || /rest/i.test(row.session)) return null;
+  // Schedule rows name the session ("Push A (Upper Chest...)"); workout days carry the
+  // fuller title. Match on the short prefix that both share.
+  const short = row.session.split(' (')[0].trim().toLowerCase();
+  return WORKOUT_DAYS.find(d => d.name.toLowerCase().startsWith(short)) ?? null;
+}
+
+/** The abs block paired with a given session, if the program pairs one. */
+export function absForDay(dayName: string): AbsDay | null {
+  const short = dayName.split(' —')[0].trim().toLowerCase();
+  return ABS_PROGRAM.find(a => a.pairedWith.toLowerCase().includes(short)) ?? null;
+}
+
 export const MEDICAL_DISCLAIMER =
   'General fitness/nutrition guidance for a healthy adult. If you have a medical condition ' +
   '(diabetes, thyroid, BP, kidney issues) or take medication, run it past your doctor first.';

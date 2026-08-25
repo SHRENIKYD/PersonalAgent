@@ -1,23 +1,29 @@
 :root {
-  /* Iron Man / arc-reactor palette — dark charcoal base, deep red as the primary brand
-     accent (buttons, active states, links-that-act), gold as the secondary highlight
-     (dots, small accents, the reactor gradient). --ok stays green on purpose: with red
-     everywhere else, a green "done" signal is what keeps checked-vs-unchecked scannable. */
-  --bg: #101216;
-  --panel: #181b21;
-  --panel-2: #21252d;
-  --line: #33373f;
-  --text: #edeef2;
-  --muted: #8b8f9b;
-  --accent: #d7a94a;
-  --accent-dim: #b3382c;
+  /* Ember palette — near-black ground with ember orange as the primary brand accent
+     (buttons, active states, links-that-act) and amber as the secondary highlight (dots,
+     small accents, the reactor gradient). This replaced the earlier red/gold arc-reactor
+     tuning; ember sits close enough to it that the swap is a retune rather than a rebuild,
+     and every component already reads these variables rather than hardcoding colour.
+
+     --ok stays green on purpose: with ember everywhere else, a green "done" signal is what
+     keeps checked-vs-unchecked scannable at a glance. --danger stays red for the same
+     reason — it has to be distinguishable from the accent to mean anything. */
+  --bg: #0a0a0c;
+  --panel: #16161b;
+  --panel-2: #1f1f26;
+  --line: #2b2b34;
+  --text: #f5f1ea;
+  --muted: #9a9187;
+  --accent: #ffb020;
+  --accent-dim: #ff6b1a;
+  --ember-deep: #d9480f;
   --warn: #e8a34d;
   --danger: #e0574a;
   --ok: #63c088;
-  /* HUD accent — the true JARVIS on-screen interface is blue/cyan holographic, distinct from
-     the Iron Man suit's red/gold. Used for scanning lines, HUD corner brackets, and readouts
-     layered on top of the red/gold base, never as a full palette swap. */
-  --hud-cyan: #3fd0e8;
+  /* Layered HUD accent, kept for scanning lines, corner brackets, and readouts drawn on
+     top of the ember base. Retuned from cyan to amber so it reads as part of the same
+     system rather than a second palette fighting the first. */
+  --hud-cyan: #ffc861;
 }
 
 * { box-sizing: border-box; }
@@ -129,7 +135,7 @@ html, body {
   font-family: 'IBM Plex Mono', monospace;
 }
 
-.tabs button.active .frac { color: #f7e2b8; }
+.tabs button.active .frac { color: #ffe2b8; }
 
 .frac.warn { color: var(--warn); font-weight: 700; }
 
@@ -291,10 +297,10 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
 /* ---------------- chat ---------------- */
 
 .chat-warn {
-  background: rgba(232, 163, 77, 0.1);
+  background: rgba(255, 176, 32, 0.10);
   border: 1px solid var(--warn);
   border-radius: 8px;
-  color: #f0d3a6;
+  color: #ffd9ae;
   font-size: 13px;
   margin: 0 0 12px;
   padding: 8px 12px;
@@ -433,7 +439,7 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
 }
 
 .pill.high { border-color: var(--danger); color: #f0a6a6; }
-.pill.normal { border-color: var(--accent-dim); color: #f0d9b8; }
+.pill.normal { border-color: var(--accent-dim); color: #ffd9ae; }
 .pill.low { border-color: var(--line); }
 .pill.complete { border-color: var(--ok); color: #a6e0bd; }
 
@@ -553,10 +559,10 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
 .setting-note a { color: var(--accent); cursor: pointer; text-decoration: underline; }
 
 .warn-box {
-  background: rgba(232, 163, 77, 0.1);
+  background: rgba(255, 176, 32, 0.10);
   border: 1px solid var(--warn);
   border-radius: 9px;
-  color: #f0d3a6;
+  color: #ffd9ae;
   font-size: 13px;
   padding: 12px 14px;
   margin-bottom: 14px;
@@ -999,8 +1005,8 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .reactor-wrap { animation: reactor-glow 3s ease-in-out infinite; border-radius: 50%; }
 
 @keyframes reactor-glow {
-  0%, 100% { filter: drop-shadow(0 0 3px rgba(215, 169, 74, 0.35)); }
-  50% { filter: drop-shadow(0 0 10px rgba(179, 56, 44, 0.55)); }
+  0%, 100% { filter: drop-shadow(0 0 3px rgba(255, 176, 32, 0.35)); }
+  50% { filter: drop-shadow(0 0 10px rgba(255, 107, 26, 0.6)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1360,3 +1366,270 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* ================= fitness: hero, muscle map, timer, sets, macros ================= */
+
+.fit-hero {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.fit-hero-copy { flex: 1 1 auto; min-width: 0; padding-bottom: 14px; }
+
+.fit-hero-session {
+  font-family: 'Orbitron', sans-serif;
+  color: var(--accent);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  margin: 0 0 6px;
+}
+
+/*
+ * The render carries its own glow that fades to alpha 0, so it needs no frame or mask —
+ * it sits directly on the page background. Hidden below the breakpoint rather than scaled
+ * down: at phone width the copy needs the whole column, and a 90px-wide figure is noise.
+ */
+.fit-hero-art {
+  width: 190px;
+  max-width: 34%;
+  height: auto;
+  display: block;
+  flex: 0 0 auto;
+  margin-bottom: -1px;
+  animation: fit-rise 0.7s cubic-bezier(.2,.7,.2,1) both;
+}
+
+@keyframes fit-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------------- muscle map ---------------- */
+
+.fit-focus {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.bodymap { height: 330px; width: auto; display: block; flex: 0 0 auto; }
+
+.mg {
+  /* Resting muscle sits well down toward the page ground so the lit groups carry all the
+     contrast — a brighter resting fill turns the whole figure into one orange mass and the
+     highlight stops meaning anything. */
+  fill: #2a1a10;
+  stroke: rgba(255, 107, 26, 0.18);
+  stroke-width: 1;
+  transition: fill 0.45s ease, opacity 0.45s ease;
+}
+
+/* A loaded group. The pulse is slow and shallow — it marks state, it isn't a spinner. */
+.mg.on {
+  fill: url(#mgHot);
+  stroke: rgba(255, 176, 32, 0.8);
+  animation: mg-glow 2.6s ease-in-out infinite alternate;
+}
+
+@keyframes mg-glow { from { opacity: 0.66; } to { opacity: 1; } }
+
+.fit-focus-side { flex: 1 1 260px; min-width: 240px; }
+.fit-focus-lede { color: var(--muted); margin: 0 0 12px; font-size: 14px; }
+
+.fit-key { list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.fit-key li {
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px;
+}
+.fit-key i { width: 7px; height: 7px; border-radius: 2px; background: var(--accent-dim); box-shadow: 0 0 8px var(--accent-dim); }
+
+.fit-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 340px; }
+.fit-stats div {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; padding: 10px 6px; text-align: center;
+}
+.fit-stats b {
+  display: block; font-family: 'IBM Plex Mono', monospace;
+  font-size: 19px; font-variant-numeric: tabular-nums;
+}
+.fit-stats span {
+  display: block; font-size: 10px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); margin-top: 2px;
+}
+
+/* ---------------- rest timer ---------------- */
+
+.rest-timer { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.rest-ring-wrap { position: relative; display: grid; place-items: center; flex: 0 0 auto; }
+.rest-ring-wrap circle { transition: stroke-dashoffset 0.25s linear; }
+.rest-val { position: absolute; text-align: center; }
+.rest-val b {
+  display: block; font-family: 'IBM Plex Mono', monospace;
+  font-size: 25px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.rest-val span {
+  display: block; font-size: 9px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted); margin-top: 2px;
+}
+.rest-timer.done .rest-val b { color: var(--ok); }
+.rest-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.rest-presets .sel { border-color: var(--accent-dim); color: var(--text); background: var(--panel-2); }
+.rest-actions { display: flex; gap: 8px; }
+
+/* ---------------- per-set logging ---------------- */
+
+.set-log { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+
+.set-chip {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  border: 1px solid var(--accent-dim);
+  background: rgba(255, 107, 26, 0.12);
+  color: #ffd9ae;
+  border-radius: 99px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.set-chip:hover { border-color: var(--danger); color: #f0a6a6; }
+
+.set-in {
+  width: 58px;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.set-add { padding: 4px 10px; }
+
+.set-last {
+  display: block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ---------------- macro bars ---------------- */
+
+.macro-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.macro {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.macro-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.macro-head b { font-size: 14px; }
+.macro-head span {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+
+.macro-bar { height: 7px; border-radius: 99px; background: var(--panel-2); overflow: hidden; }
+.macro-bar i {
+  display: block; height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, var(--ember-deep), var(--accent-dim), var(--accent));
+  transform-origin: left center;
+  /* scaleX rather than an animated width: the bound percentage stays the single source of
+     truth, and the fill costs no layout. */
+  animation: macro-fill 0.9s cubic-bezier(.2,.7,.2,1) 0.15s backwards;
+}
+
+@keyframes macro-fill { from { transform: scaleX(0); } }
+
+@media (max-width: 720px) {
+  .fit-hero-art { display: none; }
+  .bodymap { height: 250px; margin: 0 auto; }
+  .fit-focus { justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fit-hero-art, .macro-bar i, .mg.on { animation: none; }
+  .rest-ring-wrap circle { transition: none; }
+}
+
+/* ---------------- chat identity ---------------- */
+
+.chat-ident { display: flex; align-items: center; gap: 14px; min-width: 0; }
+
+.chat-avatar {
+  /* Fixed box plus cover, cropped to the top of the render: the source is a full-body
+     figure, and scaled whole into a 76px column the head is about eight pixels tall. The
+     crop keeps the visor and crossed arms, which is the whole of its identity at this size. */
+  width: 68px;
+  height: 88px;
+  flex: 0 0 auto;
+  display: block;
+  object-fit: cover;
+  object-position: 50% 6%;
+  filter: drop-shadow(0 0 14px rgba(255, 107, 26, 0.3));
+  animation: fit-rise 0.7s cubic-bezier(.2,.7,.2,1) both;
+}
+
+@media (max-width: 720px) { .chat-avatar { display: none; } }
+@media (prefers-reduced-motion: reduce) { .chat-avatar { animation: none; } }
+
+/* ---------------- dashboard hero art ---------------- */
+
+/*
+ * The anatomy render as an ambient figure at the right of the mission-status row, not a
+ * focal element: low opacity and a mask so it fades into the panel rather than sitting on
+ * it as a pasted cut-out competing with the reactor ring for attention.
+ */
+.reactor-art {
+  width: 150px;
+  height: auto;
+  display: block;
+  flex: 0 0 auto;
+  margin: -26px 0 -18px auto;
+  opacity: 0.75;
+  -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
+  animation: fit-rise 0.8s cubic-bezier(.2,.7,.2,1) 0.1s both;
+}
+
+@media (max-width: 900px) { .reactor-art { display: none; } }
+@media (prefers-reduced-motion: reduce) { .reactor-art { animation: none; } }
+
+/* ---------------- primary-button ember sweep ---------------- */
+
+/*
+ * One slow shine across primary buttons. Scoped to .cta-sweep rather than every `button`
+ * so it marks the single action a screen wants, instead of every control shimmering at once.
+ */
+.cta-sweep { position: relative; overflow: hidden; }
+.cta-sweep::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.26) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: cta-sweep 4.5s ease-in-out 1.2s infinite;
+  pointer-events: none;
+}
+
+@keyframes cta-sweep {
+  0% { transform: translateX(-100%); }
+  45%, 100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) { .cta-sweep::after { display: none; } }
+
+/* A plan that totals more than its own target is worth showing, not clamping — the bar
+   turns amber and says by how much, rather than reading as a tidy 100%. */
+.macro.over { border-color: var(--warn); }
+.macro.over .macro-bar i { background: linear-gradient(90deg, var(--accent-dim), var(--warn)); }
+.macro-note { color: var(--muted); font-size: 12px; margin: 8px 0 0; }

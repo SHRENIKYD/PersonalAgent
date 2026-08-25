@@ -27,8 +27,8 @@ interface DashCard {
           <svg class="reactor-ring" viewBox="0 0 96 96">
             <defs>
               <linearGradient id="reactorGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#b3382c" />
-                <stop offset="100%" stop-color="#d7a94a" />
+                <stop offset="0%" stop-color="#ff6b1a" />
+                <stop offset="100%" stop-color="#ffb020" />
               </linearGradient>
             </defs>
             <circle class="reactor-bg" cx="48" cy="48" r="42"></circle>
@@ -47,6 +47,7 @@ interface DashCard {
             complete across your tasks, growth roadmap, and fitness log.
           </p>
         </div>
+        <img class="reactor-art" src="assets/hero-anatomy.webp" alt="" aria-hidden="true" />
       </div>
 
       <div class="dash-grid">

@@ -132,6 +132,20 @@ export interface RoadmapState {
   habits: Habit[];
 }
 
+// ---------------- strength log ----------------
+
+/**
+ * One recorded set. Keyed in `SetLog` by `${isoDate}|${exerciseName}`, so a day's sets for
+ * one movement sit together and "what did I lift last time" is a scan backwards through
+ * dates rather than a filter over a flat list.
+ */
+export interface SetEntry {
+  weight: number;     // kg
+  reps: number;
+}
+
+export type SetLog = Record<string, SetEntry[]>;
+
 // ---------------- cross-device sync ----------------
 
 /** Everything that syncs across devices via SyncService — one device's full data. */
@@ -140,4 +154,7 @@ export interface SyncPayload {
   notes: Note[];
   roadmap: RoadmapState;
   fitnessLog: Record<string, boolean>;
+  /** Optional: absent in blobs written by a device running a build older than the
+   *  strength log, which must still merge cleanly rather than throwing. */
+  setLog?: SetLog;
 }
