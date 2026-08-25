@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { Capacitor, registerPlugin } from '@capacitor/core';
+import { environment } from '../../environments/environment';
 
 interface LocalLlmStatus {
   modelPresent: boolean;
@@ -29,14 +30,18 @@ export const SUGGESTED_MODEL = {
 /**
  * A model running on the phone itself, so the assistant can answer with no API key.
  *
- * Android only, and deliberately so: on-device inference needs WebGPU in the browser, which
+ * Beta-only. It is a gigabyte of untested native code holding a session in memory, and the
+ * failure modes are the kind that take an app down rather than showing an error — so it
+ * ships in the separate beta app with its own storage, not in the copy relied on daily.
+ *
+ * Android only on top of that: on-device inference needs WebGPU in the browser, which
  * Android's System WebView — the engine this app runs in — does not expose. Pretending
  * otherwise would mean a feature that silently does nothing on the website.
  */
 @Injectable({ providedIn: 'root' })
 export class LocalLlmService {
-  /** False everywhere except the Android app; the UI hides itself rather than failing. */
-  readonly available = Capacitor.isNativePlatform();
+  /** True only in the beta Android app; the UI hides itself everywhere else. */
+  readonly available = Capacitor.isNativePlatform() && environment.beta;
 
   modelPresent = signal(false);
   sizeBytes = signal(0);
