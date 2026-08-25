@@ -66,7 +66,7 @@ interface Group {
           “note that the wifi password is hunter2”.
         </p>
 
-        <ng-container *ngFor="let g of groups()">
+        <ng-container *ngFor="let g of groups(); let gi = index; trackBy: trackGroup">
 
           <!-- you -->
           <div class="bubble-row me" *ngIf="g.kind === 'user'">
@@ -102,7 +102,7 @@ interface Group {
               <span class="echo-time">{{ g.at | date:'h:mm a' }}</span>
             </div>
 
-            <ng-container *ngFor="let m of g.entries">
+            <ng-container *ngFor="let m of g.entries; let mi = index; trackBy: trackEntry">
 
               <!-- workout card -->
               <div class="echo-card" *ngIf="m.kind === 'card' && asWorkout(m.card) as w">
@@ -159,7 +159,8 @@ interface Group {
               <div class="echo-body" *ngIf="m.kind === 'assistant'" [class.pending]="m.pending">
                 <span *ngIf="m.pending" class="scan-line" aria-hidden="true"></span>
                 <span *ngIf="m.pending">{{ m.text }}</span>
-                <app-markdown *ngIf="!m.pending" [text]="m.text" />
+                <app-markdown *ngIf="!m.pending" [text]="m.text"
+                              [animate]="isNewest(gi, mi)" />
               </div>
 
               <div class="echo-action" *ngIf="m.kind === 'action'">
@@ -262,6 +263,27 @@ export class ChatComponent {
 
   asDiet(c: unknown): DietCard | null {
     return (c as DietCard)?.type === 'diet' ? (c as DietCard) : null;
+  }
+
+  /*
+   * Stable identities for both loops. Without them Angular tears down and rebuilds every
+   * message on each change, which restarts the reveal animation from zero every time
+   * anything in the transcript moves.
+   */
+  trackGroup = (_: number, g: Group) => `${g.kind}-${g.at}`;
+  trackEntry = (_: number, m: DisplayEntry) => `${m.kind}-${m.at}-${m.text.length}`;
+
+  /**
+   * Only the last entry of the last group animates, and only briefly after it arrived.
+   * Scrollback appears whole — re-typing an old message on every re-render would be
+   * maddening, and switching tabs and back should not replay the conversation.
+   */
+  isNewest(groupIndex: number, entryIndex: number): boolean {
+    const gs = this.groups();
+    if (groupIndex !== gs.length - 1) return false;
+    const g = gs[groupIndex];
+    if (entryIndex !== g.entries.length - 1) return false;
+    return Date.now() - (g.entries[entryIndex].at ?? 0) < 4000;
   }
 
   stateLabel(): string {
