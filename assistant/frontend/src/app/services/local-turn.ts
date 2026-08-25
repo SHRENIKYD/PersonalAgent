@@ -95,6 +95,13 @@ export function parseLocalTurn(raw: string, known: Set<string>): AssistantRespon
     return { content: [{ type: 'text', text: obj['say'] as string }], stop_reason: 'end_turn' };
   }
 
+  if (obj && typeof obj['tool'] !== 'string') {
+    const values = Object.values(obj).filter((v): v is string => typeof v === 'string');
+    if (values.length === 1) {
+      return { content: [{ type: 'text', text: cleanProse(values[0]) }], stop_reason: 'end_turn' };
+    }
+  }
+
   // A tool name that does not exist is worth naming rather than silently answering as prose,
   // otherwise the user sees a confident reply about work that never happened.
   if (obj && typeof obj['tool'] === 'string') {
@@ -107,7 +114,7 @@ export function parseLocalTurn(raw: string, known: Set<string>): AssistantRespon
     };
   }
 
-  return { content: [{ type: 'text', text: stripFences(text) }], stop_reason: 'end_turn' };
+  return { content: [{ type: 'text', text: cleanProse(text) }], stop_reason: 'end_turn' };
 }
 
 /** True when the reply is unusable enough to be worth one retry with a firmer instruction. */
@@ -165,6 +172,23 @@ function stripFences(text: string): string {
   return text.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
 }
 
+/**
+ * Tidies a reply that came back as JSON debris rather than a sentence.
+ *
+ * A small model that has been shown JSON all prompt will sometimes answer with a bare quoted
+ * string, a stray key, or an escaped newline it meant literally. None of that should reach
+ * the user as-is.
+ */
+export function cleanProse(text: string): string {
+  let t = stripFences(text);
+  // A leading key with no object around it: `"echo":\n"Note added…"`
+  t = t.replace(/^"?[a-z_]{1,20}"?\s*:\s*/i, '');
+  t = t.replace(/\\n/g, '\n').replace(/\\"/g, '"').trim();
+  // Wrapping quotes the model added around its whole answer.
+  if (t.length > 1 && t.startsWith('"') && t.endsWith('"')) t = t.slice(1, -1).trim();
+  return t.trim();
+}
+
 function firstSentence(s: string): string {
   const cut = s.indexOf('. ');
   return cut === -1 ? s : s.slice(0, cut + 1);
@@ -187,6 +211,9 @@ export function stripInternalNotes(text: string): string {
  * Deliberately narrow: "I have no tasks today" is a legitimate answer and must not match.
  */
 export function promisesAction(text: string): boolean {
+  if (/^\s*"?(?:task|note|entry|item|set|goal)\s+(?:added|updated|deleted|removed|rescheduled|completed|logged)\b/i.test(text)) {
+    return true;
+  }
   return /\b(?:i(?:'ve| have)\s+(?:added|created|saved|moved|rescheduled|deleted|completed|updated|logged)|has been\s+(?:added|created|saved|moved|rescheduled|deleted|completed|updated|logged)|have been\s+(?:added|created|saved|moved|rescheduled|deleted|completed|updated|logged)|(?:retrieving|fetching|checking|looking up|getting)\b[^.]*\.{3}|let me\s+(?:check|get|look|retrieve|fetch)|i(?:'ll| will)\s+(?:add|check|get|look|move|delete|complete|save))/i.test(text);
 }
 

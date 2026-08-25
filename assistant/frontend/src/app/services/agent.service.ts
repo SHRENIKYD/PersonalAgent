@@ -609,6 +609,13 @@ export class AgentService {
   /** Full Anthropic-shaped history. Separate from the transcript, which is display-only. */
   private history: ApiMessage[] = [];
 
+  /**
+   * Tools actually executed during the current message. Used to tell a fabricated
+   * "Task added" from a real one: after genuine work, that sentence is a correct summary
+   * and must not trigger a retry.
+   */
+  private toolsThisTurn = 0;
+
   constructor(
     private http: HttpClient,
     private state: StateService,
@@ -635,6 +642,7 @@ export class AgentService {
     if (text === '' || this.thinking()) return;
 
     this.thinking.set(true);
+    this.toolsThisTurn = 0;
     this.push({ kind: 'user', text });
     this.history.push({
       role: 'user',
@@ -671,6 +679,7 @@ export class AgentService {
       this.history.push({ role: 'assistant', content: blocks });
 
       const toolUses = blocks.filter((b): b is ToolUseBlock => b.type === 'tool_use');
+      this.toolsThisTurn += toolUses.length;
       const said = blocks
         .filter((b): b is TextBlock => b.type === 'text')
         .map(b => b.text)
@@ -829,7 +838,14 @@ export class AgentService {
     // A reply that announces work without calling anything is the worst failure available
     // here: it reads as success and nothing happened. One firm retry usually converts it
     // into the tool call it was describing.
-    if (parsed.stop_reason === 'end_turn' && promisesAction(textOf(parsed))) {
+    // Only when nothing has actually run this message. After real work, "Task added" is a
+    // correct summary rather than a fabrication, and retrying it would cost seconds for
+    // nothing.
+    if (
+      this.toolsThisTurn === 0 &&
+      parsed.stop_reason === 'end_turn' &&
+      promisesAction(textOf(parsed))
+    ) {
       const insist = localPrompt(this.history, TOOLS, today) +
         '\n\nDo not describe what you are about to do. If the request needs a tool, emit the ' +
         'tool call JSON now. If it does not, answer plainly without claiming any action.';
