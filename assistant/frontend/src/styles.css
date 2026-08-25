@@ -1880,9 +1880,14 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .app:has(.chat-panel) .main > .footnote { display: none; }
 
 @media (max-width: 720px) {
-  /* Reclaim the description on a phone: on a small screen the conversation is worth more
-     than a standing explanation of what the assistant does. */
-  .chat-panel .page-sub { display: none; }
+  /* Reclaim the heading and description on a phone: the centred ECHO mark above and the
+     lit tab in the bottom bar both already say which screen this is, so on a small screen
+     the conversation is worth more than restating it. */
+  .chat-panel .page-sub,
+  .chat-panel .page-title { display: none; }
+
+  /* With the title gone the clear button has nothing to sit opposite, so it goes right. */
+  .chat-panel .page-head { justify-content: flex-end; margin-bottom: 4px; }
   .chat-panel .chat-log { max-height: none; }
 }
 
