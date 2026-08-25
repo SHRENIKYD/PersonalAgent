@@ -2163,34 +2163,40 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
     isolation: isolate;
   }
 
+  /* The logo's own trace, tiled and scrolling, instead of a static bloom. Both ends of the
+     path sit at y=100 so each tile meets the next at the same height and the repeat is
+     seamless; the mask fades it out at both edges so it reads as passing through rather
+     than starting and stopping at the header border. */
   .brand-row::before {
     content: '';
     position: absolute;
-    left: 50%;
+    left: -14px;
+    right: -14px;
     top: 50%;
-    width: 260px;
-    height: 120px;
-    transform: translate(-50%, -50%);
+    height: 62px;
+    transform: translateY(-50%);
     pointer-events: none;
     z-index: -1;
-    background: radial-gradient(
-      ellipse at center,
-      color-mix(in srgb, var(--accent) 26%, transparent) 0%,
-      color-mix(in srgb, var(--ember-deep) 14%, transparent) 42%,
-      transparent 72%
-    );
-    animation: brand-bloom 4s ease-in-out infinite;
+    opacity: 0.28;
+    background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%2222%2038%20156%20104%22%3E%3Cpath%20d%3D%22M22%20100C25%2098.7%2034.7%2090.7%2040%2092C45.3%2093.3%2046.3%20103.3%2052%20108C57.7%20112.7%2058.3%2079.7%2062%2078C65.7%2076.3%2068.7%20122.7%2074%20128C79.3%20133.3%2082.3%2090%2086%2086C89.7%2082%2089.7%2096.7%2092%20104C94.3%20111.3%2094%2044.7%20100%2042C106%2039.3%20105.3%20116%20108%20122C110.7%20128%20112.3%2072%20116%2070C119.7%2068%20121.3%20130.7%20126%20138C130.7%20145.3%20132.3%2086%20136%2084C139.7%2082%20143%20108.7%20146%20112C149%20115.3%20152.3%2093%20156%2092C159.7%2091%20163%20102%20166%20104C169%20106%20175%20101.3%20178%20100%22%20fill%3D%22none%22%20stroke%3D%22%23ff8a2b%22%20stroke-width%3D%224%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: repeat-x;
+    background-size: auto 62px;
+    background-position: 0 center;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+    animation: brand-trace 9s linear infinite;
   }
 
   .brand-reactor { width: 30px; height: 30px; }
   .brand { font-size: 21px; }
 }
 
-@keyframes brand-bloom {
-  0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.94); }
-  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+/* One tile-width of travel per cycle, so the loop point is invisible. */
+@keyframes brand-trace {
+  from { background-position: 0 center; }
+  to { background-position: 156px center; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .brand-row::before { animation: none; opacity: 0.75; }
+  .brand-row::before { animation: none; }
 }
