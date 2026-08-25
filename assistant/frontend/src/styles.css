@@ -2032,14 +2032,22 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 /* ---------------- bottom navigation (narrow screens) ---------------- */
 
-/* Sticky, not fixed: the bar keeps its place in the layout, so the chat panel's
-   full-height maths still resolves and nothing needs a spacer to clear it. */
-.bottom-nav {
+/* Sticky sits on the host, not on the nav inside it. A sticky element can only slide within
+   its containing block, and the nav's containing block is the host element, which is exactly
+   nav-height — so it had no room to move and simply stayed wherever the page ended. The
+   host's containing block is .app, which is as tall as the page, which is what sticky needs.
+   Sticky rather than fixed so the bar keeps its place in the layout and the chat panel's
+   full-height maths still resolves with no spacer to clear it. */
+app-bottom-nav {
   display: none;
   position: sticky;
   bottom: 0;
   z-index: 30;
   flex: 0 0 auto;
+}
+
+.bottom-nav {
+  display: none;
   background: color-mix(in srgb, var(--panel) 92%, transparent);
   backdrop-filter: blur(12px);
   border-top: 1px solid var(--line);
@@ -2051,6 +2059,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
   gap: 3px;
   min-width: 0;
   padding: 6px 2px;
@@ -2063,7 +2072,15 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 .bn-item.active { color: var(--accent); }
 
-.bn-icon { position: relative; display: block; line-height: 0; }
+/* Every icon reserves the same box, so the taller centre button cannot push its own label
+   out of line with the rest. */
+.bn-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 42px;
+  line-height: 0;
+}
 .bn-icon svg { width: 24px; height: 24px; display: block; }
 
 .bn-label {
@@ -2077,11 +2094,11 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 /* The assistant is the app's main action, so it reads as a button rather than a peer. */
 .bn-item.primary .bn-icon {
-  display: grid;
-  place-items: center;
   width: 42px;
   height: 42px;
-  margin-top: -12px;
+  /* transform, not margin: the button lifts out of the bar without changing the layout, so
+     its label stays on the same line as every other label. */
+  transform: translateY(-12px);
   border-radius: 50%;
   border: 1px solid var(--accent-dim);
   background: var(--panel-2);
@@ -2142,6 +2159,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 }
 
 @media (max-width: 720px) {
+  app-bottom-nav { display: block; }
   .bottom-nav { display: flex; }
   .bottom-nav.hidden { display: none; }
   .section-nav { display: flex; }
