@@ -6,7 +6,7 @@ import { Capacitor } from '@capacitor/core';
 import { StateService } from './state.service';
 import { SettingsService } from './settings.service';
 import { LocalLlmService } from './local-llm.service';
-import { localPrompt, looksMalformed, parseLocalTurn } from './local-turn';
+import { localPrompt, looksMalformed, parseLocalTurn, promisesAction } from './local-turn';
 import {
   ApiMessage,
   AssistantResponse,
@@ -96,6 +96,14 @@ const DICTATED_NOTE =
   'near-homophone would make obvious sense in context, answer the likely intent and say ' +
   'which reading you assumed in a few words. Ask only when the readings differ enough that ' +
   'guessing wrong would waste real effort.';
+
+/** The prose in a response, for checking what the model claimed. */
+function textOf(r: AssistantResponse): string {
+  return r.content
+    .filter(b => b['type'] === 'text')
+    .map(b => String((b as { text?: unknown }).text ?? ''))
+    .join(' ');
+}
 
 /** Guards against a malformed tool loop spinning forever. */
 const MAX_TURNS = 8;
@@ -815,7 +823,25 @@ export class AgentService {
     if (raw.trim() === '') {
       throw new Error('The on-device model returned nothing. It may have run out of memory.');
     }
-    return parseLocalTurn(raw, known);
+
+    let parsed = parseLocalTurn(raw, known);
+
+    // A reply that announces work without calling anything is the worst failure available
+    // here: it reads as success and nothing happened. One firm retry usually converts it
+    // into the tool call it was describing.
+    if (parsed.stop_reason === 'end_turn' && promisesAction(textOf(parsed))) {
+      const insist = localPrompt(this.history, TOOLS, today) +
+        '\n\nDo not describe what you are about to do. If the request needs a tool, emit the ' +
+        'tool call JSON now. If it does not, answer plainly without claiming any action.';
+      const second = (await this.local.generate(insist))?.text ?? '';
+      if (second.trim() !== '') {
+        const retry = parseLocalTurn(second, known);
+        // Keep the retry only if it actually improved on the promise.
+        if (retry.stop_reason === 'tool_use' || !promisesAction(textOf(retry))) parsed = retry;
+      }
+    }
+
+    return parsed;
   }
 
   private async requestViaBackend(): Promise<AssistantResponse> {

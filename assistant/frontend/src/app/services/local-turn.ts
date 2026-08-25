@@ -40,6 +40,22 @@ export function localPrompt(
     '{"say": "<your reply>"}',
     'No prose outside the JSON. No markdown fences. One object, nothing else.',
     '',
+    // A small model will happily announce work it never did. Saying so plainly, and showing
+    // it, is worth more than any amount of instruction about JSON formatting.
+    'NEVER claim you did something unless a tool result above shows you did it. Do not say',
+    '"I have rescheduled it" or "retrieving your tasks" — call the tool instead. Anything you',
+    'only describe does not happen.',
+    '',
+    'Examples:',
+    'User: add a task to buy milk',
+    'Assistant: {"tool": "add_task", "args": {"title": "Buy milk"}}',
+    'User: move the lease task to next Monday',
+    'Assistant: {"tool": "list_tasks", "args": {}}',
+    'User: (tool result: 1. Renew the lease [id t3] due 2026-08-28)',
+    'Assistant: {"tool": "reschedule_task", "args": {"id": "t3", "due": "2026-08-31"}}',
+    'User: (tool result: rescheduled)',
+    'Assistant: {"say": "Moved the lease renewal to Monday the 31st."}',
+    '',
     'Tools:',
     menu,
     '',
@@ -154,12 +170,32 @@ function firstSentence(s: string): string {
   return cut === -1 ? s : s.slice(0, cut + 1);
 }
 
+/**
+ * Strips the bracketed instructions the cloud models are given alongside a message.
+ *
+ * They are guidance, not content. A small model does not reliably tell the two apart — one
+ * of them was written into the user's notes verbatim, as though they had dictated it.
+ */
+export function stripInternalNotes(text: string): string {
+  return text.replace(/\[(?:INPUT|UI) NOTE\][\s\S]*$/g, '').trim();
+}
+
+/**
+ * True when a reply announces work rather than doing it. Those are the replies that read as
+ * success while nothing happened, so they earn one retry demanding the tool call.
+ *
+ * Deliberately narrow: "I have no tasks today" is a legitimate answer and must not match.
+ */
+export function promisesAction(text: string): boolean {
+  return /\b(?:i(?:'ve| have)\s+(?:added|created|saved|moved|rescheduled|deleted|completed|updated|logged)|has been\s+(?:added|created|saved|moved|rescheduled|deleted|completed|updated|logged)|have been\s+(?:added|created|saved|moved|rescheduled|deleted|completed|updated|logged)|(?:retrieving|fetching|checking|looking up|getting)\b[^.]*\.{3}|let me\s+(?:check|get|look|retrieve|fetch)|i(?:'ll| will)\s+(?:add|check|get|look|move|delete|complete|save))/i.test(text);
+}
+
 function renderContent(content: ApiMessage['content']): string {
-  if (typeof content === 'string') return content;
+  if (typeof content === 'string') return stripInternalNotes(content);
   return content
     .map(b => {
       const block = b as Record<string, unknown>;
-      if (block['type'] === 'text') return String(block['text'] ?? '');
+      if (block['type'] === 'text') return stripInternalNotes(String(block['text'] ?? ''));
       if (block['type'] === 'tool_result') return `(tool result: ${String(block['content'] ?? '')})`;
       if (block['type'] === 'tool_use') return `(used ${String(block['name'] ?? '')})`;
       return '';
