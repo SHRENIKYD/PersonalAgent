@@ -2165,8 +2165,8 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
   /* The logo's ECG trace, tiled and scrolling. Drawn as a purpose-built ECG rather than
      the logo path itself: those are smooth beziers that read as rounded hills once scaled
-     to header height, where the mark reads as a spike. So the QRS here is straight
-     segments with a mitre join, which stays sharp at any size, and the baseline is flat —
+     to header height, where the mark reads as spikes. Every segment here is straight,
+     mitre-joined, so each beat stays sharp at any size and the baseline is flat —
      that contrast is what makes it read as a heartbeat rather than a wave. Both tile edges
      sit on the baseline, so the repeat has no seam; the mask fades both ends so it reads
      as passing through the header. */
@@ -2181,7 +2181,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
     pointer-events: none;
     z-index: -1;
     opacity: 0.28;
-    background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20300%2060%22%3E%3Cpath%20d%3D%22M0%2042%20H86%20Q98%2030%20110%2042%20H124%20L129%2048%20L138%208%20L147%2056%20L154%2042%20H186%20Q206%2026%20226%2042%20H300%22%20fill%3D%22none%22%20stroke%3D%22%23ff8a2b%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22miter%22%2F%3E%3C%2Fsvg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20300%2060%22%3E%3Cpath%20d%3D%22M0%2042%20H80%20L92%2030%20L104%2042%20H124%20L129%2048%20L138%208%20L147%2056%20L154%2042%20H180%20L200%2024%20L220%2042%20H300%22%20fill%3D%22none%22%20stroke%3D%22%23ff8a2b%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22miter%22%2F%3E%3C%2Fsvg%3E");
     background-repeat: repeat-x;
     background-size: 300px 60px;
     background-position: 0 center;
