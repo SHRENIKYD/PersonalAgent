@@ -319,10 +319,27 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
         </p>
 
         <p class="setting-note" *ngIf="!local.modelPresent()">
-          No model on this device. Download <strong>{{ suggested.name }}</strong>
-          (about {{ suggested.approxGb }} GB, the <code>.task</code> file) from
-          <code>{{ suggested.url }}</code>, then pick it below.
+          No model on this device. <strong>{{ suggested.name }}</strong> is about
+          {{ suggested.approxGb }} GB — download it below over Wi-Fi, or fetch it yourself
+          from <code>{{ suggested.page }}</code> and pick the file.
         </p>
+
+        <div class="add-row" *ngIf="local.progress() === null">
+          <input class="grow" [(ngModel)]="modelUrl" placeholder="https://…model file URL" />
+          <button [disabled]="local.busy() !== '' || !modelUrl.trim()" (click)="startDownload()">
+            Download
+          </button>
+        </div>
+
+        <div class="add-row" *ngIf="local.progress() !== null">
+          <div class="grow">
+            <div class="overall-progress-track">
+              <div class="overall-progress-fill" [style.width.%]="local.progress()"></div>
+            </div>
+            <p class="setting-note">Downloading — {{ local.progress() }}%. Keep this screen open.</p>
+          </div>
+          <button class="ghost-btn" (click)="local.cancelDownload()">Cancel</button>
+        </div>
 
         <div class="add-row">
           <button (click)="local.importModel()" [disabled]="local.busy() !== ''">
@@ -376,6 +393,13 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
 export class SettingsComponent {
   suggested = SUGGESTED_MODEL;
   localPrompt = '';
+  modelUrl = SUGGESTED_MODEL.downloadUrl;
+
+  startDownload() {
+    this.local.downloadUrl.set(this.modelUrl);
+    void this.local.download();
+  }
+
   localBusy = signal(false);
   localAnswer = signal('');
   localMs = signal(0);

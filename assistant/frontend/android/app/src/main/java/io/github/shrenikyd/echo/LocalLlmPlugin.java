@@ -3,6 +3,8 @@ package io.github.shrenikyd.echo;
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import androidx.activity.result.ActivityResult;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -42,6 +44,7 @@ public class LocalLlmPlugin extends Plugin {
 
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private LlmInference engine;
+    private volatile boolean cancelDownload;
 
     private File modelFile() {
         File dir = new File(getContext().getFilesDir(), MODEL_DIR);
@@ -117,6 +120,98 @@ public class LocalLlmPlugin extends Plugin {
             out.put("sizeBytes", dest.length());
             call.resolve(out);
         });
+    }
+
+
+    /**
+     * Fetches the model over the network instead of asking the user to find a file.
+     *
+     * Progress is reported as an event rather than resolving late, because a gigabyte over a
+     * phone connection is minutes long and a silent wait is indistinguishable from a hang.
+     * The same .part-then-rename dance as the picker: a download interrupted halfway must not
+     * leave something that looks like a usable model.
+     */
+    @PluginMethod
+    public void downloadModel(PluginCall call) {
+        final String url = call.getString("url", "");
+        if (url == null || !url.startsWith("https://")) {
+            call.reject("Needs an https URL.");
+            return;
+        }
+        cancelDownload = false;
+
+        worker.execute(() -> {
+            File dest = modelFile();
+            File temp = new File(dest.getAbsolutePath() + ".part");
+            HttpURLConnection conn = null;
+            try {
+                conn = (HttpURLConnection) new URL(url).openConnection();
+                conn.setConnectTimeout(30000);
+                conn.setReadTimeout(60000);
+                // Release assets redirect to a storage host; without this the body is the
+                // redirect page rather than the model.
+                conn.setInstanceFollowRedirects(true);
+                conn.connect();
+
+                int code = conn.getResponseCode();
+                if (code < 200 || code >= 300) {
+                    call.reject("Download failed: HTTP " + code);
+                    return;
+                }
+                long total = conn.getContentLengthLong();
+
+                try (InputStream in = conn.getInputStream();
+                     OutputStream out = new FileOutputStream(temp)) {
+                    byte[] buf = new byte[1 << 20];
+                    long done = 0;
+                    long lastNotified = 0;
+                    int n;
+                    while ((n = in.read(buf)) > 0) {
+                        if (cancelDownload) {
+                            temp.delete();
+                            call.reject("Download cancelled.");
+                            return;
+                        }
+                        out.write(buf, 0, n);
+                        done += n;
+                        // Every few megabytes, not every chunk: a progress event per 1MB read
+                        // floods the bridge and slows the download it is reporting on.
+                        if (done - lastNotified >= (8 << 20)) {
+                            lastNotified = done;
+                            JSObject p = new JSObject();
+                            p.put("received", done);
+                            p.put("total", total);
+                            notifyListeners("downloadProgress", p);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                temp.delete();
+                call.reject("Download failed: " + e.getMessage());
+                return;
+            } finally {
+                if (conn != null) conn.disconnect();
+            }
+
+            closeEngine();
+            dest.delete();
+            if (!temp.renameTo(dest)) {
+                temp.delete();
+                call.reject("Could not move the model into place.");
+                return;
+            }
+
+            JSObject out = new JSObject();
+            out.put("modelPresent", true);
+            out.put("sizeBytes", dest.length());
+            call.resolve(out);
+        });
+    }
+
+    @PluginMethod
+    public void cancelDownload(PluginCall call) {
+        cancelDownload = true;
+        call.resolve();
     }
 
     @PluginMethod

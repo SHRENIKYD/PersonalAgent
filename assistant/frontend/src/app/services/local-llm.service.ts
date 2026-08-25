@@ -11,6 +11,12 @@ interface LocalLlmStatus {
 
 interface LocalLlmPlugin {
   getStatus(): Promise<LocalLlmStatus>;
+  downloadModel(options: { url: string }): Promise<{ modelPresent: boolean; sizeBytes: number }>;
+  cancelDownload(): Promise<void>;
+  addListener(
+    event: 'downloadProgress',
+    handler: (p: { received: number; total: number }) => void,
+  ): Promise<{ remove: () => Promise<void> }>;
   importModel(): Promise<{ modelPresent: boolean; sizeBytes: number }>;
   load(): Promise<{ loaded: boolean }>;
   generate(options: { prompt: string }): Promise<{ text: string; ms: number }>;
@@ -23,8 +29,11 @@ const LocalLlm = registerPlugin<LocalLlmPlugin>('LocalLlm');
 /** Where to get a model, if the user has not got one yet. */
 export const SUGGESTED_MODEL = {
   name: 'Qwen2.5 1.5B Instruct',
-  approxGb: 1.1,
-  url: 'https://huggingface.co/litert-community/Qwen2.5-1.5B-Instruct',
+  approxGb: 1.5,
+  page: 'https://huggingface.co/litert-community/Qwen2.5-1.5B-Instruct',
+  /** A release asset, not a repo file: git rejects anything over 100MB. */
+  downloadUrl:
+    'https://github.com/SHRENIKYD/inter.github.io/releases/download/model-v1/model.litertlm',
 };
 
 /**
@@ -49,6 +58,10 @@ export class LocalLlmService {
   busy = signal('');
   error = signal('');
 
+  /** 0–100 while downloading, null otherwise. */
+  progress = signal<number | null>(null);
+  downloadUrl = signal(SUGGESTED_MODEL.downloadUrl);
+
   constructor() {
     if (this.available) void this.refresh();
   }
@@ -63,6 +76,30 @@ export class LocalLlmService {
     } catch (e) {
       this.error.set(message(e));
     }
+  }
+
+  /**
+   * Fetches the model straight into app storage. Reports percent as it goes — a gigabyte on
+   * a phone connection is minutes long, and a silent wait is indistinguishable from a hang.
+   */
+  async download() {
+    const url = this.downloadUrl().trim();
+    const listener = await LocalLlm.addListener('downloadProgress', p => {
+      this.progress.set(p.total > 0 ? Math.round((p.received / p.total) * 100) : 0);
+    });
+    this.progress.set(0);
+    await this.run('Downloading the model…', async () => {
+      const r = await LocalLlm.downloadModel({ url });
+      this.modelPresent.set(r.modelPresent);
+      this.sizeBytes.set(r.sizeBytes);
+      this.loaded.set(false);
+    });
+    this.progress.set(null);
+    await listener.remove();
+  }
+
+  cancelDownload() {
+    void LocalLlm.cancelDownload();
   }
 
   /**
