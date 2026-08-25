@@ -93,7 +93,7 @@ export class VoiceModeService {
   private async respond(text: string) {
     this.state.set('thinking');
     const before = this.agent.transcript().length;
-    await this.agent.send(text);
+    await this.agent.send(text, { dictated: true });
     if (this.stopping) return;
 
     // Speak only the assistant's prose. Cards are on screen and reading a table of set

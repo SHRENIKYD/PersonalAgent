@@ -273,6 +273,9 @@ export class ChatComponent {
     }
   }
 
+  /** Set while the composer holds text that came from the microphone. */
+  private dictatedInput = false;
+
   toggleMic() {
     if (this.dictation.listening()) {
       this.dictation.stop();
@@ -281,6 +284,7 @@ export class ChatComponent {
     this.dictation.start(text => {
       // Appended rather than replacing, so dictation can extend something already typed.
       this.inputText = (this.inputText + ' ' + text).trim();
+      this.dictatedInput = true;
     });
   }
 
@@ -295,8 +299,10 @@ export class ChatComponent {
   send() {
     const text = this.inputText;
     if (text.trim() === '') return;
+    const dictated = this.dictatedInput;
     this.inputText = '';
+    this.dictatedInput = false;
     this.dictation.stop();
-    void this.agent.send(text);
+    void this.agent.send(text, { dictated });
   }
 }
