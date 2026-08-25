@@ -2146,3 +2146,47 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   .mobile-nav-toggle, .sidebar-collapsible { display: none !important; }
   .sidebar { padding: 10px 14px; }
 }
+
+/* ---------------- centred brand lockup (narrow screens) ---------------- */
+
+@media (max-width: 720px) {
+  /* With the dropdown gone from the header, the mark is the only thing left in it —
+     so it centres, and gets an ambient bloom behind it rather than sitting flush left. */
+  .brand-row {
+    justify-content: center;
+    gap: 10px;
+    padding: 4px 0 2px;
+    isolation: isolate;
+  }
+
+  .brand-row::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 260px;
+    height: 120px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: -1;
+    background: radial-gradient(
+      ellipse at center,
+      color-mix(in srgb, var(--accent) 26%, transparent) 0%,
+      color-mix(in srgb, var(--ember-deep) 14%, transparent) 42%,
+      transparent 72%
+    );
+    animation: brand-bloom 4s ease-in-out infinite;
+  }
+
+  .brand-reactor { width: 30px; height: 30px; }
+  .brand { font-size: 21px; }
+}
+
+@keyframes brand-bloom {
+  0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.94); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-row::before { animation: none; opacity: 0.75; }
+}
