@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, computed, effect } from '@angular/core';
+import { Component, ElementRef, ViewChild, computed, effect, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AgentService } from '../../services/agent.service';
@@ -15,6 +15,22 @@ interface Group {
   at: number;
   entries: DisplayEntry[];
 }
+
+/** Tappable openers for the empty chat. The first three show; More reveals the rest. */
+const OPENERS: { label: string; prompt: string; icon: string }[] = [
+  { label: 'My plan today', prompt: "What's my plan today?",
+    icon: 'M7 3v3M17 3v3M4 8.5h16M5 5.5h14a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1Z' },
+  { label: 'Workout plan', prompt: "What's my workout today?",
+    icon: 'M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10' },
+  { label: 'Nutrition', prompt: 'What should I eat today to hit my macros?',
+    icon: 'M12 8c-3 0-5 2-5 5.5S9 21 12 21s5-4 5-7.5S15 8 12 8ZM12 8c0-2 1.2-3.5 3-4' },
+  { label: 'Add a task', prompt: 'Add a task: ',
+    icon: 'M12 5v14M5 12h14' },
+  { label: 'Take a note', prompt: 'Note that ',
+    icon: 'M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1ZM8 11h8M8 15h5' },
+  { label: 'How am I doing?', prompt: 'How am I doing on my goals this month?',
+    icon: 'M4 19V9M10 19V5M16 19v-6M22 19H2' },
+];
 
 @Component({
   selector: 'app-chat',
@@ -61,6 +77,47 @@ interface Group {
       </p>
 
       <div class="chat-log" #log>
+
+        <!--
+          Empty state. A greeting in the assistant's own shape, so the first thing on screen
+          shows what a reply looks like, and openers you can tap — the examples this replaced
+          were the same advice in a form you could not act on.
+        -->
+        <div class="echo-row" *ngIf="agent.transcript().length === 0">
+          <div class="echo-head">
+            <span class="echo-mark" aria-hidden="true">
+              <svg viewBox="0 0 200 200">
+                <g fill="none" stroke="var(--accent-dim)" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="100" cy="100" r="78" stroke-width="9" />
+                  <path stroke-width="9" d="M22 100C25 98.7 34.7 90.7 40 92C45.3 93.3 46.3 103.3 52 108C57.7 112.7 58.3 79.7 62 78C65.7 76.3 68.7 122.7 74 128C79.3 133.3 82.3 90 86 86C89.7 82 89.7 96.7 92 104C94.3 111.3 94 44.7 100 42C106 39.3 105.3 116 108 122C110.7 128 112.3 72 116 70C119.7 68 121.3 130.7 126 138C130.7 145.3 132.3 86 136 84C139.7 82 143 108.7 146 112C149 115.3 152.3 93 156 92C159.7 91 163 102 166 104C169 106 175 101.3 178 100" />
+                </g>
+              </svg>
+            </span>
+            <b>ECHO</b>
+            <span class="dot">·</span>
+            <span class="echo-time">{{ now | date:'h:mm a' }}</span>
+          </div>
+
+          <div class="echo-bubble"><span class="echo-body">Hi — what do you need?</span></div>
+
+          <div class="opener-row">
+            <button class="opener" *ngFor="let o of openers()"
+                    [disabled]="agent.thinking()" (click)="ask(o.prompt)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+                   stroke-linecap="round" stroke-linejoin="round" class="opener-ico" aria-hidden="true">
+                <path [attr.d]="o.icon" />
+              </svg>
+              {{ o.label }}
+            </button>
+            <button class="opener" *ngIf="!showAllOpeners()" (click)="showAllOpeners.set(true)">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="opener-ico" aria-hidden="true">
+                <circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" />
+              </svg>
+              More
+            </button>
+          </div>
+        </div>
+
         <ng-container *ngFor="let g of groups(); let gi = index; trackBy: trackGroup">
 
           <!-- you -->
@@ -175,6 +232,7 @@ interface Group {
 
       <div class="composer">
         <textarea
+          #composerInput
           [(ngModel)]="inputText"
           rows="1"
           placeholder="Ask your assistant…"
@@ -214,6 +272,27 @@ interface Group {
 export class ChatComponent {
   inputText = '';
 
+  /** Stamped once at construction — the greeting is not a real message with a real time. */
+  now = new Date();
+
+  showAllOpeners = signal(false);
+
+  openers = computed(() => (this.showAllOpeners() ? OPENERS : OPENERS.slice(0, 3)));
+
+  /**
+   * An opener ending in a space is the start of a sentence rather than a whole question, so
+   * it goes into the composer for you to finish instead of being sent as-is.
+   */
+  ask(prompt: string) {
+    if (prompt.endsWith(' ')) {
+      this.inputText = prompt;
+      this.focusComposer();
+      return;
+    }
+    this.inputText = prompt;
+    this.send();
+  }
+
   /**
    * Consecutive ECHO entries collapse into one group. A single answer is frequently a card
    * plus a line of judgement on top of it, and rendering each with its own name and
@@ -231,6 +310,15 @@ export class ChatComponent {
     return out;
   });
   @ViewChild('log') log?: ElementRef<HTMLElement>;
+  @ViewChild('composerInput') composerInput?: ElementRef<HTMLTextAreaElement>;
+
+  /** Puts the cursor at the end of a half-written opener rather than at its start. */
+  private focusComposer() {
+    const el = this.composerInput?.nativeElement;
+    if (!el) return;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  }
 
   constructor(
     public agent: AgentService,

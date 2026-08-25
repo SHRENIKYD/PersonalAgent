@@ -2203,3 +2203,33 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 @media (prefers-reduced-motion: reduce) {
   .brand-row::before { animation: none; }
 }
+
+/* ---------------- empty-chat openers ---------------- */
+
+.opener-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+
+.opener {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.opener:hover:not(:disabled) {
+  filter: none;
+  border-color: var(--accent-dim);
+  background: var(--panel);
+}
+
+.opener-ico { width: 17px; height: 17px; flex: 0 0 auto; color: var(--accent-dim); }
