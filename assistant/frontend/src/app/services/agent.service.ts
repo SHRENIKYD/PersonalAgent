@@ -16,6 +16,26 @@ import {
   ToolResultBlock,
   ToolUseBlock,
 } from '../models';
+import {
+  DIET_RULES,
+  MACRO_TARGETS,
+  NONVEG_MEALS,
+  SUPPLEMENTS,
+  VEG_MEALS,
+  WORKOUT_DAYS,
+  absForDay,
+  mealTotals,
+  musclesFor,
+  workoutForDate,
+} from '../fitness-data';
+
+/** Renders the paired abs block as a trailing line, or '' when a day has none. */
+function absCue(dayName: string): string {
+  const abs = absForDay(dayName);
+  if (!abs) return '';
+  return `\nPaired abs (${abs.focus}): ` +
+    abs.exercises.map(e => `${e.name} — ${e.sets}`).join('; ');
+}
 
 /** Guards against a malformed tool loop spinning forever. */
 const MAX_TURNS = 8;
@@ -154,6 +174,85 @@ const TOOLS: ToolDefinition[] = [
       required: ['query'],
     },
   },
+
+  // ---------------- fitness (read-mostly) ----------------
+  //
+  // These reach the same fitness-data.ts and adherence log the Fitness tab renders, so the
+  // assistant answers "what's my workout today?" from the actual plan rather than inventing
+  // a plausible-sounding one. Three of the four are read-only on purpose: what the plan says
+  // is not the assistant's to edit, and a hallucinated set range is worse than no answer.
+
+  {
+    name: 'get_todays_workout',
+    description:
+      "The user's scheduled session for a given day, with every exercise, set/rep range, the " +
+      'muscle groups it loads, and the paired abs block. Call this for "what is my workout ' +
+      'today", "what am I training", or before giving any training advice — the split is ' +
+      'fixed and written down, so never guess at it. Returns the rest day explicitly when ' +
+      'there is no session.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        date: {
+          type: 'string',
+          description: 'ISO date (YYYY-MM-DD). Defaults to today when omitted.',
+        },
+      },
+    },
+  },
+  {
+    name: 'get_workout_day',
+    description:
+      'Look up any session in the split by name ("Push A", "Legs B") regardless of what day ' +
+      'it falls on. Use for "how many sets of squats on leg day" or to compare sessions. ' +
+      'Omit the name to list every day in the split.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Session name or prefix, e.g. "Pull B".' },
+      },
+    },
+  },
+  {
+    name: 'get_diet_plan',
+    description:
+      'The daily macro targets, the full meal plan (veg or non-veg), supplement schedule, ' +
+      'and diet rules. Call this before answering anything about food, macros, protein, or ' +
+      'what to eat — including "I skipped lunch, what should I have for dinner", where you ' +
+      'need the real targets to work out the shortfall.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        variant: {
+          type: 'string',
+          enum: ['nonveg', 'veg'],
+          description: 'Which meal table to return. Defaults to nonveg.',
+        },
+      },
+    },
+  },
+  {
+    name: 'log_fitness',
+    description:
+      "Mark the day's workout or diet as done, or record a completed set with its weight and " +
+      'reps. This is the one fitness tool that writes. Use it when the user reports having ' +
+      'done something ("done with legs", "squatted 82.5 for 6") — never to correct the plan.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        what: {
+          type: 'string',
+          enum: ['workout', 'diet', 'set'],
+          description: 'workout/diet tick the day off; set records one working set.',
+        },
+        date: { type: 'string', description: 'ISO date. Defaults to today.' },
+        exercise: { type: 'string', description: 'Required when what=set.' },
+        weight: { type: 'number', description: 'Kilograms. Required when what=set.' },
+        reps: { type: 'number', description: 'Required when what=set.' },
+      },
+      required: ['what'],
+    },
+  },
 ];
 
 /**
@@ -170,7 +269,8 @@ const ALL_TOOLS: unknown[] = [...TOOLS, WEB_SEARCH_TOOL];
 function systemPrompt(hasWebSearch: boolean): string {
   const now = new Date();
   return [
-    "You are ECHO, the user's personal assistant. You manage their tasks and notes through tools.",
+    "You are ECHO, the user's personal assistant. You manage their tasks and notes through tools,",
+    'and you know their training split and diet plan.',
     '',
     `Today is ${now.toDateString()} (${now.toISOString().slice(0, 10)}).`,
     'Resolve relative dates against that before calling a tool; never pass "Friday" as a due date.',
@@ -187,6 +287,14 @@ function systemPrompt(hasWebSearch: boolean): string {
     'Keep replies short and conversational — a sentence or two. Say what you did, not what you',
     'are about to do, and never restate a task list the user can already see on screen unless',
     'they asked for it. Skip preamble.',
+    '',
+    'On training and food, read the plan before you answer. get_todays_workout, get_workout_day',
+    'and get_diet_plan return what is actually written down; the split and the macro targets are',
+    'fixed, so never improvise an exercise, a set range, or a calorie number that a tool could',
+    'have told you. When the user reports having trained or eaten, log it with log_fitness rather',
+    'than only acknowledging it. You may give coaching judgement on top of the plan — what to',
+    'add to dinner to close a protein gap, when a weight looks ready to go up — but say plainly',
+    'when you are advising rather than quoting the plan, and do not rewrite the plan itself.',
     '',
     'For minor choices (a task title\'s wording, normal priority, whether something is one task',
     'or two) decide sensibly and mention it. Ask only when getting it wrong would mean real',
@@ -848,6 +956,120 @@ export class AgentService {
             ? `No notes match "${query}".`
             : hits.map(n => `id=${n.id} | ${n.title}\n${n.body}`).join('\n\n');
           return { label: `Searched notes for “${query}” (${hits.length})`, result: body };
+        }
+
+        // ---------------- fitness ----------------
+
+        case 'get_todays_workout': {
+          const iso = String(input['date'] ?? '').trim();
+          const when = iso ? new Date(`${iso}T12:00:00`) : new Date();
+          if (Number.isNaN(when.getTime())) {
+            return { label: 'Bad date', result: `Not a valid date: "${iso}"`, isError: true };
+          }
+          const day = workoutForDate(when);
+          const label = iso || when.toISOString().slice(0, 10);
+          if (!day) {
+            return {
+              label: `Checked the plan for ${label}`,
+              result: `${label} is a rest day — no session scheduled.`,
+            };
+          }
+          return {
+            label: `Read the plan for ${label} (${day.name.split(' —')[0]})`,
+            result: [
+              `Session: ${day.name}`,
+              `Muscle groups: ${musclesFor(day).join(', ') || 'unspecified'}`,
+              '',
+              ...day.exercises.map(e => `- ${e.group ? `[${e.group}] ` : ''}${e.name} — ${e.sets}`),
+              day.extra ? `\nNote: ${day.extra}` : '',
+              absCue(day.name),
+            ].filter(Boolean).join('\n'),
+          };
+        }
+
+        case 'get_workout_day': {
+          const name = String(input['name'] ?? '').trim().toLowerCase();
+          if (name === '') {
+            return {
+              label: 'Listed the full split',
+              result: WORKOUT_DAYS.map(d => `${d.name} (${d.exercises.length} exercises)`).join('\n'),
+            };
+          }
+          const day = WORKOUT_DAYS.find(d => d.name.toLowerCase().startsWith(name));
+          if (!day) {
+            return {
+              label: `No session named “${name}”`,
+              result: `No such day. The split is: ${WORKOUT_DAYS.map(d => d.name.split(' —')[0]).join(', ')}.`,
+              isError: true,
+            };
+          }
+          return {
+            label: `Read ${day.name.split(' —')[0]}`,
+            result: [
+              `Session: ${day.name}`,
+              ...day.exercises.map(e => `- ${e.group ? `[${e.group}] ` : ''}${e.name} — ${e.sets}`),
+              absCue(day.name),
+            ].filter(Boolean).join('\n'),
+          };
+        }
+
+        case 'get_diet_plan': {
+          const veg = String(input['variant'] ?? 'nonveg') === 'veg';
+          const meals = veg ? VEG_MEALS : NONVEG_MEALS;
+          const totals = mealTotals(meals);
+          return {
+            label: `Read the ${veg ? 'veg' : 'non-veg'} diet plan`,
+            result: [
+              `Targets: ${MACRO_TARGETS.kcal} kcal, protein ${MACRO_TARGETS.protein} g, ` +
+                `carbs ${MACRO_TARGETS.carbs} g, fat ${MACRO_TARGETS.fat} g.`,
+              `Plan as written totals ${totals.calories} kcal and ${totals.protein} g protein.`,
+              '',
+              ...meals.map(m => `- ${m.meal}: ${m.food} (${m.protein}, ${m.calories} kcal)`),
+              '',
+              'Rules:',
+              ...DIET_RULES.map(r => `- ${r}`),
+              '',
+              'Supplements:',
+              ...SUPPLEMENTS.map(x => `- ${x.supplement} — ${x.when}. ${x.notes}`),
+            ].join('\n'),
+          };
+        }
+
+        case 'log_fitness': {
+          const what = String(input['what'] ?? '');
+          const date = String(input['date'] ?? '').trim() || new Date().toISOString().slice(0, 10);
+
+          if (what === 'workout' || what === 'diet') {
+            this.state.toggleFitnessLog(`${date}:${what}`, true);
+            return {
+              label: `Logged ${what} for ${date}`,
+              result: `Marked ${what} done on ${date}. Week adherence is now ${this.state.fitnessWeekProgress().pct}%.`,
+            };
+          }
+
+          if (what === 'set') {
+            const exercise = String(input['exercise'] ?? '').trim();
+            const weight = Number(input['weight']);
+            const reps = Number(input['reps']);
+            if (!exercise || !Number.isFinite(weight) || !Number.isFinite(reps)) {
+              return {
+                label: 'Rejected an incomplete set',
+                result: 'what=set needs exercise, weight and reps.',
+                isError: true,
+              };
+            }
+            const prev = this.state.lastSession(exercise, date);
+            this.state.logSet(date, exercise, weight, reps);
+            const compare = prev
+              ? ` Last time (${prev.date}): ${prev.sets.map(x => `${x.weight}×${x.reps}`).join(', ')}.`
+              : ' First time this is logged.';
+            return {
+              label: `Logged ${exercise} ${weight} kg × ${reps}`,
+              result: `Recorded ${exercise} ${weight} kg × ${reps} on ${date}.${compare}`,
+            };
+          }
+
+          return { label: 'Unknown log target', result: `what must be workout, diet or set.`, isError: true };
         }
 
         default:

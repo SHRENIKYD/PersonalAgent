@@ -6,6 +6,8 @@ import {
   Note,
   Priority,
   RoadmapState,
+  SetEntry,
+  SetLog,
   SyncPayload,
   Task,
   TrackKey,
@@ -17,6 +19,7 @@ const KEYS = {
   notes: 'assistant-notes-v1',
   roadmap: 'assistant-roadmap-v1',
   fitness: 'assistant-fitness-v1',
+  sets: 'assistant-sets-v1',
 };
 
 const HABIT_WEEKS = 26;
@@ -85,6 +88,7 @@ export class StateService {
   roadmap = signal<RoadmapState>(defaultRoadmap());
   /** key = `${YYYY-MM-DD}:${workoutDayName}` or `${YYYY-MM-DD}:diet` -> done */
   fitnessLog = signal<Record<string, boolean>>({});
+  setLog = signal<SetLog>({});
   saveStatus = signal<string>('');
 
   /**
@@ -101,6 +105,7 @@ export class StateService {
     this.notes.set(this.storage.get<Note[]>(KEYS.notes, []));
     this.roadmap.set(padRoadmapTracks(this.storage.get<RoadmapState>(KEYS.roadmap, defaultRoadmap())));
     this.fitnessLog.set(this.storage.get<Record<string, boolean>>(KEYS.fitness, {}));
+    this.setLog.set(this.storage.get<SetLog>(KEYS.sets, {}));
   }
 
   // ---------------- derived views ----------------
@@ -338,6 +343,61 @@ export class StateService {
     this.scheduleSave();
   }
 
+  // ---------------- strength log (per-set weight and reps) ----------------
+
+  /** `${isoDate}|${exercise}` — see SetEntry. */
+  private setKey(date: string, exercise: string) { return `${date}|${exercise}`; }
+
+  setsFor(date: string, exercise: string): SetEntry[] {
+    return this.setLog()[this.setKey(date, exercise)] ?? [];
+  }
+
+  logSet(date: string, exercise: string, weight: number, reps: number) {
+    const key = this.setKey(date, exercise);
+    this.setLog.update(log => ({ ...log, [key]: [...(log[key] ?? []), { weight, reps }] }));
+    this.scheduleSave();
+  }
+
+  removeSet(date: string, exercise: string, index: number) {
+    const key = this.setKey(date, exercise);
+    this.setLog.update(log => {
+      const sets = (log[key] ?? []).filter((_, i) => i !== index);
+      const next = { ...log };
+      // Drop the key entirely when its last set goes, so the log doesn't accumulate empty
+      // arrays for every exercise ever tapped into and abandoned.
+      if (sets.length) next[key] = sets; else delete next[key];
+      return next;
+    });
+    this.scheduleSave();
+  }
+
+  /**
+   * The most recent day this exercise was logged, before `beforeDate`. This is what powers
+   * "last time: 60 kg × 7" — progressive overload needs the previous session, not the best
+   * ever, so this walks back by date rather than reducing over the whole log.
+   */
+  lastSession(exercise: string, beforeDate: string): { date: string; sets: SetEntry[] } | null {
+    const log = this.setLog();
+    const dates = Object.keys(log)
+      .filter(k => k.endsWith(`|${exercise}`))
+      .map(k => k.slice(0, k.indexOf('|')))
+      .filter(d => d < beforeDate)
+      .sort();
+    const date = dates.pop();
+    return date ? { date, sets: log[this.setKey(date, exercise)] } : null;
+  }
+
+  /** Heaviest single set ever recorded for an exercise — the number worth beating. */
+  personalBest(exercise: string): SetEntry | null {
+    const log = this.setLog();
+    let best: SetEntry | null = null;
+    Object.entries(log).forEach(([k, sets]) => {
+      if (!k.endsWith(`|${exercise}`)) return;
+      sets.forEach(s => { if (!best || s.weight > best.weight) best = s; });
+    });
+    return best;
+  }
+
   /** Adherence over the last 7 calendar days, across both workout and diet checks. */
   fitnessWeekProgress = computed(() => {
     const log = this.fitnessLog();
@@ -365,6 +425,7 @@ export class StateService {
       notes: this.notes(),
       roadmap: this.roadmap(),
       fitnessLog: this.fitnessLog(),
+      setLog: this.setLog(),
     };
   }
 
@@ -380,6 +441,7 @@ export class StateService {
     this.notes.set(payload.notes ?? []);
     this.roadmap.set(payload.roadmap ? padRoadmapTracks(payload.roadmap) : defaultRoadmap());
     this.fitnessLog.set(payload.fitnessLog ?? {});
+    this.setLog.set(payload.setLog ?? {});
     this.scheduleSave();
     this.suppressChangeSignal = false;
   }
@@ -397,8 +459,9 @@ export class StateService {
       const ok2 = this.storage.set(KEYS.notes, this.notes());
       const ok3 = this.storage.set(KEYS.roadmap, this.roadmap());
       const ok4 = this.storage.set(KEYS.fitness, this.fitnessLog());
+      const ok5 = this.storage.set(KEYS.sets, this.setLog());
       this.saveStatus.set(
-        ok1 && ok2 && ok3 && ok4
+        ok1 && ok2 && ok3 && ok4 && ok5
           ? 'Saved'
           : 'Save failed — check browser storage settings'
       );

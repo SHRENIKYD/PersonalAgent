@@ -12,11 +12,15 @@ import { UiService } from '../../services/ui.service';
   template: `
     <section class="panel">
       <div class="page-head">
-        <div>
-          <h1 class="page-title">Assistant</h1>
-          <p class="page-sub">
-            Ask for anything — it adds tasks, checks them off, and keeps notes for you.
-          </p>
+        <div class="chat-ident">
+          <img class="chat-avatar" src="assets/coach-avatar.webp" alt="" aria-hidden="true" />
+          <div>
+            <h1 class="page-title">Assistant</h1>
+            <p class="page-sub">
+              Ask for anything — it adds tasks, checks them off, keeps notes, and knows
+              your training split and diet plan. Try “what's my workout today?”
+            </p>
+          </div>
         </div>
         <button class="ghost-btn" (click)="agent.reset()" [disabled]="agent.thinking()">
           Clear chat
@@ -50,7 +54,7 @@ import { UiService } from '../../services/ui.service';
           placeholder="Ask your assistant…"
           [disabled]="agent.thinking()"
           (keydown.enter)="onEnter($event)"></textarea>
-        <button class="chat-send" [disabled]="agent.thinking()" (click)="send()">Send</button>
+        <button class="chat-send cta-sweep" [disabled]="agent.thinking()" (click)="send()">Send</button>
       </div>
 
       <p class="chat-hint">Enter to send · Shift+Enter for a new line</p>
