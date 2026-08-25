@@ -5,6 +5,8 @@ import { environment } from '../../environments/environment';
 import { Capacitor } from '@capacitor/core';
 import { StateService } from './state.service';
 import { SettingsService } from './settings.service';
+import { LocalLlmService } from './local-llm.service';
+import { localPrompt, looksMalformed, parseLocalTurn } from './local-turn';
 import {
   ApiMessage,
   AssistantResponse,
@@ -602,7 +604,8 @@ export class AgentService {
   constructor(
     private http: HttpClient,
     private state: StateService,
-    private settings: SettingsService
+    private settings: SettingsService,
+    private local: LocalLlmService
   ) {}
 
   reset() {
@@ -776,7 +779,34 @@ export class AgentService {
 
   /** One request to the model, via whichever transport is configured. */
   private requestTurn(): Promise<AssistantResponse> {
+    // The on-device model wins when it is actually loaded, whatever else is configured —
+    // choosing it is the point of loading it, and it costs nothing per message.
+    if (this.local.available && this.local.loaded()) return this.requestLocal();
     return this.settings.mode() === 'direct' ? this.requestDirect() : this.requestViaBackend();
+  }
+
+  /**
+   * One turn from the model running on the phone.
+   *
+   * It has no tool-calling API, so the protocol lives in the prompt and is parsed back out.
+   * A reply that is cut off mid-object earns exactly one retry with a blunter instruction —
+   * more than that and a confused small model just burns seconds it cannot spare.
+   */
+  private async requestLocal(): Promise<AssistantResponse> {
+    const today = new Date().toISOString().slice(0, 10);
+    const known = new Set(TOOLS.map(t => t.name));
+
+    let raw = (await this.local.generate(localPrompt(this.history, TOOLS, today)))?.text ?? '';
+    if (looksMalformed(raw)) {
+      const firmer = localPrompt(this.history, TOOLS, today) +
+        '\n\nYour last reply was not valid JSON. Reply with one JSON object and nothing else.';
+      raw = (await this.local.generate(firmer))?.text ?? '';
+    }
+
+    if (raw.trim() === '') {
+      throw new Error('The on-device model returned nothing. It may have run out of memory.');
+    }
+    return parseLocalTurn(raw, known);
   }
 
   private async requestViaBackend(): Promise<AssistantResponse> {
