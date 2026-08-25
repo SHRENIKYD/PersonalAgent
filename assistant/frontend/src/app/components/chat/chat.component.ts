@@ -152,7 +152,7 @@ import { WorkoutCard, DietCard } from '../../models';
           [disabled]="agent.thinking()"
           (keydown.enter)="onEnter($event)"></textarea>
 
-        <button *ngIf="dictation.supported" class="mic-btn"
+        <button *ngIf="dictation.supported()" class="mic-btn"
                 [class.live]="dictation.listening()"
                 [disabled]="agent.thinking()"
                 (click)="toggleMic()"

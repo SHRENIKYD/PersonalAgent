@@ -38,4 +38,19 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Dictation. Android's recogniser records audio itself, so the WebView's own
+         getUserMedia prompt does not cover it — the app needs the OS permission. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!--
+      Package visibility, required since Android 11. Without this the app cannot see which
+      app provides speech recognition, so SpeechRecognition.available() reports false and the
+      mic button never appears — with no error to explain why.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
 </manifest>
