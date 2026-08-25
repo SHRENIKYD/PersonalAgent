@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Ember palette, matching the web app's :root tokens so the native chrome
+         (status bar, splash, ripples) is the same colour as the page it wraps. -->
+    <color name="colorPrimary">#FF6B1A</color>
+    <color name="colorPrimaryDark">#0A0A0C</color>
+    <color name="colorAccent">#FFB020</color>
+    <color name="background">#0A0A0C</color>
+</resources>
