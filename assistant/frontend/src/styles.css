@@ -1942,3 +1942,54 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 }
 
 @media (prefers-reduced-motion: reduce) { .exit-hint { animation: none; } }
+
+/* ---------------- hands-free (beta) ---------------- */
+
+.voice-mode {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+}
+
+.hands-free {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  border-radius: 99px;
+  padding: 7px 14px;
+  font-size: 13px;
+}
+.hands-free:hover { color: var(--text); filter: none; background: var(--panel-2); }
+.hands-free svg { width: 15px; height: 15px; }
+
+/* Live is red, not ember: an open microphone is not a brand moment, it is a warning, and
+   it must not read as just another accent element. */
+.hands-free.live {
+  border-color: var(--danger);
+  color: var(--danger);
+  animation: mic-pulse 1.4s ease-in-out infinite;
+}
+
+.voice-state {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.voice-heard {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) { .hands-free.live { animation: none; } }

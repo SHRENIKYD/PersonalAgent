@@ -7,4 +7,5 @@ export const environment = {
   // Nothing secret goes in this file. It is compiled into the browser bundle and served
   // publicly, so anything here is readable by anyone who opens the site.
   apiBaseUrl: '',
+  beta: false,
 };

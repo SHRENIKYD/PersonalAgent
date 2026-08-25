@@ -268,10 +268,37 @@ export class VoiceService {
           : `Speech failed: ${err}`
       );
     };
-    utterance.onend = () => this.lastSpokeAt.set(Date.now());
+    /*
+     * Resolve when speech FINISHES, not when it is queued. Hands-free mode reopens the
+     * microphone as soon as speak() settles, and a promise that resolves immediately would
+     * put the mic up while the app is still talking — the recogniser then hears the
+     * synthesised voice and the assistant answers itself.
+     */
+    await new Promise<void>(resolve => {
+      let done = false;
+      const finish = () => { if (!done) { done = true; resolve(); } };
+      utterance.onend = () => { this.lastSpokeAt.set(Date.now()); finish(); };
+      const priorError = utterance.onerror;
+      utterance.onerror = ev => { priorError?.call(utterance, ev); finish(); };
 
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+
+      // Chrome drops long utterances without firing either event. A ceiling well past any
+      // realistic reply keeps a lost event from stalling the loop for ever.
+      setTimeout(finish, 60_000);
+    });
+  }
+
+  /** Cuts off anything currently being spoken, on either platform. */
+  stopSpeaking() {
+    if (IS_APP) {
+      void TextToSpeech.stop().catch(() => undefined);
+      return;
+    }
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
   }
 
   greet() {

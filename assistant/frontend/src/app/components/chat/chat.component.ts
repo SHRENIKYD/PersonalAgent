@@ -5,6 +5,7 @@ import { AgentService } from '../../services/agent.service';
 import { SettingsService } from '../../services/settings.service';
 import { UiService } from '../../services/ui.service';
 import { DictationService } from '../../services/dictation.service';
+import { VoiceModeService } from '../../services/voice-mode.service';
 import { MarkdownComponent } from '../markdown/markdown.component';
 import { WorkoutCard, DietCard, DisplayEntry } from '../../models';
 
@@ -37,6 +38,22 @@ interface Group {
           Clear chat
         </button>
       </div>
+
+      <div class="voice-mode" *ngIf="voiceMode.available">
+        <button class="hands-free" [class.live]="voiceMode.enabled"
+                (click)="voiceMode.toggle()"
+                [attr.aria-pressed]="voiceMode.enabled">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z" />
+            <path d="M5 11a7 7 0 0 0 14 0M12 18v4" />
+          </svg>
+          {{ voiceMode.enabled ? 'Hands-free on' : 'Hands-free' }}
+        </button>
+        <span class="voice-state" *ngIf="voiceMode.enabled">{{ stateLabel() }}</span>
+        <span class="voice-heard" *ngIf="voiceMode.lastHeard() as h">“{{ h }}”</span>
+      </div>
+      <p class="chat-warn" *ngIf="voiceMode.error()">⚠️ {{ voiceMode.error() }}</p>
 
       <p *ngIf="!settings.ready()" class="chat-warn">
         No API key is set for direct mode.
@@ -221,7 +238,8 @@ export class ChatComponent {
     public agent: AgentService,
     public settings: SettingsService,
     public ui: UiService,
-    public dictation: DictationService
+    public dictation: DictationService,
+    public voiceMode: VoiceModeService
   ) {
     // Follow the conversation as it grows. Reading the signal inside the effect is what
     // subscribes it, so this runs on every transcript change.
@@ -244,6 +262,15 @@ export class ChatComponent {
 
   asDiet(c: unknown): DietCard | null {
     return (c as DietCard)?.type === 'diet' ? (c as DietCard) : null;
+  }
+
+  stateLabel(): string {
+    switch (this.voiceMode.state()) {
+      case 'listening': return 'Listening…';
+      case 'thinking':  return 'Thinking…';
+      case 'speaking':  return 'Speaking…';
+      default:          return '';
+    }
   }
 
   toggleMic() {
