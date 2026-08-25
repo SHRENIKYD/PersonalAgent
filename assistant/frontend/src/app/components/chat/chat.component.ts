@@ -5,12 +5,13 @@ import { AgentService } from '../../services/agent.service';
 import { SettingsService } from '../../services/settings.service';
 import { UiService } from '../../services/ui.service';
 import { DictationService } from '../../services/dictation.service';
+import { MarkdownComponent } from '../markdown/markdown.component';
 import { WorkoutCard, DietCard } from '../../models';
 
 @Component({
   selector: 'app-chat',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MarkdownComponent],
   template: `
     <section class="panel chat-panel">
       <div class="page-head">
@@ -127,7 +128,8 @@ import { WorkoutCard, DietCard } from '../../models';
 
             <div class="echo-body" *ngIf="m.kind === 'assistant'" [class.pending]="m.pending">
               <span *ngIf="m.pending" class="scan-line" aria-hidden="true"></span>
-              {{ m.text }}
+              <span *ngIf="m.pending">{{ m.text }}</span>
+              <app-markdown *ngIf="!m.pending" [text]="m.text" />
             </div>
 
             <div class="echo-action" *ngIf="m.kind === 'action'">

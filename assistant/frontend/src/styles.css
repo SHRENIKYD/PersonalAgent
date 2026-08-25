@@ -1772,7 +1772,14 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .send-btn svg { width: 19px; height: 19px; }
 .send-btn:disabled { opacity: 0.4; box-shadow: none; }
 
-.chat-hint { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+.chat-hint {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 8px 0 0;
+  /* Clears the Android gesture bar / iOS home indicator, which otherwise sits on top of
+     the hint and clips the bottom of the composer's shadow. */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
 .dict-err { color: var(--warn); }
 
 @media (max-width: 720px) {
@@ -1828,8 +1835,16 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   min-height: 0;
 }
 
-/* The shell has to stop growing for any of the above to mean anything. */
+/*
+ * The shell has to stop growing for any of the above to mean anything.
+ *
+ * dvh rather than vh: on Android the URL bar and the on-screen keyboard both change the
+ * visible area, and 100vh keeps reporting the *largest* height regardless — which pushes
+ * the composer under the keyboard exactly when you are typing into it. dvh tracks the
+ * viewport that is actually visible. vh stays as the fallback for anything that lacks it.
+ */
 .app:has(.chat-panel) { height: 100vh; height: 100dvh; }
+.app:has(.chat-panel) { overflow: hidden; }
 .app:has(.chat-panel) .main { min-height: 0; overflow: hidden; }
 .app:has(.chat-panel) .main > .footnote { display: none; }
 
@@ -1839,3 +1854,55 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   .chat-panel .page-sub { display: none; }
   .chat-panel .chat-log { max-height: none; }
 }
+
+/* ---------------- rendered markdown ---------------- */
+
+/* The bubble sets white-space: pre-wrap for plain text; parsed markdown brings its own
+   block structure, so that has to be turned off inside it or every newline doubles up. */
+.echo-body app-markdown { white-space: normal; display: block; }
+
+.md-p { margin: 0 0 10px; }
+.md-p:last-child { margin-bottom: 0; }
+
+.md-h {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 15px;
+  margin: 14px 0 6px;
+  line-height: 1.3;
+}
+.md-h:first-child { margin-top: 0; }
+.md-h2 { font-size: 13.5px; color: var(--accent); }
+
+.md-list { margin: 0 0 10px; padding-left: 20px; }
+.md-list:last-child { margin-bottom: 0; }
+.md-list li { margin-bottom: 5px; }
+.md-list li::marker { color: var(--accent-dim); }
+
+.md-quote {
+  margin: 0 0 10px;
+  padding: 2px 0 2px 12px;
+  border-left: 3px solid var(--accent-dim);
+  color: var(--muted);
+}
+
+.md-pre {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0 0 10px;
+  overflow-x: auto;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12.5px;
+}
+
+.md-code {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 1px 5px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12.5px;
+}
+
+.echo-body a { color: var(--accent); }

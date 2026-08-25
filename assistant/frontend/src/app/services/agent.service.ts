@@ -78,6 +78,14 @@ function absCue(dayName: string): string {
     abs.exercises.map(e => `${e.name} — ${e.sets}`).join('; ');
 }
 
+/** Appended to any tool result the UI has already rendered as a card. */
+const CARD_SHOWN_NOTE =
+  '[UI NOTE] The user is already looking at all of the above, laid out as a card on screen. ' +
+  'Do NOT repeat the exercises, sets, reps, meals or macros back to them — they can see it. ' +
+  'Reply with only what the card cannot say: which part to prioritise, how it compares to ' +
+  'what they lifted last time, an answer to what they actually asked, or nothing more than a ' +
+  'short sentence. One or two lines is usually right.';
+
 /** Guards against a malformed tool loop spinning forever. */
 const MAX_TURNS = 8;
 
@@ -328,6 +336,9 @@ function systemPrompt(hasWebSearch: boolean): string {
     'Keep replies short and conversational — a sentence or two. Say what you did, not what you',
     'are about to do, and never restate a task list the user can already see on screen unless',
     'they asked for it. Skip preamble.',
+    '',
+    'Some tool results are rendered on screen as a card. When a result says so, the user can',
+    'already see it — do not restate it in prose. Add judgement instead, or say very little.',
     '',
     'On training and food, read the plan before you answer. get_todays_workout, get_workout_day',
     'and get_diet_plan return what is actually written down; the split and the macro targets are',
@@ -656,7 +667,11 @@ export class AgentService {
         results.push({
           type: 'tool_result',
           tool_use_id: use.id,
-          content: outcome.result,
+          // The model cannot see the screen, so without being told it re-lists the plan it
+          // just fetched and the user reads the same six exercises twice. Saying so at the
+          // result — rather than only in the system prompt — puts the instruction next to
+          // the data it applies to, where it is hardest to ignore.
+          content: outcome.card ? `${outcome.result}\n\n${CARD_SHOWN_NOTE}` : outcome.result,
           ...(outcome.isError ? { is_error: true } : {}),
         });
       }
