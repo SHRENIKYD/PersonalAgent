@@ -594,6 +594,38 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
   flex-wrap: wrap;
 }
 
+.month-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  padding: 6px 0;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.month-toggle:hover .month-name { color: var(--accent); }
+
+.month-count {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.month-theme {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 13px;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .month-index {
   color: var(--muted);
   font-size: 12px;
