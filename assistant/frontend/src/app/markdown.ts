@@ -65,8 +65,11 @@ export function parseInline(src: string): Inline[] {
   return out.length > 0 ? out : [{ kind: 'text', text: src }];
 }
 
-const BULLET = /^\s*[-*+]\s+(.*)$/;
-const NUMBER = /^\s*\d+[.)]\s+(.*)$/;
+// The trailing content is optional: a marker alone on its line is common in model output,
+// and requiring whitespace after it meant such a line was not recognised as a list at all —
+// it fell through and the bare "-" became part of a paragraph.
+const BULLET = /^\s*[-*+](?:\s+(.*))?$/;
+const NUMBER = /^\s*\d+[.)](?:\s+(.*))?$/;
 const HEADING = /^(#{1,6})\s+(.*)$/;
 const QUOTE = /^>\s?(.*)$/;
 
@@ -115,10 +118,41 @@ export function parseMarkdown(src: string): Block[] {
     if (b || n) {
       flushPara();
       const kind = b ? 'ul' : 'ol';
+      let text = ((b ? b[1] : (n as RegExpExecArray)[1]) ?? '').trim();
+
+      /*
+       * A marker with nothing after it means the item's text is on the following lines —
+       * models write this constantly, as "- \n\n  the actual point". Without absorbing it
+       * the item renders as a naked bullet with the text stranded below as its own
+       * paragraph, which is what it looked like on screen.
+       */
+      if (text === '') {
+        let j = i + 1;
+        while (j < lines.length && lines[j].trim() === '') j++;
+        const collected: string[] = [];
+        while (
+          j < lines.length &&
+          lines[j].trim() !== '' &&
+          !BULLET.test(lines[j]) &&
+          !NUMBER.test(lines[j]) &&
+          !HEADING.test(lines[j])
+        ) {
+          collected.push(lines[j].trim());
+          j++;
+        }
+        if (collected.length) {
+          text = collected.join(' ');
+          i = j - 1;
+        }
+      }
+
+      // Still nothing to show: drop it. A bullet with no content is noise, not structure.
+      if (text === '') continue;
+
       const last = blocks[blocks.length - 1];
       // Consecutive list lines join the list above rather than each starting a new one.
       const list = last && last.kind === kind ? last : null;
-      const item = parseInline((b ? b[1] : (n as RegExpExecArray)[1]).trim());
+      const item = parseInline(text);
       if (list) list.items.push(item);
       else blocks.push({ kind, items: [item] } as Block);
       continue;

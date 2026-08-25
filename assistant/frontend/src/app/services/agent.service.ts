@@ -487,7 +487,10 @@ function fromOpenAiMessage(message: {
 /**
  * Request settings for direct-to-Gemini mode.
  */
-const GEMINI_MODEL = 'gemini-2.5-pro';
+// Google retires model ids and refuses them for new users rather than aliasing them
+// forward, so this needs updating when that happens — the API says exactly which id to
+// move to, and that message is surfaced verbatim in the chat.
+const GEMINI_MODEL = 'gemini-3.1-pro-preview';
 const GEMINI_URL = (key: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(key)}`;
 
