@@ -5,6 +5,7 @@ import { SettingsService } from '../../services/settings.service';
 import { SyncService } from '../../services/sync.service';
 import { VoiceService } from '../../services/voice.service';
 import { UpdateService } from '../../services/update.service';
+import { BackButtonService } from '../../services/back-button.service';
 import { BackupService } from '../../services/backup.service';
 import { ApiProvider } from '../../models';
 import { environment } from '../../../environments/environment';
@@ -307,6 +308,17 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
         </button>
       </details>
 
+      <h2 class="section-title">Back button</h2>
+      <p class="setting-note">
+        Press back once, then reopen this tab. If the count is still 0 the app never received
+        the press; if it counts up but the screen did not change, it was received and ignored.
+      </p>
+      <p class="setting-note">
+        Presses handled: <strong>{{ back.backCount() }}</strong> ·
+        last by <strong>{{ back.lastBackSource() }}</strong> ·
+        native listener <strong>{{ back.nativeListenerReady() ? 'ready' : 'not registered' }}</strong>
+      </p>
+
       <h2 class="section-title">Your data</h2>
       <p class="setting-note">
         Tasks and notes never leave this browser or the Gist above — only your chat messages
@@ -341,6 +353,7 @@ export class SettingsComponent {
     public voice: VoiceService,
     public update: UpdateService,
     public backup: BackupService,
+    public back: BackButtonService,
   ) {
     this.draftGistId = sync.gistId();
   }
