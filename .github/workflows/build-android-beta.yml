@@ -46,21 +46,42 @@ jobs:
       - name: Rebrand as the beta app
         run: |
           set -euo pipefail
-          # A different applicationId is the whole mechanism: Android treats it as a separate
-          # app, so ECHO Beta installs alongside ECHO instead of replacing it, and gets its
-          # own storage. Patched here rather than kept as a second checked-in config, which
-          # would drift from the real one.
-          sed -i 's/io\.github\.shrenikyd\.echo/io.github.shrenikyd.echo.beta/g' \
-            capacitor.config.json \
-            android/app/build.gradle \
-            android/app/src/main/res/values/strings.xml
+
+          # applicationId ONLY — deliberately not `namespace`.
+          #
+          # applicationId is Android's identity for the installed app, which is what makes
+          # the beta a separate install with its own storage. `namespace` is the Java package
+          # that relative class names resolve against, and the manifest declares the activity
+          # as ".MainActivity". Rewriting both (as a blanket sed over the file does) points
+          # that at io.github.shrenikyd.echo.beta.MainActivity, a class that does not exist —
+          # the app then dies with ClassNotFoundException the instant it launches.
+          # The Java sources keep package io.github.shrenikyd.echo, so namespace must too.
+          sed -i 's/^\( *applicationId \)"io\.github\.shrenikyd\.echo"/\1"io.github.shrenikyd.echo.beta"/' \
+            android/app/build.gradle
+
+          # Capacitor's own appId, used for the bridge and plugin identity.
+          sed -i 's/"appId": "io\.github\.shrenikyd\.echo"/"appId": "io.github.shrenikyd.echo.beta"/' \
+            capacitor.config.json
           sed -i 's/"appName": "ECHO"/"appName": "ECHO Beta"/' capacitor.config.json
+
+          # package_name must track applicationId — plugins derive runtime identity from it.
+          # custom_url_scheme must be unique too, or the two apps fight over the same scheme.
+          sed -i 's|<string name="package_name">io.github.shrenikyd.echo</string>|<string name="package_name">io.github.shrenikyd.echo.beta</string>|' \
+            android/app/src/main/res/values/strings.xml
+          sed -i 's|<string name="custom_url_scheme">io.github.shrenikyd.echo</string>|<string name="custom_url_scheme">io.github.shrenikyd.echo.beta</string>|' \
+            android/app/src/main/res/values/strings.xml
           sed -i 's|<string name="app_name">ECHO</string>|<string name="app_name">ECHO Beta</string>|' \
             android/app/src/main/res/values/strings.xml
           sed -i 's|<string name="title_activity_main">ECHO</string>|<string name="title_activity_main">ECHO Beta</string>|' \
             android/app/src/main/res/values/strings.xml
-          grep -n 'applicationId' android/app/build.gradle
-          grep -n 'app_name' android/app/src/main/res/values/strings.xml
+
+          echo "--- verifying: namespace must stay, applicationId must change ---"
+          grep -E 'namespace|applicationId' android/app/build.gradle
+          grep -q 'namespace = "io.github.shrenikyd.echo"' android/app/build.gradle \
+            || { echo "::error::namespace was rewritten — the app would crash on launch"; exit 1; }
+          grep -q 'applicationId "io.github.shrenikyd.echo.beta"' android/app/build.gradle \
+            || { echo "::error::applicationId was not rebranded"; exit 1; }
+          cat android/app/src/main/res/values/strings.xml
 
       - name: Install and build web assets
         run: |
