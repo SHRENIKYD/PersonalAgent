@@ -61,11 +61,6 @@ interface Group {
       </p>
 
       <div class="chat-log" #log>
-        <p *ngIf="agent.transcript().length === 0" class="chat-empty">
-          Try “what's my workout tomorrow?”, “remind me to renew the lease on Friday”, or
-          “note that the wifi password is hunter2”.
-        </p>
-
         <ng-container *ngFor="let g of groups(); let gi = index; trackBy: trackGroup">
 
           <!-- you -->

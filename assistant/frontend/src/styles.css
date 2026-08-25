@@ -308,7 +308,6 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
 
 .chat-warn a { color: var(--accent); cursor: pointer; text-decoration: underline; }
 
-.chat-empty { color: var(--muted); margin: 6px 2px; }
 
 /* ---------------- tasks ---------------- */
 
