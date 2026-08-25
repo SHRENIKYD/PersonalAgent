@@ -1644,3 +1644,20 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   gap: 9px;
   flex-wrap: wrap;
 }
+
+.setting-details { margin: 10px 0 4px; }
+.setting-details summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+  padding: 4px 0;
+}
+.setting-details summary:hover { color: var(--text); }
+.restore-box {
+  display: block;
+  width: 100%;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  margin-bottom: 8px;
+  resize: vertical;
+}

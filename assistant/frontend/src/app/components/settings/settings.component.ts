@@ -5,6 +5,7 @@ import { SettingsService } from '../../services/settings.service';
 import { SyncService } from '../../services/sync.service';
 import { VoiceService } from '../../services/voice.service';
 import { UpdateService } from '../../services/update.service';
+import { BackupService } from '../../services/backup.service';
 import { ApiProvider } from '../../models';
 import { environment } from '../../../environments/environment';
 
@@ -273,6 +274,39 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
         </p>
       </ng-template>
 
+      <h2 class="section-title">Backup &amp; restore</h2>
+      <p class="setting-note">
+        A file copy of everything — tasks, notes, roadmap, workout and diet log, and every
+        set you've recorded. Unlike sync above, it needs no account and never changes on its
+        own: it's a frozen copy you keep. <strong>Take one before uninstalling the app</strong>,
+        since uninstalling clears local storage.
+      </p>
+
+      <div class="add-row">
+        <button (click)="backup.download()">Save backup file</button>
+        <button class="ghost-btn" (click)="backup.copy()">Copy backup</button>
+        <button class="ghost-btn" (click)="restoreInput.click()">Restore from file…</button>
+        <input #restoreInput type="file" accept="application/json,.json" hidden
+               (change)="onRestoreFile($event)" />
+      </div>
+
+      <p class="setting-note" *ngIf="backup.status()">✅ {{ backup.status() }}</p>
+      <p class="setting-note" *ngIf="backup.error()">⚠️ {{ backup.error() }}</p>
+
+      <details class="setting-details">
+        <summary>Restore by pasting instead</summary>
+        <p class="setting-note">
+          For when the file picker isn't available. Paste a backup and restore it —
+          this <strong>replaces</strong> everything currently in the app.
+        </p>
+        <textarea class="grow restore-box" rows="4" [(ngModel)]="restoreText"
+                  placeholder="Paste backup JSON here"></textarea>
+        <button class="ghost-btn" [disabled]="!restoreText.trim()"
+                (click)="backup.restore(restoreText) && (restoreText = '')">
+          Restore pasted backup
+        </button>
+      </details>
+
       <h2 class="section-title">Your data</h2>
       <p class="setting-note">
         Tasks and notes never leave this browser or the Gist above — only your chat messages
@@ -288,15 +322,25 @@ export class SettingsComponent {
   saved = signal(false);
   apiBaseUrl = environment.apiBaseUrl;
 
+  restoreText = '';
   draftSyncToken = '';
   draftGistId = '';
   revealSyncToken = signal(false);
+
+  onRestoreFile(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) void this.backup.restoreFromFile(file);
+    // Cleared so picking the same file twice still fires a change event.
+    input.value = '';
+  }
 
   constructor(
     public settings: SettingsService,
     public sync: SyncService,
     public voice: VoiceService,
     public update: UpdateService,
+    public backup: BackupService,
   ) {
     this.draftGistId = sync.gistId();
   }
