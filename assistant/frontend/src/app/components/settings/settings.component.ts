@@ -6,6 +6,7 @@ import { SyncService } from '../../services/sync.service';
 import { VoiceService } from '../../services/voice.service';
 import { UpdateService } from '../../services/update.service';
 import { BackButtonService } from '../../services/back-button.service';
+import { LocalLlmService, SUGGESTED_MODEL } from '../../services/local-llm.service';
 import { BackupService } from '../../services/backup.service';
 import { ApiProvider } from '../../models';
 import { environment } from '../../../environments/environment';
@@ -308,6 +309,49 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
         </button>
       </details>
 
+      <ng-container *ngIf="local.available">
+        <h2 class="section-title">On-device model</h2>
+        <p class="setting-note">
+          Runs a model on the phone itself, so no API key and no network. It is slower and
+          weaker than the cloud models — this section only proves it works; the assistant
+          still uses your chosen provider above.
+        </p>
+
+        <p class="setting-note" *ngIf="!local.modelPresent()">
+          No model on this device. Download <strong>{{ suggested.name }}</strong>
+          (about {{ suggested.approxGb }} GB, the <code>.task</code> file) from
+          <code>{{ suggested.url }}</code>, then pick it below.
+        </p>
+
+        <div class="add-row">
+          <button (click)="local.importModel()" [disabled]="local.busy() !== ''">
+            {{ local.modelPresent() ? 'Replace model file' : 'Choose model file' }}
+          </button>
+          <button class="ghost-btn" *ngIf="local.modelPresent() && !local.loaded()"
+                  [disabled]="local.busy() !== ''" (click)="local.load()">Load</button>
+          <button class="ghost-btn" *ngIf="local.loaded()"
+                  [disabled]="local.busy() !== ''" (click)="local.unload()">Unload</button>
+          <button class="ghost-btn" *ngIf="local.modelPresent()"
+                  [disabled]="local.busy() !== ''" (click)="local.deleteModel()">Delete</button>
+        </div>
+
+        <p class="setting-note" *ngIf="local.busy()">{{ local.busy() }}</p>
+        <p class="setting-note" *ngIf="local.error()">⚠️ {{ local.error() }}</p>
+        <p class="setting-note" *ngIf="local.modelPresent()">
+          Model stored ({{ (local.sizeBytes() / 1073741824).toFixed(2) }} GB) —
+          <strong>{{ local.loaded() ? 'loaded' : 'not loaded' }}</strong>
+        </p>
+
+        <div class="add-row" *ngIf="local.loaded()">
+          <input class="grow" [(ngModel)]="localPrompt" placeholder="Ask the on-device model…" />
+          <button [disabled]="!localPrompt.trim() || localBusy()" (click)="runLocal()">Run</button>
+        </div>
+        <p class="setting-note" *ngIf="localBusy()">Thinking on-device…</p>
+        <p class="setting-note" *ngIf="localAnswer()">
+          {{ localAnswer() }}<br /><em>{{ localMs() }} ms</em>
+        </p>
+      </ng-container>
+
       <h2 class="section-title">Back button</h2>
       <p class="setting-note">
         Press back once, then reopen this tab. If the count is still 0 the app never received
@@ -329,6 +373,23 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
   `,
 })
 export class SettingsComponent {
+  suggested = SUGGESTED_MODEL;
+  localPrompt = '';
+  localBusy = signal(false);
+  localAnswer = signal('');
+  localMs = signal(0);
+
+  async runLocal() {
+    this.localBusy.set(true);
+    this.localAnswer.set('');
+    const r = await this.local.generate(this.localPrompt);
+    this.localBusy.set(false);
+    if (r) {
+      this.localAnswer.set(r.text);
+      this.localMs.set(r.ms);
+    }
+  }
+
   draftKey = '';
   reveal = signal(false);
   saved = signal(false);
@@ -354,6 +415,7 @@ export class SettingsComponent {
     public update: UpdateService,
     public backup: BackupService,
     public back: BackButtonService,
+    public local: LocalLlmService,
   ) {
     this.draftGistId = sync.gistId();
   }
