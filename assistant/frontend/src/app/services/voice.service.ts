@@ -97,14 +97,36 @@ export class VoiceService {
     );
   }
 
+  /**
+   * The Android side builds each entry as
+   *   voiceURI = the engine's voice name  (e.g. "en-gb-x-gbb-local")
+   *   name     = language + country only  (e.g. "English United Kingdom")
+   * so a device with eight English (UK) voices shows the same label eight times and the
+   * only distinguishing detail sits in voiceURI. The label is rebuilt here to include it,
+   * otherwise the list is unusable however well the selection works.
+   */
   private async loadNativeVoices() {
     try {
       const { voices } = await TextToSpeech.getSupportedVoices();
-      this.voices.set(voices as unknown as SpeechSynthesisVoice[]);
+      const labelled = voices.map(v => ({
+        ...v,
+        name: this.nativeLabel(v as unknown as { name?: string; voiceURI?: string }),
+      }));
+      this.voices.set(labelled as unknown as SpeechSynthesisVoice[]);
     } catch {
       // Not fatal: speaking without naming a voice uses the system default.
       this.voices.set([]);
     }
+  }
+
+  private nativeLabel(v: { name?: string; voiceURI?: string }): string {
+    const base = (v.name ?? '').trim();
+    const uri = (v.voiceURI ?? '').trim();
+    if (!uri) return base || 'Unnamed voice';
+    // "en-gb-x-gbb-local" -> "gbb-local": the language is already in the base label, so the
+    // part worth showing is what differs between voices of the same language.
+    const detail = uri.replace(/^[a-z]{2,3}([-_][a-z]{2,3})?[-_]x[-_]/i, '').trim() || uri;
+    return base ? `${base} — ${detail}` : detail;
   }
 
   setEnabled(value: boolean) {
@@ -115,6 +137,9 @@ export class VoiceService {
   setVoice(voiceURI: string) {
     this.selectedVoiceURI.set(voiceURI.trim() === '' ? null : voiceURI);
     this.save();
+    // Speak on change. Picking a voice you cannot hear is the reason this was broken for so
+    // long without anyone noticing — the setting looked like it had applied.
+    void this.speak('This is how I sound.');
   }
 
   private refreshVoices() {
@@ -167,7 +192,28 @@ export class VoiceService {
       // system TTS engine, so it reports success and plays nothing. The native plugin
       // talks to Android TTS directly, which is why the app path does not share the web one.
       try {
-        await TextToSpeech.speak({ text, lang: 'en-GB', rate: 1.0, pitch: 0.9 });
+        /*
+         * The plugin takes `voice` as an INDEX into getSupportedVoices(), not a URI — so the
+         * stored voiceURI has to be resolved back to its position. Passing the URI straight
+         * through would be silently ignored, which is what the previous version did by not
+         * passing anything at all: the setting saved, displayed, and changed nothing.
+         *
+         * lang is deliberately omitted when a voice is chosen. Sending 'en-GB' alongside a
+         * voice from another locale makes the two fight, and the engine wins.
+         */
+        const all = this.voices();
+        const chosen = this.selectedVoiceURI();
+        const index = chosen
+          ? all.findIndex(v => v.voiceURI === chosen)
+          : -1;
+        const picked = index >= 0 ? all[index] : undefined;
+
+        await TextToSpeech.speak({
+          text,
+          rate: 1.0,
+          pitch: 0.9,
+          ...(picked ? { voice: index, lang: picked.lang } : { lang: 'en-GB' }),
+        });
         this.lastSpokeAt.set(Date.now());
       } catch (e) {
         this.lastError.set(
@@ -195,7 +241,21 @@ export class VoiceService {
     utterance.rate = 0.98;
     utterance.pitch = 0.85;
     const voice = this.resolveVoice();
-    if (voice) { utterance.voice = voice; utterance.lang = voice.lang; }
+    if (voice) {
+      /*
+       * Assigning anything that is not a genuine SpeechSynthesisVoice throws a TypeError,
+       * and speak() is called as `void this.speak(...)` — so an unguarded throw here kills
+       * the utterance with no sound and no message, which is the exact failure mode this
+       * service exists to make visible. A stale entry from a previous voiceschanged can hit
+       * this. Falling back to the default voice is far better than silence.
+       */
+      try {
+        utterance.voice = voice;
+        utterance.lang = voice.lang;
+      } catch {
+        this.lastError.set('That voice is no longer available — using the default.');
+      }
+    }
 
     utterance.onerror = ev => {
       // "interrupted"/"canceled" are ours — cancel() below fires them on the previous

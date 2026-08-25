@@ -153,7 +153,7 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
             {{ v.name }} ({{ v.lang }})
           </option>
         </select>
-        <button class="ghost-btn" (click)="voice.greet()">Test voice</button>
+        <button class="ghost-btn" (click)="voice.speak('This is how I sound.')">Test voice</button>
       </div>
       <p class="setting-note" *ngIf="voice.lastError()">⚠️ {{ voice.lastError() }}</p>
 
