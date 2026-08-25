@@ -74,12 +74,48 @@ export interface ToolDefinition {
 
 // ---------------- UI shapes ----------------
 
+// ---------------- rich tool results ----------------
+//
+// A tool that reads the plan returns structured data as well as the text the model sees, so
+// the UI can render the real rows rather than the model's retelling of them. That difference
+// matters: a paraphrase can quietly get a set range wrong, and a card built from the same
+// object the Workout tab reads cannot.
+
+export interface CardExercise {
+  name: string;
+  sets: string;
+  /** Parenthetical qualifier from the plan, e.g. "light–moderate". */
+  note?: string;
+}
+
+export interface WorkoutCard {
+  type: 'workout';
+  title: string;            // "Legs A"
+  when: string;             // "Tomorrow (26 Aug 2026)" — or '' when not tied to a day
+  muscles: string[];
+  exercises: CardExercise[];
+  core?: { focus: string; exercises: CardExercise[] };
+}
+
+export interface DietCard {
+  type: 'diet';
+  title: string;
+  targets: string;
+  meals: { meal: string; food: string; protein: string; calories: string }[];
+}
+
+export type ChatCard = WorkoutCard | DietCard;
+
 /** A single entry in the visible transcript. Distinct from ApiMessage: one API turn
  *  can produce several of these (a thought, some tool activity, then the reply). */
 export interface DisplayEntry {
-  kind: 'user' | 'assistant' | 'action' | 'error';
+  kind: 'user' | 'assistant' | 'action' | 'error' | 'card';
   text: string;
   pending?: boolean;
+  /** Epoch ms, for the timestamp beside a message. */
+  at?: number;
+  /** Present only on 'card' entries. */
+  card?: ChatCard;
 }
 
 export type TabKey =

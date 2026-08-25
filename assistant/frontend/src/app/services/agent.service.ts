@@ -15,8 +15,11 @@ import {
   ToolDefinition,
   ToolResultBlock,
   ToolUseBlock,
+  WorkoutCard,
+  ChatCard,
 } from '../models';
 import {
+  WorkoutDay,
   DIET_RULES,
   MACRO_TARGETS,
   NONVEG_MEALS,
@@ -28,6 +31,43 @@ import {
   musclesFor,
   workoutForDate,
 } from '../fitness-data';
+
+/** Splits "Romanian deadlift (light–moderate)" into name and note. */
+function splitNote(name: string): { name: string; note?: string } {
+  const m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(name);
+  return m ? { name: m[1], note: m[2] } : { name };
+}
+
+/** A day label a person would use, rather than a bare ISO date. */
+function dayLabel(iso: string): string {
+  const today = new Date().toISOString().slice(0, 10);
+  const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+  const pretty = new Date(`${iso}T12:00:00`).toLocaleDateString(undefined,
+    { day: 'numeric', month: 'short', year: 'numeric' });
+  if (iso === today) return `Today (${pretty})`;
+  if (iso === tomorrow) return `Tomorrow (${pretty})`;
+  return pretty;
+}
+
+/** The structured twin of the text a workout tool returns. */
+function workoutCard(day: WorkoutDay, when: string): WorkoutCard {
+  const abs = absForDay(day.name);
+  return {
+    type: 'workout',
+    title: day.name.split(' —')[0].trim(),
+    when,
+    muscles: musclesFor(day),
+    exercises: day.exercises.map(e => ({ ...splitNote(e.name), sets: e.sets })),
+    ...(abs ? {
+      core: {
+        // "Core (Core stability)" reads as a stutter, so a leading "Core " is dropped —
+        // the heading already says it.
+        focus: abs.focus.replace(/^core\s+/i, ''),
+        exercises: abs.exercises.map(e => ({ ...splitNote(e.name), sets: e.sets })),
+      },
+    } : {}),
+  };
+}
 
 /** Renders the paired abs block as a trailing line, or '' when a day has none. */
 function absCue(dayName: string): string {
@@ -608,7 +648,10 @@ export class AgentService {
       const results: ToolResultBlock[] = [];
       for (const use of toolUses) {
         const outcome = this.execute(use);
-        this.push({ kind: 'action', text: outcome.label });
+        // A card replaces the one-line action label: it says everything the label did and
+        // then some, and two rows describing the same call is noise.
+        if (outcome.card) this.push({ kind: 'card', text: outcome.label, card: outcome.card });
+        else this.push({ kind: 'action', text: outcome.label });
         results.push({
           type: 'tool_result',
           tool_use_id: use.id,
@@ -811,7 +854,7 @@ export class AgentService {
    * Runs one tool against local state. Errors come back as ordinary tool results
    * with is_error set so the model can recover rather than the loop collapsing.
    */
-  private execute(use: ToolUseBlock): { label: string; result: string; isError?: boolean } {
+  private execute(use: ToolUseBlock): { label: string; result: string; isError?: boolean; card?: ChatCard } {
     const input = use.input ?? {};
 
     try {
@@ -975,6 +1018,7 @@ export class AgentService {
             };
           }
           return {
+            card: workoutCard(day, dayLabel(label)),
             label: `Read the plan for ${label} (${day.name.split(' —')[0]})`,
             result: [
               `Session: ${day.name}`,
@@ -1004,6 +1048,7 @@ export class AgentService {
             };
           }
           return {
+            card: workoutCard(day, ''),
             label: `Read ${day.name.split(' —')[0]}`,
             result: [
               `Session: ${day.name}`,
@@ -1018,6 +1063,13 @@ export class AgentService {
           const meals = veg ? VEG_MEALS : NONVEG_MEALS;
           const totals = mealTotals(meals);
           return {
+            card: {
+              type: 'diet',
+              title: `${veg ? 'Veg' : 'Non-veg'} day`,
+              targets: `${MACRO_TARGETS.kcal} kcal · ${MACRO_TARGETS.protein} g protein · ` +
+                       `${MACRO_TARGETS.carbs} g carbs · ${MACRO_TARGETS.fat} g fat`,
+              meals: meals.map(m => ({ meal: m.meal, food: m.food, protein: m.protein, calories: m.calories })),
+            },
             label: `Read the ${veg ? 'veg' : 'non-veg'} diet plan`,
             result: [
               `Targets: ${MACRO_TARGETS.kcal} kcal, protein ${MACRO_TARGETS.protein} g, ` +
@@ -1136,15 +1188,18 @@ export class AgentService {
 
   // ---------------- transcript helpers ----------------
 
+  /** Stamped centrally so no call site can forget, and a pending row keeps its own time. */
   private push(entry: DisplayEntry) {
-    this.transcript.update(list => [...list, entry]);
+    this.transcript.update(list => [...list, { at: Date.now(), ...entry }]);
   }
 
   private replace(index: number, entry: DisplayEntry) {
     this.transcript.update(list => {
-      if (index < 0 || index >= list.length) return [...list, entry];
+      if (index < 0 || index >= list.length) return [...list, { at: Date.now(), ...entry }];
       const next = [...list];
-      next[index] = entry;
+      // Keeps the time the slot was first created — a reply is timed from when the exchange
+      // started, not from when the last token happened to arrive.
+      next[index] = { at: list[index]?.at ?? Date.now(), ...entry };
       return next;
     });
   }
