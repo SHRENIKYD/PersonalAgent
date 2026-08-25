@@ -1,4 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
 
 /** What the CI build stamped into the APK, and what it published beside it. */
 interface BuildInfo {
@@ -43,8 +44,12 @@ export class UpdateService {
     return Date.parse(r.builtAt) > Date.parse(l.builtAt);
   });
 
-  /** Running inside the Capacitor shell rather than a browser tab. */
-  readonly isApp = !!(window as unknown as { Capacitor?: unknown }).Capacitor;
+  /**
+   * Running natively rather than in a browser tab. Importing any Capacitor package defines
+   * window.Capacitor in web builds as well, so the global's presence proves nothing —
+   * isNativePlatform() is what separates the app from a browser.
+   */
+  readonly isApp = Capacitor.isNativePlatform();
 
   constructor() {
     // Bundled by the build; a plain fetch rather than an import so a missing file in dev is

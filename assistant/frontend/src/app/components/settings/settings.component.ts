@@ -154,7 +154,29 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
         </select>
         <button class="ghost-btn" (click)="voice.greet()">Test voice</button>
       </div>
-      <p class="setting-note" *ngIf="voice.enabled() && voice.voices().length === 0">
+      <p class="setting-note" *ngIf="voice.lastError()">⚠️ {{ voice.lastError() }}</p>
+
+      <p class="setting-note" *ngIf="voice.enabled() && !voice.supported()">
+        This browser has no speech synthesis at all, so the greeting can't play here.
+      </p>
+
+      <p class="setting-note" *ngIf="voice.enabled() && !voice.isApp && !voice.unlocked()">
+        Waiting for you to tap the page — browsers block audio until then. The greeting is
+        held and plays on your first tap rather than being lost.
+      </p>
+
+      <p class="setting-note" *ngIf="voice.enabled() && voice.isApp">
+        Using Android's built-in text-to-speech engine. If nothing plays, check that a speech
+        engine is installed and enabled under Android Settings → Accessibility → Text-to-speech,
+        and that media volume isn't muted.
+      </p>
+
+      <p class="setting-note" *ngIf="voice.lastSpokeAt()">
+        Last spoke {{ voice.lastSpokeAt() | date:'HH:mm:ss' }} — if you heard nothing, check
+        media volume and the silent switch.
+      </p>
+
+      <p class="setting-note" *ngIf="voice.enabled() && !voice.isApp && voice.voices().length === 0">
         No voices reported by this browser yet — try "Test voice" again in a moment, or check
         another browser if this persists (voice availability is entirely up to the OS/browser,
         not this app).

@@ -34,9 +34,10 @@ export class BootComponent {
   private timer = setTimeout(() => this.skip(), 2600);
 
   constructor(private voice: VoiceService) {
-    // Most desktop browsers allow speechSynthesis without a prior user gesture (Chrome's
-    // autoplay-with-sound policy explicitly excludes it); Safari/iOS is the notable
-    // exception and may drop this silently until the user interacts with the page.
+    // Fires before any user gesture, which mobile browsers refuse to play audio for —
+    // Chrome on Android included, contrary to what this comment used to claim. VoiceService
+    // holds the greeting when the page is not yet unlocked and replays it on the first tap,
+    // so this call is a request rather than a guarantee.
     this.voice.greet();
   }
 
