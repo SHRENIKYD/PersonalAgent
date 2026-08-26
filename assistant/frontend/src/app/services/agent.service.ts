@@ -402,6 +402,17 @@ const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const OPENAI_MODEL = 'gpt-5.1';
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 
+/**
+ * Groq serves an OpenAI-compatible Chat Completions API, so it reuses that whole path —
+ * the same message shaping, the same tool format, the same response parsing. Only the
+ * endpoint, the key and the model differ.
+ *
+ * Groq rotates its hosted models faster than the other providers, so this is the one worth
+ * checking against console.groq.com if requests start failing with an unknown-model error.
+ */
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
+
 interface OpenAiToolCall {
   id: string;
   type: 'function';
@@ -794,6 +805,7 @@ export class AgentService {
     switch (this.settings.provider()) {
       case 'openai': return this.requestDirectOpenAi();
       case 'gemini': return this.requestDirectGemini();
+      case 'groq': return this.requestDirectGroq();
       default: return this.requestDirectAnthropic();
     }
   }
@@ -837,8 +849,22 @@ export class AgentService {
    * server tool and has no OpenAI equivalent in this shape, so it's left out here entirely;
    * the system prompt only claims that capability when it's actually being sent.
    */
-  private async requestDirectOpenAi(): Promise<AssistantResponse> {
-    const key = this.settings.openaiApiKey().trim();
+  private requestDirectOpenAi(): Promise<AssistantResponse> {
+    return this.requestChatCompletions(OPENAI_URL, OPENAI_MODEL, this.settings.openaiApiKey());
+  }
+
+  /** Groq, through the same OpenAI-compatible endpoint shape. */
+  private requestDirectGroq(): Promise<AssistantResponse> {
+    return this.requestChatCompletions(GROQ_URL, GROQ_MODEL, this.settings.groqApiKey());
+  }
+
+  /** One turn against any OpenAI-compatible Chat Completions endpoint. */
+  private async requestChatCompletions(
+    url: string,
+    model: string,
+    rawKey: string,
+  ): Promise<AssistantResponse> {
+    const key = rawKey.trim();
     if (key === '') {
       throw new Error('No API key set. Add one on the Settings tab.');
     }
@@ -852,9 +878,9 @@ export class AgentService {
       this.http.post<{
         choices?: { message: { content?: string | null; tool_calls?: OpenAiToolCall[] } }[];
       }>(
-        OPENAI_URL,
+        url,
         {
-          model: OPENAI_MODEL,
+          model,
           messages: toOpenAiMessages(this.history, systemPrompt(false)),
           tools: toOpenAiTools(TOOLS),
         },

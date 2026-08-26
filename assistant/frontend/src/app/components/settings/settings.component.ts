@@ -14,12 +14,14 @@ const PROVIDER_LABEL: Record<ApiProvider, string> = {
   anthropic: 'Anthropic',
   openai: 'OpenAI',
   gemini: 'Gemini',
+  groq: 'Groq',
 };
 
 const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
   anthropic: 'sk-ant-...',
   openai: 'sk-...',
   gemini: 'AIza...',
+  groq: 'gsk_...',
 };
 
 @Component({
@@ -44,7 +46,7 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
           [class.active]="settings.mode() === 'direct'"
           (click)="settings.setMode('direct')">
           <strong>Direct from browser</strong>
-          <span>No backend. Your key is stored in this browser. Anthropic, OpenAI, or Gemini.</span>
+          <span>No backend. Your key is stored in this browser. Anthropic, OpenAI, Gemini, or Groq.</span>
         </button>
       </div>
 
@@ -84,6 +86,13 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
             (click)="settings.setProvider('gemini')">
             <strong>Gemini</strong>
             <span>Google models, via generateContent.</span>
+          </button>
+          <button
+            class="mode-btn"
+            [class.active]="settings.provider() === 'groq'"
+            (click)="settings.setProvider('groq')">
+            <strong>Groq</strong>
+            <span>Open models, hosted fast. Has a free tier.</span>
           </button>
         </div>
 
@@ -371,6 +380,7 @@ export class SettingsComponent {
     switch (this.settings.provider()) {
       case 'openai': this.settings.setOpenaiApiKey(this.draftKey); break;
       case 'gemini': this.settings.setGeminiApiKey(this.draftKey); break;
+      case 'groq': this.settings.setGroqApiKey(this.draftKey); break;
       default: this.settings.setApiKey(this.draftKey);
     }
     this.draftKey = '';
@@ -383,6 +393,7 @@ export class SettingsComponent {
     switch (this.settings.provider()) {
       case 'openai': this.settings.clearOpenaiApiKey(); break;
       case 'gemini': this.settings.clearGeminiApiKey(); break;
+      case 'groq': this.settings.clearGroqApiKey(); break;
       default: this.settings.clearApiKey();
     }
     this.saved.set(false);

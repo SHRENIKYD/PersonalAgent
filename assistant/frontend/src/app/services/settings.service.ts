@@ -3,6 +3,16 @@ import { StorageService } from './storage.service';
 import { Capacitor } from '@capacitor/core';
 import { ApiProvider, TransportMode } from '../models';
 
+/**
+ * Every provider the app knows, used to validate what comes back from storage.
+ *
+ * This was a hardcoded chain of ternaries that only recognised two of them, so a saved
+ * choice of anything else silently reverted to Anthropic on the next launch — including the
+ * key that went with it appearing to vanish. A list means adding a provider is one edit
+ * rather than one edit and a trap.
+ */
+const PROVIDERS: ApiProvider[] = ['anthropic', 'openai', 'gemini', 'groq'];
+
 const KEY = 'assistant-settings-v1';
 
 interface Settings {
@@ -11,6 +21,7 @@ interface Settings {
   apiKey: string;
   openaiApiKey: string;
   geminiApiKey: string;
+  groqApiKey: string;
 }
 
 function defaults(): Settings {
@@ -24,6 +35,7 @@ function defaults(): Settings {
     apiKey: '',
     openaiApiKey: '',
     geminiApiKey: '',
+    groqApiKey: '',
   };
 }
 
@@ -37,8 +49,8 @@ function defaults(): Settings {
  * than a build-time flag, and the Settings tab states the risk plainly.
  *
  * Direct mode supports three providers, each with its own stored key so switching between
- * them never loses any of the others: Anthropic (`apiKey`), OpenAI (`openaiApiKey`), and
- * Gemini (`geminiApiKey`). Backend mode is always Anthropic, since that is all `Program.cs`
+ * them never loses any of the others: Anthropic (`apiKey`), OpenAI (`openaiApiKey`),
+ * Gemini (`geminiApiKey`), and Groq (`groqApiKey`). Backend mode is always Anthropic, since that is all `Program.cs`
  * proxies to.
  */
 @Injectable({ providedIn: 'root' })
@@ -48,6 +60,7 @@ export class SettingsService {
   apiKey = signal<string>('');
   openaiApiKey = signal<string>('');
   geminiApiKey = signal<string>('');
+  groqApiKey = signal<string>('');
 
   constructor(private storage: StorageService) {
     const fallback = defaults();
@@ -55,11 +68,12 @@ export class SettingsService {
     // An explicit stored choice still wins — this only decides what an untouched install does.
     this.mode.set(saved.mode === 'direct' || saved.mode === 'backend' ? saved.mode : fallback.mode);
     this.provider.set(
-      saved.provider === 'openai' ? 'openai' : saved.provider === 'gemini' ? 'gemini' : 'anthropic'
+      PROVIDERS.includes(saved.provider) ? saved.provider : fallback.provider
     );
     this.apiKey.set(typeof saved.apiKey === 'string' ? saved.apiKey : '');
     this.openaiApiKey.set(typeof saved.openaiApiKey === 'string' ? saved.openaiApiKey : '');
     this.geminiApiKey.set(typeof saved.geminiApiKey === 'string' ? saved.geminiApiKey : '');
+    this.groqApiKey.set(typeof saved.groqApiKey === 'string' ? saved.groqApiKey : '');
   }
 
   /** The key for whichever provider is currently selected. */
@@ -67,6 +81,7 @@ export class SettingsService {
     switch (this.provider()) {
       case 'openai': return this.openaiApiKey();
       case 'gemini': return this.geminiApiKey();
+      case 'groq': return this.groqApiKey();
       default: return this.apiKey();
     }
   });
@@ -104,6 +119,16 @@ export class SettingsService {
     this.save();
   }
 
+  setGroqApiKey(key: string) {
+    this.groqApiKey.set(key.trim());
+    this.save();
+  }
+
+  clearGroqApiKey() {
+    this.groqApiKey.set('');
+    this.save();
+  }
+
   setGeminiApiKey(key: string) {
     this.geminiApiKey.set(key.trim());
     this.save();
@@ -121,6 +146,7 @@ export class SettingsService {
       apiKey: this.apiKey(),
       openaiApiKey: this.openaiApiKey(),
       geminiApiKey: this.geminiApiKey(),
+      groqApiKey: this.groqApiKey(),
     });
   }
 }
