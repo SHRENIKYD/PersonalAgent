@@ -7,15 +7,8 @@ import { VoiceService } from '../../services/voice.service';
 import { UpdateService } from '../../services/update.service';
 import { BackButtonService } from '../../services/back-button.service';
 import { BackupService } from '../../services/backup.service';
-import { ApiProvider } from '../../models';
+import { ApiProvider, PROVIDER_LABELS } from '../../models';
 import { environment } from '../../../environments/environment';
-
-const PROVIDER_LABEL: Record<ApiProvider, string> = {
-  anthropic: 'Anthropic',
-  openai: 'OpenAI',
-  gemini: 'Gemini',
-  groq: 'Groq',
-};
 
 const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
   anthropic: 'sk-ant-...',
@@ -95,6 +88,21 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
             <span>Open models, hosted fast. Has a free tier.</span>
           </button>
         </div>
+
+        <ng-container *ngIf="settings.provider() === 'groq'">
+          <h2 class="section-title">Groq model</h2>
+          <p class="setting-note">
+            Groq retires hosted models on its own schedule, and a retired name fails every
+            request with “the model does not exist”. If that happens, pick a current one from
+            <code>console.groq.com/docs/models</code> and paste it here.
+          </p>
+          <div class="add-row">
+            <input class="grow" [(ngModel)]="draftGroqModel" placeholder="model name"
+                   autocomplete="off" spellcheck="false" />
+            <button class="ghost-btn" (click)="saveGroqModel()">Use this model</button>
+          </div>
+          <p class="setting-note">Currently using <code>{{ settings.groqModel() }}</code>.</p>
+        </ng-container>
 
         <h2 class="section-title">API key</h2>
 
@@ -339,6 +347,13 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
 })
 export class SettingsComponent {
   draftKey = '';
+  draftGroqModel = '';
+
+  saveGroqModel() {
+    this.settings.setGroqModel(this.draftGroqModel);
+    this.draftGroqModel = this.settings.groqModel();
+  }
+
   reveal = signal(false);
   saved = signal(false);
   apiBaseUrl = environment.apiBaseUrl;
@@ -365,10 +380,12 @@ export class SettingsComponent {
     public back: BackButtonService,
   ) {
     this.draftGistId = sync.gistId();
+    // Prefilled so the field shows what is in use rather than sitting empty.
+    this.draftGroqModel = settings.groqModel();
   }
 
   providerLabel(): string {
-    return PROVIDER_LABEL[this.settings.provider()];
+    return PROVIDER_LABELS[this.settings.provider()];
   }
 
   providerPlaceholder(): string {

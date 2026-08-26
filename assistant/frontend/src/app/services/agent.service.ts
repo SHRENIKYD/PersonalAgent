@@ -18,6 +18,7 @@ import {
   ToolUseBlock,
   WorkoutCard,
   ChatCard,
+  PROVIDER_LABELS,
 } from '../models';
 import {
   WorkoutDay,
@@ -411,7 +412,6 @@ const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
  * checking against console.groq.com if requests start failing with an unknown-model error.
  */
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 interface OpenAiToolCall {
   id: string;
@@ -731,13 +731,9 @@ export class AgentService {
    */
   private explainFailure(e: unknown): string {
     const direct = this.settings.mode() === 'direct';
-    const providerName = !direct
-      ? 'Anthropic'
-      : this.settings.provider() === 'openai'
-      ? 'OpenAI'
-      : this.settings.provider() === 'gemini'
-      ? 'Gemini'
-      : 'Anthropic';
+    // Backend mode always proxies to Anthropic, whatever the direct-mode choice happens
+    // to be, so it is named explicitly rather than read from the provider.
+    const providerName = direct ? PROVIDER_LABELS[this.settings.provider()] : 'Anthropic';
     const status = (e as { status?: number } | null)?.status;
 
     if (e instanceof Error && e.message.startsWith('No API key')) {
@@ -855,7 +851,7 @@ export class AgentService {
 
   /** Groq, through the same OpenAI-compatible endpoint shape. */
   private requestDirectGroq(): Promise<AssistantResponse> {
-    return this.requestChatCompletions(GROQ_URL, GROQ_MODEL, this.settings.groqApiKey());
+    return this.requestChatCompletions(GROQ_URL, this.settings.groqModel(), this.settings.groqApiKey());
   }
 
   /** One turn against any OpenAI-compatible Chat Completions endpoint. */

@@ -11,6 +11,13 @@ import { ApiProvider, TransportMode } from '../models';
  * key that went with it appearing to vanish. A list means adding a provider is one edit
  * rather than one edit and a trap.
  */
+/**
+ * Groq retires hosted models on its own schedule, and a retired name fails every request
+ * with "the model does not exist". Hardcoding one made the app dead until a rebuild, so it
+ * is editable and this is only the starting value.
+ */
+export const GROQ_DEFAULT_MODEL = 'llama-3.1-8b-instant';
+
 const PROVIDERS: ApiProvider[] = ['anthropic', 'openai', 'gemini', 'groq'];
 
 const KEY = 'assistant-settings-v1';
@@ -22,6 +29,7 @@ interface Settings {
   openaiApiKey: string;
   geminiApiKey: string;
   groqApiKey: string;
+  groqModel: string;
 }
 
 function defaults(): Settings {
@@ -36,6 +44,7 @@ function defaults(): Settings {
     openaiApiKey: '',
     geminiApiKey: '',
     groqApiKey: '',
+    groqModel: GROQ_DEFAULT_MODEL,
   };
 }
 
@@ -61,6 +70,7 @@ export class SettingsService {
   openaiApiKey = signal<string>('');
   geminiApiKey = signal<string>('');
   groqApiKey = signal<string>('');
+  groqModel = signal<string>(GROQ_DEFAULT_MODEL);
 
   constructor(private storage: StorageService) {
     const fallback = defaults();
@@ -74,6 +84,12 @@ export class SettingsService {
     this.openaiApiKey.set(typeof saved.openaiApiKey === 'string' ? saved.openaiApiKey : '');
     this.geminiApiKey.set(typeof saved.geminiApiKey === 'string' ? saved.geminiApiKey : '');
     this.groqApiKey.set(typeof saved.groqApiKey === 'string' ? saved.groqApiKey : '');
+    // An empty stored value would silently send no model at all, so it falls back.
+    this.groqModel.set(
+      typeof saved.groqModel === 'string' && saved.groqModel.trim() !== ''
+        ? saved.groqModel.trim()
+        : GROQ_DEFAULT_MODEL
+    );
   }
 
   /** The key for whichever provider is currently selected. */
@@ -129,6 +145,11 @@ export class SettingsService {
     this.save();
   }
 
+  setGroqModel(model: string) {
+    this.groqModel.set(model.trim() === '' ? GROQ_DEFAULT_MODEL : model.trim());
+    this.save();
+  }
+
   setGeminiApiKey(key: string) {
     this.geminiApiKey.set(key.trim());
     this.save();
@@ -147,6 +168,7 @@ export class SettingsService {
       openaiApiKey: this.openaiApiKey(),
       geminiApiKey: this.geminiApiKey(),
       groqApiKey: this.groqApiKey(),
+      groqModel: this.groqModel(),
     });
   }
 }

@@ -142,6 +142,18 @@ export type TransportMode = 'backend' | 'direct';
  */
 export type ApiProvider = 'anthropic' | 'openai' | 'gemini' | 'groq';
 
+/**
+ * Display names, in one place. These used to be a chain of ternaries in the error handler
+ * and a separate map in Settings, so a newly added provider was labelled "Anthropic" in its
+ * own error messages.
+ */
+export const PROVIDER_LABELS: Record<ApiProvider, string> = {
+  anthropic: 'Anthropic',
+  openai: 'OpenAI',
+  gemini: 'Gemini',
+  groq: 'Groq',
+};
+
 // ---------------- Growth tracker (roadmap + habits) ----------------
 
 export type TrackKey = 'career' | 'health' | 'habits' | 'balance';
