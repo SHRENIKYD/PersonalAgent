@@ -2424,3 +2424,19 @@ summary:focus-visible {
 /* The fold row is the heading now, so a section's first paragraph should not add to the
    gap the header already leaves. */
 .fold-body > p:first-child { margin-top: 0; }
+
+/* Sub-heading inside a folded section, quieter than the fold's own label. */
+.setting-sub {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin: 18px 0 8px;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.ghost-btn.active {
+  border-color: var(--accent-dim);
+  color: var(--text);
+  background: var(--panel-2);
+}

@@ -86,6 +86,47 @@ export function eveningBrief(input: BriefInput): Brief | null {
   return { title: 'Still open today', body: open.join(' · ') };
 }
 
+/**
+ * A short nudge for the hourly checks, or nothing.
+ *
+ * Deliberately not the morning brief repeated: sixteen copies of the same list is how a
+ * person learns to swipe the notification away without reading it, and then the 7am one goes
+ * with it. This only speaks when something is actually outstanding, so a day you have
+ * trained and logged goes quiet by itself.
+ */
+export function hourlyNudge(input: BriefInput, hour: number): Brief | null {
+  const open: string[] = [];
+
+  // Training is worth raising in the afternoon, not at 8am when the day has not started.
+  if (hour >= 12 && input.workout && !input.workoutLogged) {
+    open.push(`${shortName(input.workout.name)} not done`);
+  }
+  const due = dueToday(input.tasks, input.today);
+  if (due.length) open.push(listTasks(due));
+  const overdue = overdueTasks(input.tasks, input.today);
+  if (overdue.length) open.push(`${overdue.length} overdue`);
+
+  if (open.length === 0) return null;
+  return { title: 'Still open', body: open.join(' · ') };
+}
+
+/**
+ * The water reminder.
+ *
+ * The text changes through the day rather than repeating one line, because an identical
+ * notification arriving on the hour is the definition of something you stop seeing.
+ */
+export function waterReminder(hour: number): Brief {
+  const line =
+    hour < 9 ? 'First glass of the day — 500ml before the gym.'
+    : hour < 12 ? 'Top up. You should be a litre in by midday.'
+    : hour < 15 ? 'Halfway. Keep a bottle on the desk.'
+    : hour < 18 ? 'Afternoon glass — this is where most days slip.'
+    : hour < 21 ? 'Evening glass, before dinner.'
+    : 'Last one — go easy this close to bed.';
+  return { title: 'Drink water', body: line };
+}
+
 function dueToday(tasks: Task[], today: string): Task[] {
   return tasks.filter(t => !t.done && t.due === today);
 }
