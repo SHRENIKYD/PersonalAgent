@@ -20,6 +20,8 @@ import { SyncService } from './services/sync.service';
 import { BackButtonService } from './services/back-button.service';
 import { NotifyService } from './services/notify.service';
 import { ScrollPulseService } from './services/scroll-pulse.service';
+import { SceneComponent } from './components/scene/scene.component';
+import { SceneService } from './services/scene.service';
 
 const BOOT_SEEN_KEY = 'jarvis-boot-seen';
 
@@ -29,6 +31,7 @@ const BOOT_SEEN_KEY = 'jarvis-boot-seen';
   imports: [
     CommonModule,
     BootComponent,
+    SceneComponent,
     ContextRailComponent,
     SidebarComponent,
     BottomNavComponent,
@@ -45,7 +48,8 @@ const BOOT_SEEN_KEY = 'jarvis-boot-seen';
   ],
   template: `
     <app-boot *ngIf="showBoot()" (done)="dismissBoot()"></app-boot>
-    <div class="app">
+    <app-scene *ngIf="scenes.active()"></app-scene>
+    <div class="app" [class.over-scene]="scenes.active()" [class.lite]="scenes.mode() === 'lite'">
       <app-sidebar></app-sidebar>
       <main class="main">
         <app-section-nav></app-section-nav>
@@ -90,6 +94,7 @@ export class AppComponent {
     // launch, which must happen whether or not the Settings tab is ever opened.
     private notify: NotifyService,
     pulse: ScrollPulseService,
+    public scenes: SceneService,
   ) {
     // Starts the scroll-velocity listener that drives the header trace. Nothing else reads
     // it, so it is started here rather than by whichever component happens to mount first.
