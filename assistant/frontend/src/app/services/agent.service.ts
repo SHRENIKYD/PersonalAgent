@@ -28,11 +28,19 @@ import {
   SUPPLEMENTS,
   VEG_MEALS,
   WORKOUT_DAYS,
+  Exercise,
   absForDay,
   mealTotals,
   musclesFor,
   workoutForDate,
 } from '../fitness-data';
+import {
+  hasStalledTwice,
+  nextSetAdvice,
+  parseRepTarget,
+  volumeByGroup,
+  weeklyChange,
+} from '../fitness-progress';
 
 /** Splits "Romanian deadlift (light–moderate)" into name and note. */
 function splitNote(name: string): { name: string; note?: string } {
@@ -289,6 +297,44 @@ const TOOLS: ToolDefinition[] = [
         },
       },
     },
+  },
+  {
+    name: 'get_progress',
+    description:
+      'Strength progress on one exercise, or body-weight trend when no exercise is given. ' +
+      'Returns what was actually lifted last session and what to do next, plus the 7-day ' +
+      'body-weight average and its weekly change. Use this for "am I progressing", "what ' +
+      'should I lift today", "am I losing weight".',
+    input_schema: {
+      type: 'object',
+      properties: {
+        exercise: {
+          type: 'string',
+          description: 'Exact exercise name from the plan. Omit for body weight only.',
+        },
+      },
+    },
+  },
+  {
+    name: 'log_weight',
+    description:
+      "Record the user's body weight in kilograms for a date. One reading per day; logging " +
+      'again for the same date replaces it.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        kg: { type: 'number', description: 'Body weight in kilograms.' },
+        date: { type: 'string', description: 'YYYY-MM-DD. Defaults to today.' },
+      },
+      required: ['kg'],
+    },
+  },
+  {
+    name: 'weekly_volume',
+    description:
+      'Hard sets per muscle group over the last 7 days, from what was actually logged. Use ' +
+      'for "have I trained legs enough", "what am I neglecting".',
+    input_schema: { type: 'object', properties: {} },
   },
   {
     name: 'log_fitness',
@@ -729,6 +775,22 @@ export class AgentService {
    * different ways, and "something went wrong" sends people to the wrong place —
    * a 401 in direct mode is a bad key, not a broken app.
    */
+  /** Exercise lookup by name, case- and whitespace-insensitive so chat spelling can be loose. */
+  private findExercise(name: string): Exercise | undefined {
+    const want = name.trim().toLowerCase();
+    for (const day of WORKOUT_DAYS) {
+      const hit =
+        day.exercises.find(e => e.name.toLowerCase() === want) ??
+        day.exercises.find(e => e.name.toLowerCase().includes(want));
+      if (hit) return hit;
+    }
+    return undefined;
+  }
+
+  private groupOfExercise(name: string): string | undefined {
+    return this.findExercise(name)?.group;
+  }
+
   private explainFailure(e: unknown): string {
     const direct = this.settings.mode() === 'direct';
     // Backend mode always proxies to Anthropic, whatever the direct-mode choice happens
@@ -1150,6 +1212,73 @@ export class AgentService {
               'Supplements:',
               ...SUPPLEMENTS.map(x => `- ${x.supplement} — ${x.when}. ${x.notes}`),
             ].join('\n'),
+          };
+        }
+
+        case 'log_weight': {
+          const kg = Number(input['kg']);
+          const date = String(input['date'] ?? '').trim() || new Date().toISOString().slice(0, 10);
+          if (!Number.isFinite(kg) || kg <= 0) {
+            return { label: 'Weight not logged', result: 'A positive weight in kg is required.', isError: true };
+          }
+          this.state.logWeight(date, kg);
+          const change = weeklyChange(this.state.weightEntries());
+          return {
+            label: `Logged ${kg}kg for ${date}`,
+            result:
+              `Recorded ${kg}kg on ${date}.` +
+              (change === null
+                ? ' Not enough history yet for a weekly trend.'
+                : ` 7-day average is moving ${change > 0 ? '+' : ''}${change}kg per week.`),
+          };
+        }
+
+        case 'weekly_volume': {
+          const to = new Date().toISOString().slice(0, 10);
+          const from = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
+          const vol = volumeByGroup(this.state.setLog(), n => this.groupOfExercise(n), from, to);
+          if (vol.length === 0) {
+            return { label: 'Read weekly volume', result: 'No sets logged in the last 7 days.' };
+          }
+          return {
+            label: 'Read weekly volume',
+            result: `Hard sets per group, ${from} to ${to}: ` +
+              vol.map(v => `${v.group} ${v.sets}`).join(', ') + '.',
+          };
+        }
+
+        case 'get_progress': {
+          const today = new Date().toISOString().slice(0, 10);
+          const entries = this.state.weightEntries();
+          const change = weeklyChange(entries);
+          const latest = entries.length ? entries[entries.length - 1] : null;
+          const bodyLine = latest
+            ? `Body weight ${latest.kg}kg on ${latest.date}` +
+              (change === null ? ', not enough history for a trend yet.' : `, trending ${change > 0 ? '+' : ''}${change}kg per week.`)
+            : 'No body weight recorded yet.';
+
+          const name = String(input['exercise'] ?? '').trim();
+          if (name === '') return { label: 'Read progress', result: bodyLine };
+
+          const ex = this.findExercise(name);
+          if (!ex) {
+            return {
+              label: 'Read progress',
+              result: `No exercise named "${name}" in the plan. ${bodyLine}`,
+              isError: true,
+            };
+          }
+          const prev = this.state.lastSession(ex.name, today);
+          const target = parseRepTarget(ex.sets);
+          const stalled = hasStalledTwice(this.state.recentSessions(ex.name, today), target);
+          const advice = nextSetAdvice(prev?.sets ?? null, target, ex.group ?? '', stalled);
+          const best = this.state.personalBest(ex.name);
+          return {
+            label: `Read progress on ${ex.name}`,
+            result:
+              `${ex.name} (target ${ex.sets}). ${advice.text}.` +
+              (best ? ` Best ever ${best.weight}kg × ${best.reps}.` : '') +
+              ` ${bodyLine}`,
           };
         }
 

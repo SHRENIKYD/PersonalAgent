@@ -206,4 +206,6 @@ export interface SyncPayload {
   /** Optional: absent in blobs written by a device running a build older than the
    *  strength log, which must still merge cleanly rather than throwing. */
   setLog?: SetLog;
+  /** Optional for the same reason — body weight arrived after the first sync format. */
+  weightLog?: Record<string, number>;
 }

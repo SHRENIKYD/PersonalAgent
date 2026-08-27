@@ -19,6 +19,7 @@ const KEYS = {
   notes: 'assistant-notes-v1',
   roadmap: 'assistant-roadmap-v1',
   fitness: 'assistant-fitness-v1',
+  weight: 'assistant-weight-v1',
   sets: 'assistant-sets-v1',
 };
 
@@ -88,6 +89,12 @@ export class StateService {
   roadmap = signal<RoadmapState>(defaultRoadmap());
   /** key = `${YYYY-MM-DD}:${workoutDayName}` or `${YYYY-MM-DD}:diet` -> done */
   fitnessLog = signal<Record<string, boolean>>({});
+
+  /**
+   * Body weight by ISO date, one reading per day. Keyed by date rather than appended to a
+   * list so weighing twice in a morning corrects the day instead of skewing it.
+   */
+  weightLog = signal<Record<string, number>>({});
   setLog = signal<SetLog>({});
   saveStatus = signal<string>('');
 
@@ -105,6 +112,7 @@ export class StateService {
     this.notes.set(this.storage.get<Note[]>(KEYS.notes, []));
     this.roadmap.set(padRoadmapTracks(this.storage.get<RoadmapState>(KEYS.roadmap, defaultRoadmap())));
     this.fitnessLog.set(this.storage.get<Record<string, boolean>>(KEYS.fitness, {}));
+    this.weightLog.set(this.storage.get<Record<string, number>>(KEYS.weight, {}));
     this.setLog.set(this.storage.get<SetLog>(KEYS.sets, {}));
   }
 
@@ -387,6 +395,45 @@ export class StateService {
     return date ? { date, sets: log[this.setKey(date, exercise)] } : null;
   }
 
+  // ---------------- body weight ----------------
+
+  /** Readings oldest first, which is what every chart and average here expects. */
+  weightEntries = computed(() =>
+    Object.entries(this.weightLog())
+      .map(([date, kg]) => ({ date, kg }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+  );
+
+  logWeight(date: string, kg: number) {
+    if (!Number.isFinite(kg) || kg <= 0) return;
+    this.weightLog.update(log => ({ ...log, [date]: Math.round(kg * 10) / 10 }));
+    this.scheduleSave();
+  }
+
+  removeWeight(date: string) {
+    this.weightLog.update(log => {
+      const next = { ...log };
+      delete next[date];
+      return next;
+    });
+    this.scheduleSave();
+  }
+
+  /**
+   * The last few sessions on a movement, oldest first — what a stall check needs, since one
+   * short session is a bad night's sleep and two is a pattern.
+   */
+  recentSessions(exercise: string, beforeDate: string, count = 3): { date: string; sets: SetEntry[] }[] {
+    const log = this.setLog();
+    return Object.keys(log)
+      .filter(k => k.endsWith(`|${exercise}`))
+      .map(k => k.slice(0, k.indexOf('|')))
+      .filter(d => d < beforeDate)
+      .sort()
+      .slice(-count)
+      .map(date => ({ date, sets: log[this.setKey(date, exercise)] }));
+  }
+
   /** Heaviest single set ever recorded for an exercise — the number worth beating. */
   personalBest(exercise: string): SetEntry | null {
     const log = this.setLog();
@@ -425,6 +472,7 @@ export class StateService {
       notes: this.notes(),
       roadmap: this.roadmap(),
       fitnessLog: this.fitnessLog(),
+      weightLog: this.weightLog(),
       setLog: this.setLog(),
     };
   }
@@ -441,6 +489,7 @@ export class StateService {
     this.notes.set(payload.notes ?? []);
     this.roadmap.set(payload.roadmap ? padRoadmapTracks(payload.roadmap) : defaultRoadmap());
     this.fitnessLog.set(payload.fitnessLog ?? {});
+    this.weightLog.set(payload.weightLog ?? {});
     this.setLog.set(payload.setLog ?? {});
     this.scheduleSave();
     this.suppressChangeSignal = false;
@@ -459,9 +508,10 @@ export class StateService {
       const ok2 = this.storage.set(KEYS.notes, this.notes());
       const ok3 = this.storage.set(KEYS.roadmap, this.roadmap());
       const ok4 = this.storage.set(KEYS.fitness, this.fitnessLog());
+      const ok6 = this.storage.set(KEYS.weight, this.weightLog());
       const ok5 = this.storage.set(KEYS.sets, this.setLog());
       this.saveStatus.set(
-        ok1 && ok2 && ok3 && ok4 && ok5
+        ok1 && ok2 && ok3 && ok4 && ok5 && ok6
           ? 'Saved'
           : 'Save failed — check browser storage settings'
       );
