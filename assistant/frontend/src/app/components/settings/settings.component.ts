@@ -6,6 +6,7 @@ import { SyncService } from '../../services/sync.service';
 import { VoiceService } from '../../services/voice.service';
 import { UpdateService } from '../../services/update.service';
 import { BackButtonService } from '../../services/back-button.service';
+import { NotifyService } from '../../services/notify.service';
 import { BackupService } from '../../services/backup.service';
 import { ApiProvider, PROVIDER_LABELS } from '../../models';
 import { environment } from '../../../environments/environment';
@@ -325,6 +326,41 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
         </button>
       </details>
 
+      <ng-container *ngIf="notify.available">
+        <h2 class="section-title">Daily briefs</h2>
+        <p class="setting-note">
+          Two notifications a day, assembled on this phone — no account, no server, and they
+          still arrive with no signal and no API key. <strong>7am</strong> is the plan for the
+          day: session, what's due, protein target. <strong>7pm</strong> is what's still open,
+          and stays silent on a day you've finished.
+        </p>
+
+        <div class="mode-row">
+          <button class="mode-btn" [class.active]="notify.enabled()" (click)="notify.setEnabled(true)">
+            <strong>On</strong>
+            <span>Brief at 7am and 7pm.</span>
+          </button>
+          <button class="mode-btn" [class.active]="!notify.enabled()" (click)="notify.setEnabled(false)">
+            <strong>Off</strong>
+            <span>No notifications.</span>
+          </button>
+        </div>
+
+        <p class="setting-note" *ngIf="notify.enabled() && notify.permission() !== 'granted'">
+          ⚠️ Android has not granted notification permission — <strong>nothing will be
+          delivered</strong> until it is allowed under Android Settings → Apps → ECHO →
+          Notifications. (Permission state: {{ notify.permission() }}.)
+        </p>
+        <p class="setting-note" *ngIf="notify.error()">⚠️ {{ notify.error() }}</p>
+        <p class="setting-note" *ngIf="notify.enabled() && notify.lastScheduled() as t">
+          Next week of briefs scheduled {{ t | date:'d MMM, HH:mm' }}.
+        </p>
+
+        <div class="add-row" *ngIf="notify.enabled()">
+          <button class="ghost-btn" (click)="notify.sendTest()">Send one now</button>
+        </div>
+      </ng-container>
+
       <h2 class="section-title">Back button</h2>
       <p class="setting-note">
         Press back once, then reopen this tab. If the count is still 0 the app never received
@@ -378,6 +414,7 @@ export class SettingsComponent {
     public update: UpdateService,
     public backup: BackupService,
     public back: BackButtonService,
+    public notify: NotifyService,
   ) {
     this.draftGistId = sync.gistId();
     // Prefilled so the field shows what is in use rather than sitting empty.
