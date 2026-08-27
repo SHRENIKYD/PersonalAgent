@@ -20,6 +20,16 @@ const EVENING_HOUR = 19;
 const MORNING_ID = 1001;
 const EVENING_ID = 1002;
 
+/**
+ * The status-bar icon, and the colour Android tints it.
+ *
+ * Without a small icon Android falls back to a generic marker — a plain white circle that
+ * says nothing about which app it came from. The drawable is a white silhouette because
+ * Android discards the colour; iconColor is what puts the ember back.
+ */
+const SMALL_ICON = 'ic_stat_echo';
+const ICON_COLOR = '#FF6B1A';
+
 /** How many days ahead to schedule. Rebuilt on every launch, so this only has to cover a
  *  stretch of not opening the app. */
 const DAYS_AHEAD = 7;
@@ -196,6 +206,8 @@ export class NotifyService {
           id: 9999,
           title: brief.title,
           body: brief.body,
+          smallIcon: SMALL_ICON,
+          iconColor: ICON_COLOR,
           schedule: { at: new Date(Date.now() + 2000) },
           extra: { tab: 'workout' },
         }],
@@ -211,6 +223,8 @@ export class NotifyService {
       id,
       title: brief.title,
       body: brief.body,
+      smallIcon: SMALL_ICON,
+      iconColor: ICON_COLOR,
       schedule: { at: when, allowWhileIdle: true },
       extra: { tab },
     };

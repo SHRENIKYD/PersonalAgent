@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The status-bar icon for ECHO's notifications.
+
+  Android draws this as a silhouette: it keeps the alpha channel and throws the colour away,
+  tinting whatever remains. So it is a white stroke on transparent, and anything relying on
+  colour — the ember gradient, the ring around the mark — would simply vanish. What survives
+  is the trace itself, which is the recognisable half of the logo anyway.
+
+  Drawn at 24dp because that is the size the status bar renders, and a shape designed larger
+  and scaled down loses the thin flat sections between beats.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.9"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M1,12 H5.2 L6.6,9.2 L8,12 H9.4 L11,4 L13,20 L14.6,12 H18 L19.4,9.4 L20.8,12 H23" />
+</vector>
