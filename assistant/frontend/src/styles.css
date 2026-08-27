@@ -2251,3 +2251,176 @@ app-bottom-nav {
 }
 
 .opener-ico { width: 17px; height: 17px; flex: 0 0 auto; color: var(--accent-dim); }
+
+/* ---------------- sticky header, with content fading under it ---------------- */
+
+@media (max-width: 720px) {
+  /* Sticky goes on the host, not on .sidebar inside it — exactly the trap the bottom bar
+     fell into. A sticky element can only slide within its containing block, and .sidebar's
+     containing block is the host element, which is 60px tall: no room to move, so it simply
+     scrolled away. The host's containing block is .app, which is as tall as the page. */
+  app-sidebar {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  /* Same translucent treatment as the bottom bar, so the two read as one frame. */
+  .sidebar {
+    background: color-mix(in srgb, var(--panel) 92%, transparent);
+    backdrop-filter: blur(12px);
+  }
+
+  /* The fade itself: a scrim hung off the header's own bottom edge, so it travels with the
+     header and needs no magic number for the header's height. Content dissolves into the
+     page background rather than being cut off by a hard line. */
+  .sidebar::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: 44px;
+    pointer-events: none;
+    /* Three stops, not two: a straight gradient dissolves fastest at the start and leaves a
+       visible edge where it ends. Holding the ground colour briefly, then easing out through
+       a midpoint, thins the text away gradually instead. */
+    background: linear-gradient(
+      to bottom,
+      var(--bg) 0%,
+      color-mix(in srgb, var(--bg) 72%, transparent) 45%,
+      transparent 100%
+    );
+  }
+
+  /* Chat scrolls inside its own box rather than moving the page, so the same effect comes
+     from masking the log itself — and it gets a matching fade at the bottom, where messages
+     run into the composer. */
+  .chat-panel .chat-log {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 20px, #000 calc(100% - 16px), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 20px, #000 calc(100% - 16px), transparent 100%);
+  }
+}
+
+/* ---------------- tap feedback ---------------- */
+
+/*
+ * Android's WebView paints a translucent blue rectangle over whatever you touch, and leaves
+ * it behind on a button that keeps focus after the tap — which is why the last-tapped bottom
+ * bar slot stayed highlighted. The app already shows what is active in its own colours.
+ *
+ * Focus is removed only for pointer input. :focus-visible still draws a ring, so keyboard
+ * users keep track of where they are — dropping focus styling wholesale would trade one
+ * visual annoyance for an unusable interface.
+ */
+:root {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+summary:focus:not(:focus-visible) {
+  outline: none;
+}
+
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------------- progressive overload hints ---------------- */
+
+.set-advice {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* A weight increase is the one thing here worth looking for, so it is the only one coloured. */
+.set-advice.up { color: var(--ok); }
+.set-advice.deload { color: var(--warn); }
+
+/* ---------------- body weight trend ---------------- */
+
+.weight-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.weight-now {
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.weight-delta { font-size: 13px; font-variant-numeric: tabular-nums; }
+.weight-delta.down { color: var(--ok); }
+.weight-delta.up { color: var(--warn); }
+
+.weight-chart {
+  width: 100%;
+  height: 90px;
+  display: block;
+  overflow: visible;
+}
+
+.weight-empty { color: var(--muted); font-size: 13px; }
+
+/* ---------------- collapsible sections ---------------- */
+
+/* No card, no border: a fold reads as the section heading it replaced, so a closed page
+   looks the way it always did. Only the chevron and the summary are new. */
+.fold {
+  border: 0;
+  background: transparent;
+  margin-bottom: 2px;
+}
+
+.fold-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 18px 0 8px;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fold-head:hover { filter: none; }
+.fold-head:hover .fold-label { color: var(--text); }
+
+/* Deliberately identical to .section-title — same face, size, tracking and colour. */
+.fold-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+  transition: color 0.15s ease;
+}
+
+.fold-note {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fold-body { padding: 0 0 6px; }
+
+/* The fold row is the heading now, so a section's first paragraph should not add to the
+   gap the header already leaves. */
+.fold-body > p:first-child { margin-top: 0; }

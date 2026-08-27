@@ -18,6 +18,7 @@ import { UiService } from './services/ui.service';
 import { StateService } from './services/state.service';
 import { SyncService } from './services/sync.service';
 import { BackButtonService } from './services/back-button.service';
+import { NotifyService } from './services/notify.service';
 
 const BOOT_SEEN_KEY = 'jarvis-boot-seen';
 
@@ -84,6 +85,9 @@ export class AppComponent {
     // Injected purely so it is constructed — it wires the back gesture on creation and has
     // no API the template needs.
     public back: BackButtonService,
+    // Injected purely so it is constructed: it reschedules the next week of briefs on
+    // launch, which must happen whether or not the Settings tab is ever opened.
+    private notify: NotifyService,
   ) {}
 
   dismissBoot() {

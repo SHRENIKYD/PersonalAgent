@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { StateService } from './state.service';
+import { buildSpreadsheet, Sheet } from '../export-sheet';
 import { SyncPayload } from '../models';
 
 /** Bumped only if the payload shape changes incompatibly. */
@@ -49,21 +50,85 @@ export class BackupService {
     return `echo-backup-${new Date().toISOString().slice(0, 10)}.json`;
   }
 
+  /**
+   * The same data as a spreadsheet: one sheet per thing, sortable and chartable.
+   *
+   * The JSON backup is for restoring — it round-trips exactly and is the wrong shape for
+   * reading. This is the other half; nobody reads a training history as nested JSON.
+   */
+  sheets(): Sheet[] {
+    const sets: (string | number)[][] = [];
+    Object.entries(this.state.setLog()).forEach(([key, entries]) => {
+      const bar = key.indexOf('|');
+      const date = key.slice(0, bar);
+      const exercise = key.slice(bar + 1);
+      entries.forEach((e, i) => sets.push([date, exercise, i + 1, e.weight, e.reps, e.weight * e.reps]));
+    });
+    sets.sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+
+    return [
+      {
+        name: 'Sets',
+        headers: ['Date', 'Exercise', 'Set', 'Weight kg', 'Reps', 'Volume kg'],
+        rows: sets,
+      },
+      {
+        name: 'Body weight',
+        headers: ['Date', 'Weight kg'],
+        rows: this.state.weightEntries().map(e => [e.date, e.kg]),
+      },
+      {
+        name: 'Tasks',
+        headers: ['Title', 'Due', 'Priority', 'Done', 'Created'],
+        rows: this.state.tasks().map(t => [t.title, t.due || '', t.priority, t.done ? 'yes' : 'no', t.created ?? '']),
+      },
+      {
+        name: 'Notes',
+        headers: ['Title', 'Body'],
+        rows: this.state.notes().map(n => [n.title, n.body ?? '']),
+      },
+      {
+        name: 'Adherence',
+        headers: ['Date', 'What'],
+        rows: Object.keys(this.state.fitnessLog())
+          .filter(k => this.state.fitnessLog()[k])
+          .sort()
+          .map(k => [k.split(':')[0], k.split(':')[1] ?? '']),
+      },
+    ];
+  }
+
+  downloadSpreadsheet() {
+    const name = `echo-data-${new Date().toISOString().slice(0, 10)}.xls`;
+    this.saveFile(buildSpreadsheet(this.sheets()), name, 'application/vnd.ms-excel');
+  }
+
   download() {
+    this.saveFile(this.toJson(), this.filename(), 'application/json');
+  }
+
+  /**
+   * Writes a string out as a file.
+   *
+   * An <a download> is inert inside Android's WebView, which is why "Copy backup" exists
+   * beside it — the failure is caught and named rather than leaving a button that appears
+   * to do nothing.
+   */
+  private saveFile(text: string, name: string, mime: string) {
     this.error.set('');
     try {
-      const blob = new Blob([this.toJson()], { type: 'application/json' });
+      const blob = new Blob([text], { type: mime });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = this.filename();
+      a.download = name;
       document.body.appendChild(a);
       a.click();
       a.remove();
       // Revoked on a delay: revoking synchronously can cancel the download in some
       // browsers before it has actually read the blob.
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
-      this.status.set(`Saved ${this.filename()}.`);
+      this.status.set(`Saved ${name}.`);
     } catch (e) {
       this.error.set(
         `Could not save a file here (${e instanceof Error ? e.message : String(e)}). ` +

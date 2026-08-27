@@ -20,6 +20,7 @@ import {
   ToolUseBlock,
   WorkoutCard,
   ChatCard,
+  PROVIDER_LABELS,
 } from '../models';
 import {
   WorkoutDay,
@@ -29,11 +30,20 @@ import {
   SUPPLEMENTS,
   VEG_MEALS,
   WORKOUT_DAYS,
+  Exercise,
   absForDay,
   mealTotals,
   musclesFor,
   workoutForDate,
 } from '../fitness-data';
+import {
+  hasStalledTwice,
+  nextSetAdvice,
+  parseRepTarget,
+  volumeByGroup,
+  weeklyChange,
+} from '../fitness-progress';
+import { readSse, parseJson } from './sse';
 
 /** Splits "Romanian deadlift (light–moderate)" into name and note. */
 function splitNote(name: string): { name: string; note?: string } {
@@ -300,6 +310,44 @@ const TOOLS: ToolDefinition[] = [
     },
   },
   {
+    name: 'get_progress',
+    description:
+      'Strength progress on one exercise, or body-weight trend when no exercise is given. ' +
+      'Returns what was actually lifted last session and what to do next, plus the 7-day ' +
+      'body-weight average and its weekly change. Use this for "am I progressing", "what ' +
+      'should I lift today", "am I losing weight".',
+    input_schema: {
+      type: 'object',
+      properties: {
+        exercise: {
+          type: 'string',
+          description: 'Exact exercise name from the plan. Omit for body weight only.',
+        },
+      },
+    },
+  },
+  {
+    name: 'log_weight',
+    description:
+      "Record the user's body weight in kilograms for a date. One reading per day; logging " +
+      'again for the same date replaces it.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        kg: { type: 'number', description: 'Body weight in kilograms.' },
+        date: { type: 'string', description: 'YYYY-MM-DD. Defaults to today.' },
+      },
+      required: ['kg'],
+    },
+  },
+  {
+    name: 'weekly_volume',
+    description:
+      'Hard sets per muscle group over the last 7 days, from what was actually logged. Use ' +
+      'for "have I trained legs enough", "what am I neglecting".',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
     name: 'log_fitness',
     description:
       "Mark the day's workout or diet as done, or record a completed set with its weight and " +
@@ -412,6 +460,16 @@ const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const OPENAI_MODEL = 'gpt-5.1';
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 
+/**
+ * Groq serves an OpenAI-compatible Chat Completions API, so it reuses that whole path —
+ * the same message shaping, the same tool format, the same response parsing. Only the
+ * endpoint, the key and the model differ.
+ *
+ * Groq rotates its hosted models faster than the other providers, so this is the one worth
+ * checking against console.groq.com if requests start failing with an unknown-model error.
+ */
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+
 interface OpenAiToolCall {
   id: string;
   type: 'function';
@@ -426,11 +484,85 @@ interface OpenAiMessage {
 }
 
 /** Anthropic-shaped tool defs -> OpenAI's { type: 'function', function: {...} } shape. */
+/**
+ * Optional parameters are widened to accept null on the way out.
+ *
+ * Models routinely fill every declared property and pass null for the ones they have nothing
+ * to say about. Anthropic tolerates that; Groq validates strictly and rejects the whole call
+ * — "parameters for tool get_progress did not match schema: `/exercise`: expected string,
+ * but got null" — which surfaces as a failed message rather than a missing argument. Widening
+ * only the properties that are not required keeps required arguments strict, where a null
+ * genuinely is a bug worth rejecting.
+ */
+/** One SSE frame from an Anthropic message stream. */
+interface AnthropicStreamEvent {
+  type: string;
+  index?: number;
+  content_block?: Record<string, unknown>;
+  delta?: {
+    type?: string;
+    text?: string;
+    thinking?: string;
+    signature?: string;
+    partial_json?: string;
+    stop_reason?: string;
+  };
+}
+
+/** One SSE frame from a Chat Completions stream. */
+interface OpenAiStreamChunk {
+  choices?: {
+    delta?: {
+      content?: string;
+      tool_calls?: {
+        index: number;
+        id?: string;
+        function?: { name?: string; arguments?: string };
+      }[];
+    };
+  }[];
+}
+
+/**
+ * fetch does not throw on a 4xx, and the error handler upstream reads Angular's shape, so a
+ * failed streaming response is reshaped to match — otherwise a Groq rejection would surface
+ * as "see the browser console" rather than the reason it gave.
+ */
+async function httpErrorFrom(res: Response): Promise<unknown> {
+  const text = await res.text().catch(() => '');
+  return { status: res.status, error: parseJson<unknown>(text) ?? { message: text } };
+}
+
 function toOpenAiTools(tools: ToolDefinition[]): unknown[] {
   return tools.map(t => ({
     type: 'function',
-    function: { name: t.name, description: t.description, parameters: t.input_schema },
+    function: {
+      name: t.name,
+      description: t.description,
+      parameters: nullableOptionals(t.input_schema),
+    },
   }));
+}
+
+function nullableOptionals(schema: ToolDefinition['input_schema']) {
+  const required = new Set(schema.required ?? []);
+  const properties: Record<string, unknown> = {};
+
+  Object.entries(schema.properties).forEach(([name, def]) => {
+    const prop = def as { type?: unknown; enum?: unknown[] };
+    if (required.has(name) || typeof prop.type !== 'string') {
+      properties[name] = def;
+      return;
+    }
+    properties[name] = {
+      ...prop,
+      type: [prop.type, 'null'],
+      // An enum has to admit null too, or the widened type is rejected against the values.
+      ...(Array.isArray(prop.enum) ? { enum: [...prop.enum, null] } : {}),
+    };
+  });
+
+  return { ...schema, properties };
 }
 
 /**
@@ -671,7 +803,15 @@ export class AgentService {
     let slot = pendingIndex;
 
     for (let turn = 0; turn < MAX_TURNS; turn++) {
-      const res = await this.requestTurn();
+      // Render prose as it arrives. The slot is the pending bubble, so partial text simply
+      // replaces "Thinking…" and grows — and if the turn ends in a tool call instead, the
+      // card that follows overwrites it.
+      const streamSlot = slot;
+      let streamed = '';
+      const res = await this.requestTurn(delta => {
+        streamed += delta;
+        this.replace(streamSlot, { kind: 'assistant', text: streamed, pending: true });
+      });
       const blocks = res.content ?? [];
 
       // Echo the assistant turn back verbatim. Thinking blocks in particular must
@@ -738,15 +878,27 @@ export class AgentService {
    * different ways, and "something went wrong" sends people to the wrong place —
    * a 401 in direct mode is a bad key, not a broken app.
    */
+  /** Exercise lookup by name, case- and whitespace-insensitive so chat spelling can be loose. */
+  private findExercise(name: string): Exercise | undefined {
+    const want = name.trim().toLowerCase();
+    for (const day of WORKOUT_DAYS) {
+      const hit =
+        day.exercises.find(e => e.name.toLowerCase() === want) ??
+        day.exercises.find(e => e.name.toLowerCase().includes(want));
+      if (hit) return hit;
+    }
+    return undefined;
+  }
+
+  private groupOfExercise(name: string): string | undefined {
+    return this.findExercise(name)?.group;
+  }
+
   private explainFailure(e: unknown): string {
     const direct = this.settings.mode() === 'direct';
-    const providerName = !direct
-      ? 'Anthropic'
-      : this.settings.provider() === 'openai'
-      ? 'OpenAI'
-      : this.settings.provider() === 'gemini'
-      ? 'Gemini'
-      : 'Anthropic';
+    // Backend mode always proxies to Anthropic, whatever the direct-mode choice happens
+    // to be, so it is named explicitly rather than read from the provider.
+    const providerName = direct ? PROVIDER_LABELS[this.settings.provider()] : 'Anthropic';
     const status = (e as { status?: number } | null)?.status;
 
     if (e instanceof Error && e.message.startsWith('No API key')) {
@@ -804,11 +956,14 @@ export class AgentService {
   );
 
   /** One request to the model, via whichever transport is configured. */
-  private requestTurn(): Promise<AssistantResponse> {
+  private requestTurn(onDelta?: (text: string) => void): Promise<AssistantResponse> {
     // The on-device model wins when it is actually loaded, whatever else is configured —
-    // choosing it is the point of loading it, and it costs nothing per message.
+    // choosing it is the point of loading it, and it costs nothing per message. It does not
+    // stream yet: MediaPipe can emit partial results, but that is a separate change.
     if (this.local.available && this.local.loaded()) return this.requestLocal();
-    return this.settings.mode() === 'direct' ? this.requestDirect() : this.requestViaBackend();
+    return this.settings.mode() === 'direct'
+      ? this.requestDirect(onDelta)
+      : this.requestViaBackend();
   }
 
   /**
@@ -871,11 +1026,12 @@ export class AgentService {
   }
 
   /** One request to whichever provider direct mode is currently set to. */
-  private requestDirect(): Promise<AssistantResponse> {
+  private requestDirect(onDelta?: (text: string) => void): Promise<AssistantResponse> {
     switch (this.settings.provider()) {
-      case 'openai': return this.requestDirectOpenAi();
+      case 'openai': return this.requestDirectOpenAi(onDelta);
       case 'gemini': return this.requestDirectGemini();
-      default: return this.requestDirectAnthropic();
+      case 'groq': return this.requestDirectGroq(onDelta);
+      default: return this.requestDirectAnthropic(onDelta);
     }
   }
 
@@ -883,33 +1039,88 @@ export class AgentService {
    * Straight to Anthropic from the browser. Needs the dangerous-direct-browser-access
    * header — without it the API rejects requests carrying an Origin.
    */
-  private async requestDirectAnthropic(): Promise<AssistantResponse> {
+  private async requestDirectAnthropic(onDelta?: (text: string) => void): Promise<AssistantResponse> {
     const key = this.settings.apiKey().trim();
     if (key === '') {
       throw new Error('No API key set. Add one on the Settings tab.');
     }
 
-    const headers = new HttpHeaders({
+    const headerMap: Record<string, string> = {
       'content-type': 'application/json',
       'x-api-key': key,
       'anthropic-version': '2023-06-01',
       'anthropic-dangerous-direct-browser-access': 'true',
+    };
+    const payload = {
+      ...DIRECT_CONFIG,
+      system: systemPrompt(true),
+      messages: this.history,
+      tools: ALL_TOOLS,
+    };
+
+    if (!onDelta) {
+      const res = await firstValueFrom(
+        this.http.post<{ content?: ContentBlock[]; stop_reason?: string | null }>(
+          ANTHROPIC_URL, payload, { headers: new HttpHeaders(headerMap) }
+        )
+      );
+      return { content: res.content ?? [], stop_reason: res.stop_reason ?? null };
+    }
+
+    const res = await fetch(ANTHROPIC_URL, {
+      method: 'POST',
+      headers: headerMap,
+      body: JSON.stringify({ ...payload, stream: true }),
+    });
+    if (!res.ok) throw await httpErrorFrom(res);
+
+    // Anthropic streams block by block: content_block_start announces the kind, deltas carry
+    // either text or a slice of a tool call's JSON arguments, content_block_stop closes it.
+    // Blocks are rebuilt in place because the history round-trips them verbatim — a thinking
+    // block dropped or reordered makes the next request invalid.
+    const blocks: ContentBlock[] = [];
+    const partialJson = new Map<number, string>();
+    let stopReason: string | null = null;
+
+    await readSse(res, raw => {
+      const ev = parseJson<AnthropicStreamEvent>(raw);
+      if (!ev || ev.index === undefined && ev.type !== 'message_delta') return;
+
+      if (ev.type === 'content_block_start' && ev.content_block && ev.index !== undefined) {
+        blocks[ev.index] = { ...ev.content_block } as ContentBlock;
+        if (ev.content_block['type'] === 'tool_use') partialJson.set(ev.index, '');
+        return;
+      }
+
+      if (ev.type === 'content_block_delta' && ev.index !== undefined && ev.delta) {
+        const block = blocks[ev.index] as Record<string, unknown> | undefined;
+        const d = ev.delta;
+        if (d.type === 'text_delta' && d.text) {
+          if (block) block['text'] = String(block['text'] ?? '') + d.text;
+          onDelta(d.text);
+        } else if (d.type === 'thinking_delta' && d.thinking) {
+          if (block) block['thinking'] = String(block['thinking'] ?? '') + d.thinking;
+        } else if (d.type === 'signature_delta' && d.signature) {
+          if (block) block['signature'] = String(block['signature'] ?? '') + d.signature;
+        } else if (d.type === 'input_json_delta' && d.partial_json !== undefined) {
+          partialJson.set(ev.index, (partialJson.get(ev.index) ?? '') + d.partial_json);
+        }
+        return;
+      }
+
+      if (ev.type === 'content_block_stop' && ev.index !== undefined) {
+        const pending = partialJson.get(ev.index);
+        const block = blocks[ev.index] as Record<string, unknown> | undefined;
+        if (pending !== undefined && block) {
+          block['input'] = parseJson<Record<string, unknown>>(pending || '{}') ?? {};
+        }
+        return;
+      }
+
+      if (ev.type === 'message_delta' && ev.delta?.stop_reason) stopReason = ev.delta.stop_reason;
     });
 
-    const res = await firstValueFrom(
-      this.http.post<{ content?: ContentBlock[]; stop_reason?: string | null }>(
-        ANTHROPIC_URL,
-        {
-          ...DIRECT_CONFIG,
-          system: systemPrompt(true),
-          messages: this.history,
-          tools: ALL_TOOLS,
-        },
-        { headers }
-      )
-    );
-
-    return { content: res.content ?? [], stop_reason: res.stop_reason ?? null };
+    return { content: blocks.filter(Boolean), stop_reason: stopReason };
   }
 
   /**
@@ -918,33 +1129,86 @@ export class AgentService {
    * server tool and has no OpenAI equivalent in this shape, so it's left out here entirely;
    * the system prompt only claims that capability when it's actually being sent.
    */
-  private async requestDirectOpenAi(): Promise<AssistantResponse> {
-    const key = this.settings.openaiApiKey().trim();
+  private requestDirectOpenAi(onDelta?: (t: string) => void): Promise<AssistantResponse> {
+    return this.requestChatCompletions(OPENAI_URL, OPENAI_MODEL, this.settings.openaiApiKey(), onDelta);
+  }
+
+  /** Groq, through the same OpenAI-compatible endpoint shape. */
+  private requestDirectGroq(onDelta?: (t: string) => void): Promise<AssistantResponse> {
+    return this.requestChatCompletions(GROQ_URL, this.settings.groqModel(), this.settings.groqApiKey(), onDelta);
+  }
+
+  /** One turn against any OpenAI-compatible Chat Completions endpoint. */
+  private async requestChatCompletions(
+    url: string,
+    model: string,
+    rawKey: string,
+    onDelta?: (text: string) => void,
+  ): Promise<AssistantResponse> {
+    const key = rawKey.trim();
     if (key === '') {
       throw new Error('No API key set. Add one on the Settings tab.');
     }
 
-    const headers = new HttpHeaders({
-      'content-type': 'application/json',
-      authorization: `Bearer ${key}`,
+    const body = {
+      model,
+      messages: toOpenAiMessages(this.history, systemPrompt(false)),
+      tools: toOpenAiTools(TOOLS),
+      stream: !!onDelta,
+    };
+
+    if (!onDelta) {
+      const res = await firstValueFrom(
+        this.http.post<{ choices?: { message: { content?: string | null; tool_calls?: OpenAiToolCall[] } }[] }>(url, body, {
+          headers: new HttpHeaders({ 'content-type': 'application/json', authorization: `Bearer ${key}` }),
+        })
+      );
+      const message = res.choices?.[0]?.message;
+      return { content: message ? fromOpenAiMessage(message) : [], stop_reason: null };
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw await httpErrorFrom(res);
+
+    // Tool calls arrive in fragments keyed by index: the name in one delta, the arguments a
+    // character at a time across many more. They are assembled here and parsed once at the
+    // end, because partial JSON is not parseable and half a tool call is not a tool call.
+    let text = '';
+    const calls = new Map<number, { id: string; name: string; args: string }>();
+
+    await readSse(res, raw => {
+      const chunk = parseJson<OpenAiStreamChunk>(raw);
+      const delta = chunk?.choices?.[0]?.delta;
+      if (!delta) return;
+      if (delta.content) {
+        text += delta.content;
+        onDelta(delta.content);
+      }
+      (delta.tool_calls ?? []).forEach(tc => {
+        const slot = calls.get(tc.index) ?? { id: '', name: '', args: '' };
+        if (tc.id) slot.id = tc.id;
+        if (tc.function?.name) slot.name = tc.function.name;
+        if (tc.function?.arguments) slot.args += tc.function.arguments;
+        calls.set(tc.index, slot);
+      });
     });
 
-    const res = await firstValueFrom(
-      this.http.post<{
-        choices?: { message: { content?: string | null; tool_calls?: OpenAiToolCall[] } }[];
-      }>(
-        OPENAI_URL,
-        {
-          model: OPENAI_MODEL,
-          messages: toOpenAiMessages(this.history, systemPrompt(false)),
-          tools: toOpenAiTools(TOOLS),
-        },
-        { headers }
-      )
-    );
-
-    const message = res.choices?.[0]?.message;
-    return { content: message ? fromOpenAiMessage(message) : [], stop_reason: null };
+    const content: ContentBlock[] = [];
+    if (text) content.push({ type: 'text', text });
+    calls.forEach(c => {
+      if (!c.name) return;
+      content.push({
+        type: 'tool_use',
+        id: c.id || `call_${c.name}`,
+        name: c.name,
+        input: parseJson<Record<string, unknown>>(c.args || '{}') ?? {},
+      });
+    });
+    return { content, stop_reason: calls.size ? 'tool_use' : 'end_turn' };
   }
 
   /**
@@ -1209,6 +1473,73 @@ export class AgentService {
               'Supplements:',
               ...SUPPLEMENTS.map(x => `- ${x.supplement} — ${x.when}. ${x.notes}`),
             ].join('\n'),
+          };
+        }
+
+        case 'log_weight': {
+          const kg = Number(input['kg']);
+          const date = String(input['date'] ?? '').trim() || new Date().toISOString().slice(0, 10);
+          if (!Number.isFinite(kg) || kg <= 0) {
+            return { label: 'Weight not logged', result: 'A positive weight in kg is required.', isError: true };
+          }
+          this.state.logWeight(date, kg);
+          const change = weeklyChange(this.state.weightEntries());
+          return {
+            label: `Logged ${kg}kg for ${date}`,
+            result:
+              `Recorded ${kg}kg on ${date}.` +
+              (change === null
+                ? ' Not enough history yet for a weekly trend.'
+                : ` 7-day average is moving ${change > 0 ? '+' : ''}${change}kg per week.`),
+          };
+        }
+
+        case 'weekly_volume': {
+          const to = new Date().toISOString().slice(0, 10);
+          const from = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
+          const vol = volumeByGroup(this.state.setLog(), n => this.groupOfExercise(n), from, to);
+          if (vol.length === 0) {
+            return { label: 'Read weekly volume', result: 'No sets logged in the last 7 days.' };
+          }
+          return {
+            label: 'Read weekly volume',
+            result: `Hard sets per group, ${from} to ${to}: ` +
+              vol.map(v => `${v.group} ${v.sets}`).join(', ') + '.',
+          };
+        }
+
+        case 'get_progress': {
+          const today = new Date().toISOString().slice(0, 10);
+          const entries = this.state.weightEntries();
+          const change = weeklyChange(entries);
+          const latest = entries.length ? entries[entries.length - 1] : null;
+          const bodyLine = latest
+            ? `Body weight ${latest.kg}kg on ${latest.date}` +
+              (change === null ? ', not enough history for a trend yet.' : `, trending ${change > 0 ? '+' : ''}${change}kg per week.`)
+            : 'No body weight recorded yet.';
+
+          const name = String(input['exercise'] ?? '').trim();
+          if (name === '') return { label: 'Read progress', result: bodyLine };
+
+          const ex = this.findExercise(name);
+          if (!ex) {
+            return {
+              label: 'Read progress',
+              result: `No exercise named "${name}" in the plan. ${bodyLine}`,
+              isError: true,
+            };
+          }
+          const prev = this.state.lastSession(ex.name, today);
+          const target = parseRepTarget(ex.sets);
+          const stalled = hasStalledTwice(this.state.recentSessions(ex.name, today), target);
+          const advice = nextSetAdvice(prev?.sets ?? null, target, ex.group ?? '', stalled);
+          const best = this.state.personalBest(ex.name);
+          return {
+            label: `Read progress on ${ex.name}`,
+            result:
+              `${ex.name} (target ${ex.sets}). ${advice.text}.` +
+              (best ? ` Best ever ${best.weight}kg × ${best.reps}.` : '') +
+              ` ${bodyLine}`,
           };
         }
 

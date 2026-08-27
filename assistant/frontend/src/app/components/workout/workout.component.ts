@@ -1,6 +1,16 @@
 import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FoldComponent } from '../fold/fold.component';
 import { StateService } from '../../services/state.service';
+import {
+  Advice,
+  hasStalledTwice,
+  nextSetAdvice,
+  parseRepTarget,
+  rollingAverage,
+  volumeByGroup,
+  weeklyChange,
+} from '../../fitness-progress';
 import { MuscleMapComponent } from '../muscle-map/muscle-map.component';
 import { RestTimerComponent } from '../rest-timer/rest-timer.component';
 import {
@@ -27,7 +37,7 @@ function todayIso(): string {
 @Component({
   selector: 'app-workout',
   standalone: true,
-  imports: [CommonModule, MuscleMapComponent, RestTimerComponent],
+  imports: [CommonModule, MuscleMapComponent, RestTimerComponent, FoldComponent],
   template: `
     <section class="panel">
       <div class="fit-hero">
@@ -48,9 +58,11 @@ function todayIso(): string {
       </div>
 
       <div class="section-head">
-        <h2 class="section-title">Muscle focus</h2>
+        <app-fold label="Muscle focus" [expanded]="true">
+
         <button class="ghost-btn" *ngIf="previewing()" (click)="showToday()">Back to today</button>
-      </div>
+        </app-fold>
+</div>
       <div class="fit-focus">
         <app-muscle-map [active]="todayMuscles()" />
         <div class="fit-focus-side">
@@ -76,10 +88,57 @@ function todayIso(): string {
         </div>
       </div>
 
-      <h2 class="section-title">Rest timer</h2>
-      <app-rest-timer />
+      <app-fold label="Body weight" [note]="latestWeight() ? latestWeight() + ' kg' : 'not logged'">
 
-      <h2 class="section-title">Weekly split</h2>
+      <p class="setting-note">
+        Day to day this is mostly water — the line is the 7-day average, which is the only
+        part that tracks what your training is actually doing.
+      </p>
+
+      <div class="weight-row" *ngIf="latestWeight() as w">
+        <span class="weight-now">{{ w }} kg</span>
+        <span class="weight-delta" *ngIf="weeklyDelta() !== null"
+              [class.down]="weeklyDelta()! < 0" [class.up]="weeklyDelta()! > 0">
+          {{ weeklyDelta()! > 0 ? '+' : '' }}{{ weeklyDelta() }} kg / week
+        </span>
+      </div>
+
+      <svg class="weight-chart" *ngIf="trendPath() as d" viewBox="0 0 300 90"
+           preserveAspectRatio="none" role="img" aria-label="Body weight trend">
+        <path [attr.d]="d" fill="none" stroke="var(--accent)" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
+      </svg>
+      <p class="weight-empty" *ngIf="!trendPath()">
+        Two or more readings draw a trend line.
+      </p>
+
+      <div class="add-row">
+        <input class="grow" type="number" inputmode="decimal" step="0.1"
+               placeholder="today's weight in kg" #wkg />
+        <button (click)="saveWeight(wkg)">Log weight</button>
+      </div>
+      </app-fold>
+<app-fold label="This week's volume">
+
+      <p class="setting-note">
+        Hard sets per group over the last 7 days — what you actually did, not what the plan
+        says. A group sitting at zero is the one to look at.
+      </p>
+      <div class="muscle-tags" *ngIf="weekVolume().length; else noVolume">
+        <span class="muscle-tag" *ngFor="let v of weekVolume()">
+          <span class="muscle-dot"></span>{{ v.group }} — {{ v.sets }}
+        </span>
+      </div>
+      <ng-template #noVolume>
+        <p class="weight-empty">No sets logged in the last 7 days.</p>
+      </ng-template>
+</app-fold>
+<app-fold label="Rest timer">
+
+      <app-rest-timer />
+</app-fold>
+<app-fold label="Weekly split">
+
       <div class="fit-table-wrap">
         <table class="fit-table">
           <thead>
@@ -92,6 +151,7 @@ function todayIso(): string {
           </tbody>
         </table>
       </div>
+      </app-fold>
 
       <div class="prep-topic" *ngFor="let day of workoutDays; let i = index">
         <button class="prep-topic-head" (click)="toggleDay(i)">
@@ -108,9 +168,9 @@ function todayIso(): string {
                   <tr>
                     <td>
                       {{ ex.name }}
-                      <span class="set-last" *ngIf="lastFor(ex.name) as prev">
-                        last {{ prev }}
-                      </span>
+                      <span class="set-advice" *ngIf="adviceFor(ex) as a"
+                            [class.up]="a.kind === 'up'"
+                            [class.deload]="a.kind === 'deload'">{{ a.text }}</span>
                     </td>
                     <td>{{ ex.sets }}</td>
                     <td>
@@ -134,7 +194,8 @@ function todayIso(): string {
         </div>
       </div>
 
-      <h2 class="section-title">Abs program</h2>
+<app-fold label="Abs program">
+
       <p class="page-sub">One block per training day, paired with that day's session — pick the easier option whenever the main move isn't accessible.</p>
       <div class="prep-topic" *ngFor="let ad of absProgram; let ai = index">
         <button class="prep-topic-head" (click)="toggleAbsDay(ai)">
@@ -154,18 +215,20 @@ function todayIso(): string {
           </div>
         </div>
       </div>
+</app-fold>
+<app-fold label="Training rules">
 
-      <h2 class="section-title">Training rules</h2>
       <ul class="fit-list">
         <li *ngFor="let r of workoutRules">{{ r }}</li>
       </ul>
+</app-fold>
+<app-fold label="Expected progress">
 
-      <h2 class="section-title">Expected progress</h2>
       <ul class="fit-list">
         <li *ngFor="let p of workoutProgress">{{ p }}</li>
       </ul>
-
-    </section>
+</app-fold>
+</section>
   `,
 })
 export class WorkoutComponent {
@@ -236,10 +299,68 @@ export class WorkoutComponent {
 
   setsToday(exercise: string) { return this.state.setsFor(todayIso(), exercise); }
 
-  /** "60x7, 60x6" from the previous session, or null when there isn't one. */
-  lastFor(exercise: string): string | null {
-    const prev = this.state.lastSession(exercise, todayIso());
-    return prev ? prev.sets.map(s => `${s.weight}\u00d7${s.reps}`).join(', ') : null;
+  /**
+   * What to do on this movement today, from what was actually lifted last time.
+   *
+   * Nothing shows until there is history, because "no history yet" on every row of a fresh
+   * install is noise. The advice itself is arithmetic, not a model — a wrong instruction to
+   * add weight would be worse than no instruction at all.
+   */
+  /** The most recent reading, or null before anything is logged. */
+  latestWeight = computed(() => {
+    const e = this.state.weightEntries();
+    return e.length ? e[e.length - 1].kg : null;
+  });
+
+  weeklyDelta = computed(() => weeklyChange(this.state.weightEntries()));
+
+  /** The averaged line as an SVG path, or null until two readings exist to join. */
+  trendPath = computed<string | null>(() => {
+    const avg = rollingAverage(this.state.weightEntries());
+    if (avg.length < 2) return null;
+    const values = avg.map(a => a.kg);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    // A flat run would divide by zero and, worse, draw a line at the top of the box; a
+    // minimum span keeps a steady week looking steady rather than dramatic.
+    const span = Math.max(max - min, 1);
+    return values
+      .map((v, i) => {
+        const x = (i / (values.length - 1)) * 300;
+        const y = 85 - ((v - min) / span) * 80;
+        return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`;
+      })
+      .join(' ');
+  });
+
+  weekVolume = computed(() => {
+    const to = todayIso();
+    const from = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
+    return volumeByGroup(this.state.setLog(), name => this.groupOf(name), from, to);
+  });
+
+  /** Exercise name back to its muscle group, from the plan rather than from the log. */
+  private groupOf(name: string): string | undefined {
+    for (const day of this.workoutDays) {
+      const hit = day.exercises.find(e => e.name === name);
+      if (hit) return hit.group;
+    }
+    return undefined;
+  }
+
+  saveWeight(input: HTMLInputElement) {
+    const kg = Number(input.value);
+    if (!Number.isFinite(kg) || kg <= 0) return;
+    this.state.logWeight(todayIso(), kg);
+    input.value = '';
+  }
+
+  adviceFor(ex: { name: string; group?: string; sets: string }): Advice | null {
+    const prev = this.state.lastSession(ex.name, todayIso());
+    if (!prev) return null;
+    const target = parseRepTarget(ex.sets);
+    const stalled = hasStalledTwice(this.state.recentSessions(ex.name, todayIso()), target);
+    return nextSetAdvice(prev.sets, target, ex.group ?? '', stalled);
   }
 
   add(exercise: string, w: HTMLInputElement, r: HTMLInputElement) {

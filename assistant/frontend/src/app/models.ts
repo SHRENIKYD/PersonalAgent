@@ -140,7 +140,19 @@ export type TransportMode = 'backend' | 'direct';
  * Which model provider direct mode talks to. Backend mode is always Anthropic — the .NET
  * API only ever proxies to Anthropic's Messages API, so this only matters in direct mode.
  */
-export type ApiProvider = 'anthropic' | 'openai' | 'gemini';
+export type ApiProvider = 'anthropic' | 'openai' | 'gemini' | 'groq';
+
+/**
+ * Display names, in one place. These used to be a chain of ternaries in the error handler
+ * and a separate map in Settings, so a newly added provider was labelled "Anthropic" in its
+ * own error messages.
+ */
+export const PROVIDER_LABELS: Record<ApiProvider, string> = {
+  anthropic: 'Anthropic',
+  openai: 'OpenAI',
+  gemini: 'Gemini',
+  groq: 'Groq',
+};
 
 // ---------------- Growth tracker (roadmap + habits) ----------------
 
@@ -194,4 +206,6 @@ export interface SyncPayload {
   /** Optional: absent in blobs written by a device running a build older than the
    *  strength log, which must still merge cleanly rather than throwing. */
   setLog?: SetLog;
+  /** Optional for the same reason — body weight arrived after the first sync format. */
+  weightLog?: Record<string, number>;
 }
