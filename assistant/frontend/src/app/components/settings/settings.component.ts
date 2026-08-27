@@ -370,9 +370,50 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
           Notifications. (Permission state: {{ notify.permission() }}.)
         </p>
         <p class="setting-note" *ngIf="notify.error()">⚠️ {{ notify.error() }}</p>
-        <p class="setting-note" *ngIf="notify.enabled() && notify.lastScheduled() as t">
-          Next week of briefs scheduled {{ t | date:'d MMM, HH:mm' }}.
-        </p>
+        <ng-container *ngIf="notify.enabled()">
+          <h3 class="setting-sub">How often</h3>
+          <div class="mode-row">
+            <button class="mode-btn" [class.active]="notify.briefMode() === 'twice'"
+                    (click)="notify.setBriefMode('twice')">
+              <strong>Twice a day</strong>
+              <span>7am and 7pm only. Two a day, both worth reading.</span>
+            </button>
+            <button class="mode-btn" [class.active]="notify.briefMode() === 'hourly'"
+                    (click)="notify.setBriefMode('hourly')">
+              <strong>Hourly checks</strong>
+              <span>
+                Every hour 7am–10pm, but silent unless something is outstanding — a day
+                you've trained and logged stays quiet.
+              </span>
+            </button>
+          </div>
+
+          <h3 class="setting-sub">Water reminders</h3>
+          <div class="mode-row">
+            <button class="mode-btn" [class.active]="!notify.water()" (click)="notify.setWater(false)">
+              <strong>Off</strong>
+              <span>No water nudges.</span>
+            </button>
+            <button class="mode-btn" [class.active]="notify.water()" (click)="notify.setWater(true)">
+              <strong>On</strong>
+              <span>7am–10pm, on the half hour so they never collide with a brief.</span>
+            </button>
+          </div>
+
+          <div class="add-row" *ngIf="notify.water()">
+            <button class="ghost-btn" *ngFor="let h of [1, 2, 3]"
+                    [class.active]="notify.waterEvery() === h"
+                    (click)="notify.setWaterEvery(h)">
+              {{ h === 1 ? 'Every hour' : 'Every ' + h + ' hours' }}
+            </button>
+          </div>
+
+          <p class="setting-note" *ngIf="notify.lastScheduled() as t">
+            <strong>{{ notify.scheduledCount() }}</strong> notifications queued, last rebuilt
+            {{ t | date:'d MMM, HH:mm' }}. Rebuilt every time the app opens or your tasks
+            change.
+          </p>
+        </ng-container>
 
         <div class="add-row" *ngIf="notify.enabled()">
           <button class="ghost-btn" (click)="notify.sendTest()">Send one now</button>

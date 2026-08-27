@@ -4,7 +4,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { StateService } from './state.service';
 import { StorageService } from './storage.service';
 import { UiService } from './ui.service';
-import { morningBrief, eveningBrief, Brief, BriefInput } from '../brief';
+import { morningBrief, eveningBrief, hourlyNudge, waterReminder, Brief, BriefInput } from '../brief';
 import { workoutForDate, MACRO_TARGETS } from '../fitness-data';
 
 const KEY = 'assistant-notify-v1';
@@ -36,7 +36,25 @@ const DAYS_AHEAD = 7;
 
 interface NotifySettings {
   enabled: boolean;
+  /** 'twice' = 7am and 7pm only. 'hourly' = a check on every hour of the waking window. */
+  briefMode: 'twice' | 'hourly';
+  water: boolean;
+  /** Hours between water reminders. 1 is every hour; 2 halves the count. */
+  waterEvery: number;
 }
+
+const DEFAULTS: NotifySettings = { enabled: false, briefMode: 'twice', water: false, waterEvery: 1 };
+
+/** The waking window the hourly checks and water reminders run inside. */
+const DAY_START = 7;
+const DAY_END = 22;
+
+/**
+ * Android keeps a limited number of pending alarms per app, and hourly checks plus water can
+ * reach thirty a day. Scheduling fewer days ahead when the count is high keeps well clear of
+ * that, and every launch rebuilds anyway.
+ */
+const MAX_PENDING = 120;
 
 /**
  * The daily briefs, delivered by Android rather than by the app being open.
@@ -53,6 +71,11 @@ export class NotifyService {
   readonly available = Capacitor.isNativePlatform();
 
   enabled = signal(false);
+  briefMode = signal<'twice' | 'hourly'>('twice');
+  water = signal(false);
+  waterEvery = signal(1);
+  /** How many notifications the last rebuild actually queued — the honest count. */
+  scheduledCount = signal(0);
   /** 'granted' | 'denied' | 'prompt' | 'unsupported' — shown in Settings, because a denied
    *  permission makes every one of these silently do nothing. */
   permission = signal<string>('unsupported');
@@ -64,8 +87,11 @@ export class NotifyService {
     private storage: StorageService,
     private ui: UiService,
   ) {
-    const saved = this.storage.get<NotifySettings>(KEY, { enabled: false });
+    const saved = this.storage.get<NotifySettings>(KEY, DEFAULTS);
     this.enabled.set(!!saved.enabled);
+    this.briefMode.set(saved.briefMode === 'hourly' ? 'hourly' : 'twice');
+    this.water.set(!!saved.water);
+    this.waterEvery.set(saved.waterEvery === 2 || saved.waterEvery === 3 ? saved.waterEvery : 1);
 
     if (!this.available) return;
 
@@ -97,9 +123,36 @@ export class NotifyService {
     this.pending = setTimeout(() => void this.reschedule(), 3000);
   }
 
+  private persist() {
+    this.storage.set<NotifySettings>(KEY, {
+      enabled: this.enabled(),
+      briefMode: this.briefMode(),
+      water: this.water(),
+      waterEvery: this.waterEvery(),
+    });
+  }
+
+  setBriefMode(mode: 'twice' | 'hourly') {
+    this.briefMode.set(mode);
+    this.persist();
+    void this.reschedule();
+  }
+
+  setWater(on: boolean) {
+    this.water.set(on);
+    this.persist();
+    void this.reschedule();
+  }
+
+  setWaterEvery(hours: number) {
+    this.waterEvery.set(hours);
+    this.persist();
+    void this.reschedule();
+  }
+
   async setEnabled(on: boolean) {
     this.enabled.set(on);
-    this.storage.set<NotifySettings>(KEY, { enabled: on });
+    this.persist();
     if (!this.available) return;
 
     if (!on) {
@@ -167,27 +220,56 @@ export class NotifyService {
     try {
       await this.cancelAll();
 
-      const notifications = [];
-      for (let i = 0; i < DAYS_AHEAD; i++) {
+      const notifications: ReturnType<NotifyService['toNotification']>[] = [];
+      const hourly = this.briefMode() === 'hourly';
+      // Hourly checks plus water can reach thirty a day, so the horizon shortens to stay
+      // well inside Android's pending-alarm limit. Every launch rebuilds regardless.
+      const days = hourly || this.water() ? 2 : DAYS_AHEAD;
+
+      for (let i = 0; i < days; i++) {
         const day = new Date();
         day.setDate(day.getDate() + i);
+        const input = this.input(day);
+        const base = i * 100;
 
-        const morningAt = at(day, MORNING_HOUR);
-        if (morningAt.getTime() > Date.now()) {
-          notifications.push(this.toNotification(MORNING_ID + i * 10, morningBrief(this.input(day)), morningAt, 'workout'));
+        const morning = at(day, MORNING_HOUR);
+        if (morning.getTime() > Date.now()) {
+          notifications.push(this.toNotification(MORNING_ID + base, morningBrief(input), morning, 'workout'));
         }
 
-        const eveningAt = at(day, EVENING_HOUR);
-        // The evening brief stays silent on a finished day. Today's is known now; a future
-        // day's is a guess, so those are scheduled and simply say what is outstanding as of
-        // scheduling time — the next launch rewrites them.
-        const evening = eveningBrief(this.input(day));
-        if (evening && eveningAt.getTime() > Date.now()) {
-          notifications.push(this.toNotification(EVENING_ID + i * 10, evening, eveningAt, 'tasks'));
+        if (hourly) {
+          // Skip the two hours the briefs already cover, or the same minute carries two
+          // notifications saying overlapping things.
+          for (let h = DAY_START + 1; h <= DAY_END; h++) {
+            if (h === MORNING_HOUR || h === EVENING_HOUR) continue;
+            const when = at(day, h);
+            if (when.getTime() <= Date.now()) continue;
+            const nudge = hourlyNudge(input, h);
+            if (nudge) notifications.push(this.toNotification(base + 200 + h, nudge, when, 'tasks'));
+          }
+        }
+
+        if (this.water()) {
+          for (let h = DAY_START; h <= DAY_END; h += this.waterEvery()) {
+            const when = at(day, h, 30);
+            if (when.getTime() <= Date.now()) continue;
+            notifications.push(this.toNotification(base + 300 + h, waterReminder(h), when, 'today'));
+          }
+        }
+
+        const evening = at(day, EVENING_HOUR);
+        const later = eveningBrief(input);
+        if (later && evening.getTime() > Date.now()) {
+          notifications.push(this.toNotification(EVENING_ID + base, later, evening, 'tasks'));
         }
       }
 
-      if (notifications.length) await LocalNotifications.schedule({ notifications });
+      // Soonest first, so if the cap bites it drops the furthest-out rather than today's.
+      notifications.sort((a, b) => a.schedule.at.getTime() - b.schedule.at.getTime());
+      const queued = notifications.slice(0, MAX_PENDING);
+
+      if (queued.length) await LocalNotifications.schedule({ notifications: queued });
+      this.scheduledCount.set(queued.length);
       this.lastScheduled.set(Date.now());
       this.error.set('');
     } catch (e) {
@@ -246,10 +328,13 @@ export class NotifyService {
   }
 }
 
-/** A given hour of a given day, on the minute. */
-function at(day: Date, hour: number): Date {
+/**
+ * A given hour of a given day. Water reminders sit on the half hour so they never land in
+ * the same minute as a brief, which would arrive as one buried under the other.
+ */
+function at(day: Date, hour: number, minute = 0): Date {
   const d = new Date(day);
-  d.setHours(hour, 0, 0, 0);
+  d.setHours(hour, minute, 0, 0);
   return d;
 }
 
