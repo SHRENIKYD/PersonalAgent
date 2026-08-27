@@ -151,6 +151,7 @@ function todayIso(): string {
           </tbody>
         </table>
       </div>
+      </app-fold>
 
       <div class="prep-topic" *ngFor="let day of workoutDays; let i = index">
         <button class="prep-topic-head" (click)="toggleDay(i)">
@@ -192,7 +193,7 @@ function todayIso(): string {
           <p class="fit-note" *ngIf="day.extra">{{ day.extra }}</p>
         </div>
       </div>
-</app-fold>
+
 <app-fold label="Abs program">
 
       <p class="page-sub">One block per training day, paired with that day's session — pick the easier option whenever the main move isn't accessible.</p>

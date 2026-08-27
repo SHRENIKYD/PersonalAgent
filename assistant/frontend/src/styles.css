@@ -2376,36 +2376,37 @@ summary:focus-visible {
 
 /* ---------------- collapsible sections ---------------- */
 
+/* No card, no border: a fold reads as the section heading it replaced, so a closed page
+   looks the way it always did. Only the chevron and the summary are new. */
 .fold {
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  margin-bottom: 8px;
-  background: var(--panel);
-  overflow: hidden;
+  border: 0;
+  background: transparent;
+  margin-bottom: 2px;
 }
-
-.fold.open { border-color: color-mix(in srgb, var(--accent-dim) 45%, var(--line)); }
 
 .fold-head {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
-  padding: 13px 14px;
+  padding: 18px 0 8px;
   background: transparent;
   border: 0;
-  color: var(--text);
   text-align: left;
   cursor: pointer;
 }
 
-.fold-head:hover { filter: none; background: var(--panel-2); }
+.fold-head:hover { filter: none; }
+.fold-head:hover .fold-label { color: var(--text); }
 
+/* Deliberately identical to .section-title — same face, size, tracking and colour. */
 .fold-label {
   font-family: 'Orbitron', sans-serif;
-  font-size: 12px;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.09em;
+  color: var(--muted);
+  transition: color 0.15s ease;
 }
 
 .fold-note {
@@ -2418,7 +2419,8 @@ summary:focus-visible {
   white-space: nowrap;
 }
 
-.fold-body { padding: 0 14px 14px; }
+.fold-body { padding: 0 0 6px; }
 
-/* The sections keep their own headings inside; the fold row is the heading now. */
-.fold-body > .section-title:first-child { margin-top: 4px; }
+/* The fold row is the heading now, so a section's first paragraph should not add to the
+   gap the header already leaves. */
+.fold-body > p:first-child { margin-top: 0; }
