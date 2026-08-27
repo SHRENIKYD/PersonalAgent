@@ -2373,3 +2373,52 @@ summary:focus-visible {
 }
 
 .weight-empty { color: var(--muted); font-size: 13px; }
+
+/* ---------------- collapsible sections ---------------- */
+
+.fold {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.fold.open { border-color: color-mix(in srgb, var(--accent-dim) 45%, var(--line)); }
+
+.fold-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 14px;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.fold-head:hover { filter: none; background: var(--panel-2); }
+
+.fold-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+.fold-note {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fold-body { padding: 0 14px 14px; }
+
+/* The sections keep their own headings inside; the fold row is the heading now. */
+.fold-body > .section-title:first-child { margin-top: 4px; }

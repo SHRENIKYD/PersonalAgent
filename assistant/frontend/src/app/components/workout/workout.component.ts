@@ -1,5 +1,6 @@
 import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FoldComponent } from '../fold/fold.component';
 import { StateService } from '../../services/state.service';
 import {
   Advice,
@@ -36,7 +37,7 @@ function todayIso(): string {
 @Component({
   selector: 'app-workout',
   standalone: true,
-  imports: [CommonModule, MuscleMapComponent, RestTimerComponent],
+  imports: [CommonModule, MuscleMapComponent, RestTimerComponent, FoldComponent],
   template: `
     <section class="panel">
       <div class="fit-hero">
@@ -57,9 +58,11 @@ function todayIso(): string {
       </div>
 
       <div class="section-head">
-        <h2 class="section-title">Muscle focus</h2>
+        <app-fold label="Muscle focus" [expanded]="true">
+
         <button class="ghost-btn" *ngIf="previewing()" (click)="showToday()">Back to today</button>
-      </div>
+        </app-fold>
+</div>
       <div class="fit-focus">
         <app-muscle-map [active]="todayMuscles()" />
         <div class="fit-focus-side">
@@ -85,7 +88,8 @@ function todayIso(): string {
         </div>
       </div>
 
-      <h2 class="section-title">Body weight</h2>
+      <app-fold label="Body weight" [note]="latestWeight() ? latestWeight() + ' kg' : 'not logged'">
+
       <p class="setting-note">
         Day to day this is mostly water — the line is the 7-day average, which is the only
         part that tracks what your training is actually doing.
@@ -113,8 +117,9 @@ function todayIso(): string {
                placeholder="today's weight in kg" #wkg />
         <button (click)="saveWeight(wkg)">Log weight</button>
       </div>
+      </app-fold>
+<app-fold label="This week's volume">
 
-      <h2 class="section-title">This week's volume</h2>
       <p class="setting-note">
         Hard sets per group over the last 7 days — what you actually did, not what the plan
         says. A group sitting at zero is the one to look at.
@@ -127,11 +132,13 @@ function todayIso(): string {
       <ng-template #noVolume>
         <p class="weight-empty">No sets logged in the last 7 days.</p>
       </ng-template>
+</app-fold>
+<app-fold label="Rest timer">
 
-      <h2 class="section-title">Rest timer</h2>
       <app-rest-timer />
+</app-fold>
+<app-fold label="Weekly split">
 
-      <h2 class="section-title">Weekly split</h2>
       <div class="fit-table-wrap">
         <table class="fit-table">
           <thead>
@@ -185,8 +192,9 @@ function todayIso(): string {
           <p class="fit-note" *ngIf="day.extra">{{ day.extra }}</p>
         </div>
       </div>
+</app-fold>
+<app-fold label="Abs program">
 
-      <h2 class="section-title">Abs program</h2>
       <p class="page-sub">One block per training day, paired with that day's session — pick the easier option whenever the main move isn't accessible.</p>
       <div class="prep-topic" *ngFor="let ad of absProgram; let ai = index">
         <button class="prep-topic-head" (click)="toggleAbsDay(ai)">
@@ -206,18 +214,20 @@ function todayIso(): string {
           </div>
         </div>
       </div>
+</app-fold>
+<app-fold label="Training rules">
 
-      <h2 class="section-title">Training rules</h2>
       <ul class="fit-list">
         <li *ngFor="let r of workoutRules">{{ r }}</li>
       </ul>
+</app-fold>
+<app-fold label="Expected progress">
 
-      <h2 class="section-title">Expected progress</h2>
       <ul class="fit-list">
         <li *ngFor="let p of workoutProgress">{{ p }}</li>
       </ul>
-
-    </section>
+</app-fold>
+</section>
   `,
 })
 export class WorkoutComponent {

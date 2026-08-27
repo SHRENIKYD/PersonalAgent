@@ -7,6 +7,7 @@ import { VoiceService } from '../../services/voice.service';
 import { UpdateService } from '../../services/update.service';
 import { BackButtonService } from '../../services/back-button.service';
 import { NotifyService } from '../../services/notify.service';
+import { FoldComponent } from '../fold/fold.component';
 import { BackupService } from '../../services/backup.service';
 import { ApiProvider, PROVIDER_LABELS } from '../../models';
 import { environment } from '../../../environments/environment';
@@ -21,12 +22,14 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FoldComponent],
   template: `
     <section class="panel">
       <h1 class="page-title">Settings</h1>
       <p class="page-sub">How the assistant reaches a model.</p>
 
+      <app-fold label="Connection"
+                [note]="settings.mode() === 'direct' ? 'Direct from browser' : 'Via backend'">
       <div class="mode-row">
         <button
           class="mode-btn"
@@ -43,9 +46,11 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
           <span>No backend. Your key is stored in this browser. Anthropic, OpenAI, Gemini, or Groq.</span>
         </button>
       </div>
+      </app-fold>
 
       <ng-container *ngIf="settings.mode() === 'backend'">
-        <h2 class="section-title">Backend</h2>
+        <app-fold label="Backend" [expanded]="true">
+
         <p class="setting-note">
           Requests go to <code>{{ apiBaseUrl }}</code>, which holds the Anthropic API key as
           an environment variable. Change this in
@@ -55,10 +60,12 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
           ⚠️ That is still the placeholder URL — requests will fail until you set your real
           backend URL, or switch to direct mode.
         </p>
-      </ng-container>
+        </app-fold>
+</ng-container>
 
       <ng-container *ngIf="settings.mode() === 'direct'">
-        <h2 class="section-title">Provider</h2>
+        <app-fold label="Provider" [note]="providerLabel()" [expanded]="true">
+
         <div class="mode-row">
           <button
             class="mode-btn"
@@ -89,9 +96,10 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
             <span>Open models, hosted fast. Has a free tier.</span>
           </button>
         </div>
-
+        </app-fold>
         <ng-container *ngIf="settings.provider() === 'groq'">
-          <h2 class="section-title">Groq model</h2>
+<app-fold label="Groq model" [note]="settings.groqModel()">
+
           <p class="setting-note">
             Groq retires hosted models on its own schedule, and a retired name fails every
             request with “the model does not exist”. If that happens, pick a current one from
@@ -103,9 +111,11 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
             <button class="ghost-btn" (click)="saveGroqModel()">Use this model</button>
           </div>
           <p class="setting-note">Currently using <code>{{ settings.groqModel() }}</code>.</p>
-        </ng-container>
+</app-fold>
+</ng-container>
 
-        <h2 class="section-title">API key</h2>
+        <app-fold label="API key" [note]="settings.activeKey() ? 'stored' : 'not set'">
+
 
         <div class="warn-box">
           <strong>This key is readable by anything running in this browser.</strong>
@@ -142,9 +152,11 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
           No {{ providerLabel() }} key stored — the assistant will not respond until you add
           one.
         </p>
-      </ng-container>
+        </app-fold>
+</ng-container>
 
-      <h2 class="section-title">Voice</h2>
+      <app-fold label="Voice" [note]="voice.enabled() ? 'on' : 'off'">
+
       <p class="setting-note">
         A short spoken greeting plays when the app loads, using your browser's built-in
         text-to-speech — nothing sent anywhere, no API key involved. This isn't a movie AI
@@ -201,8 +213,9 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
         another browser if this persists (voice availability is entirely up to the OS/browser,
         not this app).
       </p>
+      </app-fold>
+<app-fold label="Cross-device sync" [note]="sync.configured() ? 'on' : 'off'">
 
-      <h2 class="section-title">Cross-device sync</h2>
       <p class="setting-note">
         Syncs tasks, notes, growth, and fitness log across devices via a
         private GitHub Gist — no separate backend. Whoever has the token below can read and
@@ -251,8 +264,9 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
       </p>
       <p class="setting-note" *ngIf="!sync.configured()">Not set up — data stays on this device only.</p>
       <p class="setting-note" *ngIf="sync.status() === 'error'">⚠️ {{ sync.errorMessage() }}</p>
+</app-fold>
+<app-fold label="App version">
 
-      <h2 class="section-title">App version</h2>
       <ng-container *ngIf="update.isApp; else webVersion">
         <p class="setting-note" *ngIf="update.local() as l">
           Installed build <code>{{ l.sha.slice(0, 7) }}</code>, {{ l.builtAt | date:'d MMM y, HH:mm' }}.
@@ -292,8 +306,9 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
           shown in the Android app, where installing a new build is a manual step.
         </p>
       </ng-template>
+</app-fold>
+<app-fold label="Backup &amp; restore">
 
-      <h2 class="section-title">Backup &amp; restore</h2>
       <p class="setting-note">
         A file copy of everything — tasks, notes, roadmap, workout and diet log, and every
         set you've recorded. Unlike sync above, it needs no account and never changes on its
@@ -304,6 +319,7 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
       <div class="add-row">
         <button (click)="backup.download()">Save backup file</button>
         <button class="ghost-btn" (click)="backup.copy()">Copy backup</button>
+        <button class="ghost-btn" (click)="backup.downloadSpreadsheet()">Save spreadsheet</button>
         <button class="ghost-btn" (click)="restoreInput.click()">Restore from file…</button>
         <input #restoreInput type="file" accept="application/json,.json" hidden
                (change)="onRestoreFile($event)" />
@@ -325,9 +341,10 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
           Restore pasted backup
         </button>
       </details>
+</app-fold>
+<ng-container *ngIf="notify.available">
+<app-fold label="Daily briefs" [note]="notify.enabled() ? '7am · 7pm' : 'off'">
 
-      <ng-container *ngIf="notify.available">
-        <h2 class="section-title">Daily briefs</h2>
         <p class="setting-note">
           Two notifications a day, assembled on this phone — no account, no server, and they
           still arrive with no signal and no API key. <strong>7am</strong> is the plan for the
@@ -359,9 +376,11 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
         <div class="add-row" *ngIf="notify.enabled()">
           <button class="ghost-btn" (click)="notify.sendTest()">Send one now</button>
         </div>
-      </ng-container>
+</app-fold>
+</ng-container>
 
-      <h2 class="section-title">Back button</h2>
+      <app-fold label="Back button">
+
       <p class="setting-note">
         Press back once, then reopen this tab. If the count is still 0 the app never received
         the press; if it counts up but the screen did not change, it was received and ignored.
@@ -371,14 +390,16 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
         last by <strong>{{ back.lastBackSource() }}</strong> ·
         native listener <strong>{{ back.nativeListenerReady() ? 'ready' : 'not registered' }}</strong>
       </p>
+      </app-fold>
+<app-fold label="Your data">
 
-      <h2 class="section-title">Your data</h2>
       <p class="setting-note">
         Tasks and notes never leave this browser or the Gist above — only your chat messages
         are sent to the model provider. Clearing site data for this page deletes local data
         (synced data stays in the Gist until you delete it on GitHub).
       </p>
-    </section>
+</app-fold>
+</section>
   `,
 })
 export class SettingsComponent {
