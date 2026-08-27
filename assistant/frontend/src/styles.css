@@ -2440,3 +2440,64 @@ summary:focus-visible {
   color: var(--text);
   background: var(--panel-2);
 }
+
+/* ---------------- scroll-driven reveals ---------------- */
+
+/*
+ * Panels, folds and section headings lift into place as they enter the viewport, and the
+ * ECG in the header speeds up when you fling the page. Both are tied to scroll position
+ * rather than to a timer, so the page feels like it is being moved by hand rather than
+ * playing an intro at you.
+ *
+ * The reveal is pure CSS — `animation-timeline: view()` drives the animation from the
+ * element's own progress through the scrollport, with no scroll listener and no
+ * IntersectionObserver, so it stays on the compositor and costs nothing per frame. It is
+ * behind @supports because the property is not everywhere yet: without it the rules never
+ * apply and everything simply renders in its final state, which is the correct fallback.
+ */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .panel,
+    .fold,
+    .section-title {
+      animation: rise-in linear both;
+      animation-timeline: view();
+      /* Finishes a fifth of the way up the viewport and starts just before the element
+         appears, so content is fully settled by the time it reaches reading height. */
+      animation-range: entry 5% cover 22%;
+    }
+
+    /* The chat transcript scrolls itself and is written to on every token; a reveal there
+       would re-run mid-reply. Same for anything inside an open fold, which is revealed by
+       the fold opening, not by the page moving. */
+    .chat-panel .panel,
+    .fold-body .panel,
+    .fold-body .section-title { animation: none; }
+  }
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.995); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------------- ECG reacts to scroll velocity ---------------- */
+
+/*
+ * --trace-dur is written by ScrollPulseService from the current scroll speed: about 9s at
+ * rest, down to ~1.2s under a hard fling. Duration is animated rather than restarted, so
+ * the trace keeps its phase and surges instead of jumping. --trace-lift rides the same
+ * value into opacity, because a faster trace at the same brightness barely reads.
+ */
+:root {
+  --trace-dur: 9s;
+  --trace-lift: 0;
+}
+
+@media (max-width: 720px) {
+  .brand-row::before {
+    animation-duration: var(--trace-dur);
+    opacity: calc(0.28 + var(--trace-lift) * 0.34);
+    transition: opacity 0.25s ease-out;
+  }
+}

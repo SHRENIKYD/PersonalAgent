@@ -6,7 +6,7 @@ import { SetEntry } from './models';
  * All of this is deterministic arithmetic over sets you have already recorded — no model is
  * involved, so it reads the same on every provider and works with no key and no signal. That
  * matters more here than anywhere else in the app: a suggestion to add weight has to be right
- * every time, and a small on-device model guessing at it would be worse than nothing.
+ * every time, and a model guessing at it would be worse than nothing.
  */
 
 /** Barbell and machine loads move in 2.5kg steps; leg work takes 5kg comfortably. */

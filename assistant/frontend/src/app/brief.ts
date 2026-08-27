@@ -5,9 +5,8 @@ import { WorkoutDay } from './fitness-data';
  * The text of the daily briefs.
  *
  * Assembled here rather than written by a model, deliberately. A brief fires at 7am whether
- * or not there is signal, whether or not a key is set, and whether or not a small on-device
- * model happens to answer well that morning — a notification that sometimes says nothing is
- * worse than no notification. This is arithmetic over data already on the device, so it is
+ * or not there is signal and whether or not a key is set — a notification that sometimes
+ * says nothing is worse than no notification. This is arithmetic over data already on the device, so it is
  * also fully testable without a phone.
  *
  * The two briefs do different jobs. Morning is the plan; evening is what is still open. A

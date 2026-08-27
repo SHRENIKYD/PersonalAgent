@@ -6,7 +6,6 @@ import { SettingsService } from '../../services/settings.service';
 import { UiService } from '../../services/ui.service';
 import { DictationService } from '../../services/dictation.service';
 import { VoiceModeService } from '../../services/voice-mode.service';
-import { LocalLlmService } from '../../services/local-llm.service';
 import { MarkdownComponent } from '../markdown/markdown.component';
 import { WorkoutCard, DietCard, DisplayEntry } from '../../models';
 
@@ -74,7 +73,7 @@ const OPENERS: { label: string; prompt: string; icon: string }[] = [
 
       <p *ngIf="!agent.ready()" class="chat-warn">
         No API key is set for direct mode.
-        <a (click)="ui.setTab('settings')">Add one on the Settings tab</a> to use the assistant{{ local.available ? ', or load an on-device model there' : '' }}.
+        <a (click)="ui.setTab('settings')">Add one on the Settings tab</a> to use the assistant.
       </p>
 
       <div class="chat-log" #log>
@@ -235,8 +234,8 @@ const OPENERS: { label: string; prompt: string; icon: string }[] = [
         <!--
           Deliberately not disabled while thinking. Disabling a focused element drops focus,
           which un-hides the bottom bar and shifts the composer 87px mid-conversation; and
-          with an on-device model taking seconds per reply, being able to draft the next
-          message while waiting is worth more than the guard. agent.send already refuses to
+          being able to draft the next message while a reply is in flight is worth more
+          than the guard. agent.send already refuses to
           start a second turn.
         -->
         <textarea
@@ -352,8 +351,7 @@ export class ChatComponent {
     public settings: SettingsService,
     public ui: UiService,
     public dictation: DictationService,
-    public voiceMode: VoiceModeService,
-    public local: LocalLlmService
+    public voiceMode: VoiceModeService
   ) {
     // Follow the conversation as it grows. Reading the signal inside the effect is what
     // subscribes it, so this runs on every transcript change.

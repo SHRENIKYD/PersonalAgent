@@ -6,7 +6,6 @@ import { SyncService } from '../../services/sync.service';
 import { VoiceService } from '../../services/voice.service';
 import { UpdateService } from '../../services/update.service';
 import { BackButtonService } from '../../services/back-button.service';
-import { LocalLlmService, SUGGESTED_MODEL } from '../../services/local-llm.service';
 import { NotifyService } from '../../services/notify.service';
 import { FoldComponent } from '../fold/fold.component';
 import { BackupService } from '../../services/backup.service';
@@ -421,68 +420,6 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
 </app-fold>
 </ng-container>
 
-      <ng-container *ngIf="local.available">
-        <app-fold label="On-device model"
-                  [note]="local.loaded() ? 'loaded' : (local.modelPresent() ? 'not loaded' : 'no model')">
-        <p class="setting-note">
-          Runs a model on the phone itself, so no API key and no network. While it is
-          <strong>loaded</strong>, the assistant uses it instead of the provider above —
-          unload it to go back to the cloud. It is slower and weaker than the cloud models,
-          and is at its worst on requests needing more than one step.
-        </p>
-
-        <p class="setting-note" *ngIf="!local.modelPresent()">
-          No model on this device. <strong>{{ suggested.name }}</strong> is about
-          {{ suggested.approxGb }} GB — download it below over Wi-Fi, or fetch it yourself
-          from <code>{{ suggested.page }}</code> and pick the file.
-        </p>
-
-        <div class="add-row" *ngIf="local.progress() === null">
-          <input class="grow" [(ngModel)]="modelUrl" placeholder="https://…model file URL" />
-          <button [disabled]="local.busy() !== '' || !modelUrl.trim()" (click)="startDownload()">
-            Download
-          </button>
-        </div>
-
-        <div class="add-row" *ngIf="local.progress() !== null">
-          <div class="grow">
-            <div class="overall-progress-track">
-              <div class="overall-progress-fill" [style.width.%]="local.progress()"></div>
-            </div>
-            <p class="setting-note">Downloading — {{ local.progress() }}%. Keep this screen open.</p>
-          </div>
-          <button class="ghost-btn" (click)="local.cancelDownload()">Cancel</button>
-        </div>
-
-        <div class="add-row">
-          <button (click)="local.importModel()" [disabled]="local.busy() !== ''">
-            {{ local.modelPresent() ? 'Replace model file' : 'Choose model file' }}
-          </button>
-          <button class="ghost-btn" *ngIf="local.modelPresent() && !local.loaded()"
-                  [disabled]="local.busy() !== ''" (click)="local.load()">Load</button>
-          <button class="ghost-btn" *ngIf="local.loaded()"
-                  [disabled]="local.busy() !== ''" (click)="local.unload()">Unload</button>
-          <button class="ghost-btn" *ngIf="local.modelPresent()"
-                  [disabled]="local.busy() !== ''" (click)="local.deleteModel()">Delete</button>
-        </div>
-
-        <p class="setting-note" *ngIf="local.busy()">{{ local.busy() }}</p>
-        <p class="setting-note" *ngIf="local.error()">⚠️ {{ local.error() }}</p>
-        <p class="setting-note" *ngIf="local.modelPresent()">
-          Model stored ({{ (local.sizeBytes() / 1073741824).toFixed(2) }} GB) —
-          <strong>{{ local.loaded() ? 'loaded' : 'not loaded' }}</strong>
-        </p>
-
-        <div class="add-row" *ngIf="local.loaded()">
-          <input class="grow" [(ngModel)]="localPrompt" placeholder="Ask the on-device model…" />
-          <button [disabled]="!localPrompt.trim() || localBusy()" (click)="runLocal()">Run</button>
-        </div>
-        <p class="setting-note" *ngIf="localBusy()">Thinking on-device…</p>
-        <p class="setting-note" *ngIf="localAnswer()">
-          {{ localAnswer() }}<br /><em>{{ localMs() }} ms</em>
-        </p>
-        </app-fold>
-      </ng-container>
 
       <app-fold label="Back button">
 
@@ -509,30 +446,6 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
   `,
 })
 export class SettingsComponent {
-  suggested = SUGGESTED_MODEL;
-  localPrompt = '';
-  modelUrl = SUGGESTED_MODEL.downloadUrl;
-
-  startDownload() {
-    this.local.downloadUrl.set(this.modelUrl);
-    void this.local.download();
-  }
-
-  localBusy = signal(false);
-  localAnswer = signal('');
-  localMs = signal(0);
-
-  async runLocal() {
-    this.localBusy.set(true);
-    this.localAnswer.set('');
-    const r = await this.local.generate(this.localPrompt);
-    this.localBusy.set(false);
-    if (r) {
-      this.localAnswer.set(r.text);
-      this.localMs.set(r.ms);
-    }
-  }
-
   draftKey = '';
   draftGroqModel = '';
 
@@ -565,7 +478,6 @@ export class SettingsComponent {
     public update: UpdateService,
     public backup: BackupService,
     public back: BackButtonService,
-    public local: LocalLlmService,
     public notify: NotifyService,
   ) {
     this.draftGistId = sync.gistId();

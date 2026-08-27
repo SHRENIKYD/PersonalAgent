@@ -5,8 +5,6 @@ import { environment } from '../../environments/environment';
 import { Capacitor } from '@capacitor/core';
 import { StateService } from './state.service';
 import { SettingsService } from './settings.service';
-import { LocalLlmService } from './local-llm.service';
-import { localPrompt, looksMalformed, parseLocalTurn, promisesAction } from './local-turn';
 import {
   ApiMessage,
   AssistantResponse,
@@ -741,18 +739,10 @@ export class AgentService {
   /** Full Anthropic-shaped history. Separate from the transcript, which is display-only. */
   private history: ApiMessage[] = [];
 
-  /**
-   * Tools actually executed during the current message. Used to tell a fabricated
-   * "Task added" from a real one: after genuine work, that sentence is a correct summary
-   * and must not trigger a retry.
-   */
-  private toolsThisTurn = 0;
-
   constructor(
     private http: HttpClient,
     private state: StateService,
-    private settings: SettingsService,
-    private local: LocalLlmService
+    private settings: SettingsService
   ) {}
 
   reset() {
@@ -774,7 +764,6 @@ export class AgentService {
     if (text === '' || this.thinking()) return;
 
     this.thinking.set(true);
-    this.toolsThisTurn = 0;
     this.push({ kind: 'user', text });
     this.history.push({
       role: 'user',
@@ -819,7 +808,6 @@ export class AgentService {
       this.history.push({ role: 'assistant', content: blocks });
 
       const toolUses = blocks.filter((b): b is ToolUseBlock => b.type === 'tool_use');
-      this.toolsThisTurn += toolUses.length;
       const said = blocks
         .filter((b): b is TextBlock => b.type === 'text')
         .map(b => b.text)
@@ -946,73 +934,14 @@ export class AgentService {
 
   // ---------------- transport ----------------
 
-  /**
-   * Whether the assistant can answer at all. A loaded on-device model counts: it needs no
-   * key, so gating on the key alone told the user to add one while a working model sat
-   * loaded on the phone.
-   */
-  ready = computed(() =>
-    (this.local.available && this.local.loaded()) || this.settings.ready()
-  );
+  /** Whether the assistant can answer at all — that is, whether a key is configured. */
+  ready = computed(() => this.settings.ready());
 
   /** One request to the model, via whichever transport is configured. */
   private requestTurn(onDelta?: (text: string) => void): Promise<AssistantResponse> {
-    // The on-device model wins when it is actually loaded, whatever else is configured —
-    // choosing it is the point of loading it, and it costs nothing per message. It does not
-    // stream yet: MediaPipe can emit partial results, but that is a separate change.
-    if (this.local.available && this.local.loaded()) return this.requestLocal();
     return this.settings.mode() === 'direct'
       ? this.requestDirect(onDelta)
       : this.requestViaBackend();
-  }
-
-  /**
-   * One turn from the model running on the phone.
-   *
-   * It has no tool-calling API, so the protocol lives in the prompt and is parsed back out.
-   * A reply that is cut off mid-object earns exactly one retry with a blunter instruction —
-   * more than that and a confused small model just burns seconds it cannot spare.
-   */
-  private async requestLocal(): Promise<AssistantResponse> {
-    const today = new Date().toISOString().slice(0, 10);
-    const known = new Set(TOOLS.map(t => t.name));
-
-    let raw = (await this.local.generate(localPrompt(this.history, TOOLS, today)))?.text ?? '';
-    if (looksMalformed(raw)) {
-      const firmer = localPrompt(this.history, TOOLS, today) +
-        '\n\nYour last reply was not valid JSON. Reply with one JSON object and nothing else.';
-      raw = (await this.local.generate(firmer))?.text ?? '';
-    }
-
-    if (raw.trim() === '') {
-      throw new Error('The on-device model returned nothing. It may have run out of memory.');
-    }
-
-    let parsed = parseLocalTurn(raw, known);
-
-    // A reply that announces work without calling anything is the worst failure available
-    // here: it reads as success and nothing happened. One firm retry usually converts it
-    // into the tool call it was describing.
-    // Only when nothing has actually run this message. After real work, "Task added" is a
-    // correct summary rather than a fabrication, and retrying it would cost seconds for
-    // nothing.
-    if (
-      this.toolsThisTurn === 0 &&
-      parsed.stop_reason === 'end_turn' &&
-      promisesAction(textOf(parsed))
-    ) {
-      const insist = localPrompt(this.history, TOOLS, today) +
-        '\n\nDo not describe what you are about to do. If the request needs a tool, emit the ' +
-        'tool call JSON now. If it does not, answer plainly without claiming any action.';
-      const second = (await this.local.generate(insist))?.text ?? '';
-      if (second.trim() !== '') {
-        const retry = parseLocalTurn(second, known);
-        // Keep the retry only if it actually improved on the promise.
-        if (retry.stop_reason === 'tool_use' || !promisesAction(textOf(retry))) parsed = retry;
-      }
-    }
-
-    return parsed;
   }
 
   private async requestViaBackend(): Promise<AssistantResponse> {
