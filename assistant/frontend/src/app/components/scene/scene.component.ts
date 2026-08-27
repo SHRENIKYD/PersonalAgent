@@ -16,7 +16,15 @@ import type { EchoScene } from '../../scene/echo-scene';
   selector: 'app-scene',
   standalone: true,
   imports: [CommonModule],
-  template: `<canvas #canvas class="scene-canvas" aria-hidden="true"></canvas>`,
+  template: `
+    <canvas #canvas class="scene-canvas" aria-hidden="true"></canvas>
+    <!--
+      The opaque floor between the scene and the UI. Rendered here rather than in the app
+      shell so it can never be present without the canvas that needs it — a veil on its own
+      would just be a gradient over a flat background.
+    -->
+    <div class="scene-veil" aria-hidden="true"></div>
+  `,
 })
 export class SceneComponent implements OnDestroy {
   @ViewChild('canvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;

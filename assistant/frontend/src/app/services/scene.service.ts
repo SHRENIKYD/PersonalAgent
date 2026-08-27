@@ -26,7 +26,13 @@ export class SceneService {
   /** Beta only — the production app is unchanged until this has proven itself. */
   readonly available = environment.beta;
 
-  mode = signal<SceneMode>('full');
+  /*
+   * Lite by default. With the scene confined to the header band, Full's extra particle
+   * count and the nav's backdrop blur buy very little that is actually visible, and they
+   * are the two things that cost frames on a mid-range phone. Full is one tap away for
+   * anyone who wants it.
+   */
+  mode = signal<SceneMode>('lite');
 
   /** Set by the scene host when WebGL turns out not to be usable, so Settings can say so
    *  rather than showing a toggle that silently does nothing. */
@@ -41,9 +47,9 @@ export class SceneService {
   loaded = signal(false);
 
   constructor(private storage: StorageService) {
-    const saved = this.storage.get<SceneSettings>(KEY, { mode: 'full' });
+    const saved = this.storage.get<SceneSettings>(KEY, { mode: 'lite' });
     this.mode.set(
-      saved.mode === 'off' || saved.mode === 'lite' || saved.mode === 'full' ? saved.mode : 'full'
+      saved.mode === 'off' || saved.mode === 'lite' || saved.mode === 'full' ? saved.mode : 'lite'
     );
 
     // Nothing is going to load, so say so now. The scene host is not even created in these
