@@ -380,8 +380,6 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
 </app-fold>
 </ng-container>
 
-      <app-fold label="Back button">
-
       <ng-container *ngIf="local.available">
         <app-fold label="On-device model"
                   [note]="local.loaded() ? 'loaded' : (local.modelPresent() ? 'not loaded' : 'no model')">
@@ -444,6 +442,9 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
         </p>
         </app-fold>
       </ng-container>
+
+      <app-fold label="Back button">
+
 
       <p class="setting-note">
         Press back once, then reopen this tab. If the count is still 0 the app never received

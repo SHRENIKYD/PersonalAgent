@@ -58,11 +58,9 @@ function todayIso(): string {
       </div>
 
       <div class="section-head">
-        <app-fold label="Muscle focus" [expanded]="true">
-
+        <h2 class="section-title">Muscle focus</h2>
         <button class="ghost-btn" *ngIf="previewing()" (click)="showToday()">Back to today</button>
-        </app-fold>
-</div>
+      </div>
       <div class="fit-focus">
         <app-muscle-map [active]="todayMuscles()" />
         <div class="fit-focus-side">
