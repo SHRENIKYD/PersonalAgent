@@ -8,6 +8,10 @@ import {
   nextSetAdvice,
   parseRepTarget,
   rollingAverage,
+  goalStatus,
+  detectPr,
+  personalRecords,
+  estimated1RM,
   volumeByGroup,
   weeklyChange,
 } from '../../fitness-progress';
@@ -95,14 +99,36 @@ function todayIso(): string {
 
       <div class="weight-row" *ngIf="latestWeight() as w">
         <span class="weight-now">{{ w }} kg</span>
+        <!--
+          Coloured by whether the trend moves toward the goal, not by its sign. Without a
+          goal set there is nothing to be right or wrong about, so it stays neutral rather
+          than assuming a cut.
+        -->
         <span class="weight-delta" *ngIf="weeklyDelta() !== null"
-              [class.down]="weeklyDelta()! < 0" [class.up]="weeklyDelta()! > 0">
+              [class.good]="deltaIsGood() === true"
+              [class.bad]="deltaIsGood() === false">
           {{ weeklyDelta()! > 0 ? '+' : '' }}{{ weeklyDelta() }} kg / week
         </span>
       </div>
 
+      <p class="setting-note goal-line-note" *ngIf="goal() as g">
+        <ng-container [ngSwitch]="g.direction">
+          <span *ngSwitchCase="'reached'">At target.</span>
+          <span *ngSwitchDefault>
+            {{ g.remainingKg }} kg to {{ g.direction === 'cut' ? 'lose' : 'gain' }}<span
+              *ngIf="g.weeksToGoal"> · about {{ g.weeksToGoal }} week{{ g.weeksToGoal === 1 ? '' : 's' }} at this rate</span><span
+              *ngIf="g.movingToward === false"> · currently moving away</span>
+          </span>
+        </ng-container>
+      </p>
+
       <svg class="weight-chart" *ngIf="trendPath() as d" viewBox="0 0 300 90"
            preserveAspectRatio="none" role="img" aria-label="Body weight trend">
+        <!-- The goal, drawn only when it falls inside the plotted range; a target far
+             outside the last few weeks would otherwise pin to an edge and read as data. -->
+        <line *ngIf="goalY() as gy" x1="0" [attr.y1]="gy" x2="300" [attr.y2]="gy"
+              stroke="var(--ok)" stroke-width="1" stroke-dasharray="4 4"
+              vector-effect="non-scaling-stroke" />
         <path [attr.d]="d" fill="none" stroke="var(--accent)" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
       </svg>
@@ -114,6 +140,12 @@ function todayIso(): string {
         <input class="grow" type="number" inputmode="decimal" step="0.1"
                placeholder="today's weight in kg" #wkg />
         <button (click)="saveWeight(wkg)">Log weight</button>
+      </div>
+
+      <div class="add-row">
+        <input class="grow" type="number" inputmode="decimal" step="0.1"
+               placeholder="target weight in kg" [value]="state.weightGoal() || ''" #gkg />
+        <button class="ghost-btn" (click)="saveGoal(gkg)">Set target</button>
       </div>
       </app-fold>
 <app-fold label="This week's volume">
@@ -169,6 +201,7 @@ function todayIso(): string {
                       <span class="set-advice" *ngIf="adviceFor(ex) as a"
                             [class.up]="a.kind === 'up'"
                             [class.deload]="a.kind === 'deload'">{{ a.text }}</span>
+                      <span class="pr-badge" *ngIf="prFor(ex.name) as p">{{ p }}</span>
                     </td>
                     <td>{{ ex.sets }}</td>
                     <td>
@@ -312,6 +345,29 @@ export class WorkoutComponent {
 
   weeklyDelta = computed(() => weeklyChange(this.state.weightEntries()));
 
+  goal = computed(() => goalStatus(this.state.weightEntries(), this.state.weightGoal()));
+
+  /** true = moving toward the target, false = away, null = no target or too flat to say. */
+  deltaIsGood = computed<boolean | null>(() => this.goal()?.movingToward ?? null);
+
+  /**
+   * The goal's y position in the chart's coordinate space, or null when it sits outside the
+   * plotted range. Recomputes the same min/max the path does — worth the duplication, since
+   * a goal line drawn against a different scale than the curve is actively misleading.
+   */
+  goalY = computed<number | null>(() => {
+    const target = this.state.weightGoal();
+    if (!target) return null;
+    const avg = rollingAverage(this.state.weightEntries());
+    if (avg.length < 2) return null;
+    const values = avg.map(a => a.kg);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    if (target < min || target > max) return null;
+    const span = Math.max(max - min, 1);
+    return 85 - ((target - min) / span) * 80;
+  });
+
   /** The averaged line as an SVG path, or null until two readings exist to join. */
   trendPath = computed<string | null>(() => {
     const avg = rollingAverage(this.state.weightEntries());
@@ -330,6 +386,10 @@ export class WorkoutComponent {
       })
       .join(' ');
   });
+
+  saveGoal(input: HTMLInputElement) {
+    this.state.setWeightGoal(parseFloat(input.value));
+  }
 
   weekVolume = computed(() => {
     const to = todayIso();
@@ -361,10 +421,39 @@ export class WorkoutComponent {
     return nextSetAdvice(prev.sets, target, ex.group ?? '', stalled);
   }
 
+  /**
+   * Which movements just produced a personal record, and what kind.
+   *
+   * Held in a signal rather than derived, because a PR is an event — it happened when the set
+   * was logged. Recomputing it from the log would make the badge permanent, and a badge that
+   * never goes away stops meaning "you just did something".
+   */
+  private prFlash = signal<Record<string, string>>({});
+
+  prFor(exercise: string): string | null {
+    return this.prFlash()[exercise] ?? null;
+  }
+
   add(exercise: string, w: HTMLInputElement, r: HTMLInputElement) {
     const weight = Number(w.value);
     const reps = Number(r.value);
     if (!Number.isFinite(weight) || !Number.isFinite(reps) || reps <= 0) return;
+
+    // Checked against history *before* the set is written. Comparing afterwards would make
+    // every set its own record and fire the badge on all of them.
+    const pr = detectPr({ weight, reps }, this.state.allSets(exercise));
+    if (pr.any) {
+      const label = pr.heaviest ? 'PR · heaviest'
+        : pr.reps ? 'PR · reps'
+        : `PR · est ${estimated1RM({ weight, reps })}kg`;
+      this.prFlash.update(m => ({ ...m, [exercise]: label }));
+      // Long enough to notice between sets, short enough that it is gone next session.
+      setTimeout(() => this.prFlash.update(m => {
+        const { [exercise]: _drop, ...rest } = m;
+        return rest;
+      }), 8000);
+    }
+
     this.state.logSet(todayIso(), exercise, weight, reps);
     // Reps usually repeat across sets while weight holds, so clearing only reps means the
     // common case is one number to type instead of two.

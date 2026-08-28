@@ -21,6 +21,7 @@ const KEYS = {
   fitness: 'assistant-fitness-v1',
   weight: 'assistant-weight-v1',
   sets: 'assistant-sets-v1',
+  weightGoal: 'assistant-weight-goal-v1',
 };
 
 const HABIT_WEEKS = 26;
@@ -94,6 +95,14 @@ export class StateService {
    * Body weight by ISO date, one reading per day. Keyed by date rather than appended to a
    * list so weighing twice in a morning corrects the day instead of skewing it.
    */
+  /**
+   * Target body weight in kg, or 0 for none.
+   *
+   * Kept because a weight trend on its own cannot say whether it is good news: falling is
+   * progress on a cut and a failure on a bulk, and without a target the app has to guess —
+   * it used to guess "down is good", which is wrong for anyone gaining.
+   */
+  weightGoal = signal<number>(0);
   weightLog = signal<Record<string, number>>({});
   setLog = signal<SetLog>({});
   saveStatus = signal<string>('');
@@ -113,6 +122,7 @@ export class StateService {
     this.roadmap.set(padRoadmapTracks(this.storage.get<RoadmapState>(KEYS.roadmap, defaultRoadmap())));
     this.fitnessLog.set(this.storage.get<Record<string, boolean>>(KEYS.fitness, {}));
     this.weightLog.set(this.storage.get<Record<string, number>>(KEYS.weight, {}));
+    this.weightGoal.set(this.storage.get<number>(KEYS.weightGoal, 0));
     this.setLog.set(this.storage.get<SetLog>(KEYS.sets, {}));
   }
 
@@ -404,6 +414,13 @@ export class StateService {
       .sort((a, b) => a.date.localeCompare(b.date))
   );
 
+  /** Sets the target, or clears it with 0 or anything unusable. */
+  setWeightGoal(kg: number) {
+    const clean = Number.isFinite(kg) && kg > 0 ? Math.round(kg * 10) / 10 : 0;
+    this.weightGoal.set(clean);
+    this.storage.set<number>(KEYS.weightGoal, clean);
+  }
+
   logWeight(date: string, kg: number) {
     if (!Number.isFinite(kg) || kg <= 0) return;
     this.weightLog.update(log => ({ ...log, [date]: Math.round(kg * 10) / 10 }));
@@ -432,6 +449,21 @@ export class StateService {
       .sort()
       .slice(-count)
       .map(date => ({ date, sets: log[this.setKey(date, exercise)] }));
+  }
+
+  /**
+   * Every set ever recorded for a movement, across all dates.
+   *
+   * Order is by date so a caller can reason about "before today", but PR comparison does not
+   * depend on it — a record is a record whenever it happened.
+   */
+  allSets(exercise: string, beforeDate?: string): SetEntry[] {
+    const log = this.setLog();
+    return Object.keys(log)
+      .filter(k => k.endsWith(`|${exercise}`))
+      .filter(k => !beforeDate || k.slice(0, k.indexOf('|')) < beforeDate)
+      .sort()
+      .flatMap(k => log[k]);
   }
 
   /** Heaviest single set ever recorded for an exercise — the number worth beating. */

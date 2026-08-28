@@ -2358,8 +2358,34 @@ summary:focus-visible {
 }
 
 .weight-delta { font-size: 13px; font-variant-numeric: tabular-nums; }
-.weight-delta.down { color: var(--ok); }
-.weight-delta.up { color: var(--warn); }
+
+/*
+ * Coloured by direction relative to the target, not by sign.
+ *
+ * These used to be .down (green) and .up (amber), which quietly asserted that losing weight
+ * is always the good outcome. It is not — on a bulk that colouring marks every good week as
+ * a warning. With no target set neither class applies and the number stays neutral, which is
+ * the honest answer when the app has no way to know what you are aiming at.
+ */
+.weight-delta.good { color: var(--ok); }
+.weight-delta.bad { color: var(--warn); }
+
+.goal-line-note { margin-top: 2px; }
+
+/* The PR badge. Deliberately loud relative to everything else in the row — it appears for a
+   few seconds after a record and then goes, so it has one chance to be seen. */
+.pr-badge {
+  display: inline-block;
+  margin-top: 3px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bg);
+  background: var(--ok);
+  border-radius: 3px;
+  padding: 1px 6px;
+}
 
 .weight-chart {
   width: 100%;
