@@ -2742,3 +2742,74 @@ summary:focus-visible {
 .theme-instrument .month-index {
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------------- exercise library ---------------- */
+
+.lib-filters {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+
+.lib-filters select {
+  flex: 1 1 0;
+  min-width: 0;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+/*
+ * Capped and scrollable. Search over 873 rows can return sixty, and letting that grow the
+ * page means the search box scrolls off the top exactly when you want to refine the query.
+ */
+.lib-list {
+  max-height: 46vh;
+  overflow-y: auto;
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.lib-item { border-bottom: 1px solid var(--line); }
+
+.lib-head {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 10px 2px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.lib-head:hover .lib-name { color: var(--accent-dim); }
+
+.lib-name { display: block; font-size: 14px; font-weight: 600; }
+
+.lib-meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+  /* Equipment plus a muscle list runs long on a phone; one line keeps the list scannable. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lib-body { padding: 2px 2px 12px; }
+
+.lib-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+
+.lib-steps {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.lib-steps li { margin-bottom: 5px; }

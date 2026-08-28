@@ -15,6 +15,14 @@ import {
   volumeByGroup,
   weeklyChange,
 } from '../../fitness-progress';
+import { ExerciseLibraryService } from '../../services/exercise-library.service';
+import {
+  LibraryExercise,
+  equipmentOptions,
+  groupForExercise,
+  muscleOptions,
+  searchExercises,
+} from '../../exercise-search';
 import { MuscleMapComponent } from '../muscle-map/muscle-map.component';
 import { RestTimerComponent } from '../rest-timer/rest-timer.component';
 import {
@@ -167,6 +175,72 @@ function todayIso(): string {
 
       <app-rest-timer />
 </app-fold>
+<app-fold label="Exercise library" [note]="libNote()">
+
+      <p class="setting-note">
+        873 movements, searchable by name, muscle or equipment. Log a set against any of them
+        and it counts toward this week's volume like anything in the plan.
+      </p>
+
+      <div class="add-row">
+        <input class="grow" type="search" placeholder="search — bench, curl, dumbbell…"
+               [value]="libQuery()" (input)="onLibQuery($event)" />
+      </div>
+
+      <div class="lib-filters">
+        <select [value]="libMuscle()" (change)="onLibMuscle($event)" aria-label="Filter by muscle">
+          <option value="">Any muscle</option>
+          <option *ngFor="let m of muscles()" [value]="m">{{ m }}</option>
+        </select>
+        <select [value]="libEquipment()" (change)="onLibEquipment($event)" aria-label="Filter by equipment">
+          <option value="">Any equipment</option>
+          <option *ngFor="let e of equipment()" [value]="e">{{ e }}</option>
+        </select>
+      </div>
+
+      <p class="setting-note" *ngIf="library.loading()">Loading the library…</p>
+      <p class="setting-note" *ngIf="library.error() as err">⚠️ Could not load the library: {{ err }}</p>
+
+      <p class="setting-note" *ngIf="!library.loading() && !library.error() && !libResults().length">
+        Nothing matches. Try one word rather than several.
+      </p>
+
+      <div class="lib-list">
+        <div class="lib-item" *ngFor="let ex of libResults()">
+          <button class="lib-head" (click)="toggleLib(ex.id)"
+                  [attr.aria-expanded]="openLib() === ex.id">
+            <span class="lib-name">{{ ex.name }}</span>
+            <span class="lib-meta">{{ ex.equipment || 'no equipment' }} · {{ ex.primary.join(', ') }}</span>
+          </button>
+
+          <div class="lib-body" *ngIf="openLib() === ex.id">
+            <p class="lib-tags">
+              <span class="pill" *ngIf="ex.level">{{ ex.level }}</span>
+              <span class="pill" *ngIf="ex.mechanic">{{ ex.mechanic }}</span>
+              <span class="pill" *ngIf="ex.category">{{ ex.category }}</span>
+              <span class="pill" *ngIf="groupOfLib(ex) as g">counts as {{ g }}</span>
+            </p>
+
+            <ol class="lib-steps" *ngIf="ex.steps.length">
+              <li *ngFor="let step of ex.steps">{{ step }}</li>
+            </ol>
+            <p class="setting-note" *ngIf="!ex.steps.length">No written steps for this one.</p>
+
+            <div class="set-log">
+              <span class="set-chip" *ngFor="let st of setsToday(ex.name); let si = index"
+                    (click)="state.removeSet(today(), ex.name, si)"
+                    title="Click to remove">{{ st.weight }}×{{ st.reps }}</span>
+              <input class="set-in" type="number" inputmode="decimal" placeholder="kg"
+                     #lw (keydown.enter)="add(ex.name, lw, lr)" />
+              <input class="set-in" type="number" inputmode="numeric" placeholder="reps"
+                     #lr (keydown.enter)="add(ex.name, lw, lr)" />
+              <button class="ghost-btn set-add" (click)="add(ex.name, lw, lr)">+</button>
+            </div>
+            <span class="pr-badge" *ngIf="prFor(ex.name) as p">{{ p }}</span>
+          </div>
+        </div>
+      </div>
+</app-fold>
 <app-fold label="Weekly split">
 
       <div class="fit-table-wrap">
@@ -299,7 +373,15 @@ export class WorkoutComponent {
       : 'Nothing scheduled today. Recovery is part of the program, not a gap in it.'
   );
 
-  constructor(public state: StateService) {}
+  constructor(
+    public state: StateService,
+    public library: ExerciseLibraryService,
+  ) {
+    // Kicked off on construction rather than on first keystroke: the Body tab is where the
+    // library lives, so by the time the fold is opened the fetch has usually finished and
+    // the list appears instantly instead of blinking through a loading line.
+    void this.library.load();
+  }
 
   today(): string { return todayIso(); }
 
@@ -387,6 +469,43 @@ export class WorkoutComponent {
       .join(' ');
   });
 
+  // ---------------- exercise library ----------------
+
+  libQuery = signal('');
+  libMuscle = signal('');
+  libEquipment = signal('');
+  openLib = signal<string | null>(null);
+
+  muscles = computed(() => muscleOptions(this.library.all()));
+  equipment = computed(() => equipmentOptions(this.library.all()));
+
+  libResults = computed(() =>
+    searchExercises(this.library.all(), {
+      text: this.libQuery(),
+      muscle: this.libMuscle(),
+      equipment: this.libEquipment(),
+    }),
+  );
+
+  /** The fold's right-hand note: how many movements match right now. */
+  libNote(): string {
+    if (this.library.loading()) return 'loading';
+    const total = this.library.all().length;
+    if (!total) return '';
+    const shown = this.libResults().length;
+    return shown < total ? `${shown} of ${total}` : `${total}`;
+  }
+
+  onLibQuery(e: Event) { this.libQuery.set((e.target as HTMLInputElement).value); }
+  onLibMuscle(e: Event) { this.libMuscle.set((e.target as HTMLSelectElement).value); }
+  onLibEquipment(e: Event) { this.libEquipment.set((e.target as HTMLSelectElement).value); }
+
+  toggleLib(id: string) {
+    this.openLib.set(this.openLib() === id ? null : id);
+  }
+
+  groupOfLib(ex: LibraryExercise): string | null { return groupForExercise(ex); }
+
   saveGoal(input: HTMLInputElement) {
     this.state.setWeightGoal(parseFloat(input.value));
   }
@@ -398,12 +517,21 @@ export class WorkoutComponent {
   });
 
   /** Exercise name back to its muscle group, from the plan rather than from the log. */
+  /**
+   * Exercise name to muscle group, for the weekly volume readout.
+   *
+   * The plan wins, since its groups are the ones the split is balanced around. The library is
+   * the fallback, which is what makes a set logged against one of its 873 movements actually
+   * count — without it the panel promised that sets outside the plan contribute to volume and
+   * they silently did not, which is a worse failure than not offering the library at all.
+   */
   private groupOf(name: string): string | undefined {
     for (const day of this.workoutDays) {
       const hit = day.exercises.find(e => e.name === name);
       if (hit) return hit.group;
     }
-    return undefined;
+    const fromLibrary = this.library.byName(name);
+    return fromLibrary ? groupForExercise(fromLibrary) ?? undefined : undefined;
   }
 
   saveWeight(input: HTMLInputElement) {
