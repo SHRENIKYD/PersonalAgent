@@ -19,7 +19,6 @@ import { StateService } from './services/state.service';
 import { SyncService } from './services/sync.service';
 import { BackButtonService } from './services/back-button.service';
 import { NotifyService } from './services/notify.service';
-import { ScrollPulseService } from './services/scroll-pulse.service';
 import { SceneComponent } from './components/scene/scene.component';
 import { SceneService } from './services/scene.service';
 import { environment } from '../environments/environment';
@@ -94,7 +93,6 @@ export class AppComponent {
     // Injected purely so it is constructed: it reschedules the next week of briefs on
     // launch, which must happen whether or not the Settings tab is ever opened.
     private notify: NotifyService,
-    pulse: ScrollPulseService,
     public scenes: SceneService,
   ) {
     /*
@@ -107,9 +105,6 @@ export class AppComponent {
      */
     if (environment.beta) document.documentElement.classList.add('theme-instrument');
 
-    // Starts the scroll-velocity listener that drives the header trace. Nothing else reads
-    // it, so it is started here rather than by whichever component happens to mount first.
-    pulse.start();
   }
 
   dismissBoot() {
