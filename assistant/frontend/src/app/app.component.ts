@@ -22,6 +22,7 @@ import { NotifyService } from './services/notify.service';
 import { ScrollPulseService } from './services/scroll-pulse.service';
 import { SceneComponent } from './components/scene/scene.component';
 import { SceneService } from './services/scene.service';
+import { environment } from '../environments/environment';
 
 const BOOT_SEEN_KEY = 'jarvis-boot-seen';
 
@@ -96,6 +97,16 @@ export class AppComponent {
     pulse: ScrollPulseService,
     public scenes: SceneService,
   ) {
+    /*
+     * The Instrument theme, applied to the document root and only in beta builds.
+     *
+     * A class rather than a build-time swap so the whole theme stays one scoped block in
+     * styles.css that production can never match. Two visual passes have already reached
+     * the stable app when they should not have; this makes that structurally impossible
+     * rather than a matter of remembering.
+     */
+    if (environment.beta) document.documentElement.classList.add('theme-instrument');
+
     // Starts the scroll-velocity listener that drives the header trace. Nothing else reads
     // it, so it is started here rather than by whichever component happens to mount first.
     pulse.start();

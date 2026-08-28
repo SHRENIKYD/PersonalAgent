@@ -24,6 +24,13 @@
      top of the ember base. Retuned from cyan to amber so it reads as part of the same
      system rather than a second palette fighting the first. */
   --hud-cyan: #ffc861;
+
+  /* Typefaces as tokens rather than literals. The defaults here are exactly what the app
+     already used, so this changes nothing on its own — it exists so a theme can override
+     the three stacks in one place instead of thirty. */
+  --font-display: 'Orbitron', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -33,7 +40,7 @@ html, body {
   padding: 0;
   background: var(--bg);
   color: var(--text);
-  font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font: 15px/1.55 var(--font-body);
 }
 
 .app {
@@ -73,7 +80,7 @@ html, body {
   font-size: 19px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-display);
 }
 
 .brand-sub {
@@ -92,7 +99,7 @@ html, body {
 }
 
 .tab-group-label {
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-display);
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -132,7 +139,7 @@ html, body {
   color: var(--muted);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
 }
 
 .tabs button.active .frac { color: #ffe2b8; }
@@ -203,7 +210,7 @@ html, body {
 .page-title {
   font-size: 25px;
   margin: 0 0 4px;
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-display);
 }
 
 .page-sub {
@@ -218,7 +225,7 @@ html, body {
   letter-spacing: 0.09em;
   color: var(--muted);
   margin: 26px 0 10px;
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-display);
 }
 
 .empty { color: var(--muted); }
@@ -343,7 +350,7 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
   flex: 0 0 auto;
   border: 1px solid var(--line);
   color: var(--muted);
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
 }
 
 .pill.high { border-color: var(--danger); color: #f0a6a6; }
@@ -357,7 +364,7 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
   font-variant-numeric: tabular-nums;
   flex: 0 0 auto;
   min-width: 88px;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   text-align: right;
 }
 
@@ -407,7 +414,7 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
   padding: 15px;
 }
 
-.stat-value { font-size: 27px; font-weight: 700; font-variant-numeric: tabular-nums; font-family: 'IBM Plex Mono', monospace; }
+.stat-value { font-size: 27px; font-weight: 700; font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
 
 .stat-label {
   color: var(--muted);
@@ -438,7 +445,7 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
   gap: 4px;
   padding: 13px 15px;
   text-align: left;
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-display);
   transition: border-color 0.15s ease, transform 0.15s ease;
 }
 
@@ -612,7 +619,7 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
   color: var(--muted);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
 }
 
 .month-theme {
@@ -630,10 +637,10 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   flex: 0 0 auto;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
 }
 
-.month-name { font-weight: 700; font-size: 16px; flex: 0 0 auto; font-family: 'Orbitron', sans-serif; }
+.month-name { font-weight: 700; font-size: 16px; flex: 0 0 auto; font-family: var(--font-display); }
 
 .theme-input {
   flex: 1 1 220px;
@@ -773,7 +780,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 .prep-topic-chevron.open { transform: rotate(90deg); }
 
-.prep-topic-name { flex: 1 1 auto; font-weight: 600; font-family: 'Orbitron', sans-serif; }
+.prep-topic-name { flex: 1 1 auto; font-weight: 600; font-family: var(--font-display); }
 
 .prep-problem-list { border-top: 1px solid var(--line); }
 
@@ -876,7 +883,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   letter-spacing: 0.06em;
   color: var(--muted);
   margin-bottom: 4px;
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-display);
 }
 
 .note-section p { margin: 0; font-size: 13.5px; }
@@ -886,7 +893,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 10px 12px;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--hud-cyan);
@@ -959,14 +966,14 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 18px;
   font-weight: 600;
   color: var(--accent);
 }
 
 .reactor-copy .h {
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-display);
   font-size: 15px;
   font-weight: 700;
   margin: 0 0 3px;
@@ -993,7 +1000,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 .overall-progress-label {
   font-size: 12px;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   color: var(--accent);
 }
 
@@ -1037,7 +1044,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 }
 
 .dash-card-title {
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-display);
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1048,7 +1055,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .dash-card-stat {
   color: var(--muted);
   font-size: 13px;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   margin-top: 8px;
 }
 
@@ -1086,7 +1093,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 .fit-table th {
   color: var(--accent-dim);
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-display);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1097,7 +1104,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .fit-group-row {
   background: var(--panel-2);
   color: var(--hud-cyan);
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-display);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1161,7 +1168,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 .boot-field {
   margin: 0;
-  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   /* Tight leading so the character grid reads as a filled disc rather than stripes. */
   line-height: 1.02;
@@ -1175,7 +1182,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
    the text is already in the right cell. */
 .boot-count {
   position: absolute;
-  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   letter-spacing: 0.14em;
   color: var(--hud-cyan);
@@ -1184,7 +1191,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 }
 
 .boot-status {
-  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -1283,7 +1290,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .rail-section:last-child { border-bottom: none; }
 
 .rail-head {
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-display);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -1359,7 +1366,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .fit-hero-copy { flex: 1 1 auto; min-width: 0; padding-bottom: 14px; }
 
 .fit-hero-session {
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-display);
   color: var(--accent);
   font-size: 15px;
   letter-spacing: 0.04em;
@@ -1422,7 +1429,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .fit-key { list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .fit-key li {
   display: flex; align-items: center; gap: 6px;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--muted);
   border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px;
@@ -1435,7 +1442,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   border-radius: 10px; padding: 10px 6px; text-align: center;
 }
 .fit-stats b {
-  display: block; font-family: 'IBM Plex Mono', monospace;
+  display: block; font-family: var(--font-mono);
   font-size: 19px; font-variant-numeric: tabular-nums;
 }
 .fit-stats span {
@@ -1450,7 +1457,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .rest-ring-wrap circle { transition: stroke-dashoffset 0.25s linear; }
 .rest-val { position: absolute; text-align: center; }
 .rest-val b {
-  display: block; font-family: 'IBM Plex Mono', monospace;
+  display: block; font-family: var(--font-mono);
   font-size: 25px; font-weight: 700; font-variant-numeric: tabular-nums;
 }
 .rest-val span {
@@ -1467,7 +1474,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .set-log { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
 
 .set-chip {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   border: 1px solid var(--accent-dim);
   background: rgba(255, 107, 26, 0.12);
@@ -1482,13 +1489,13 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   width: 58px;
   padding: 4px 6px;
   font-size: 12px;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
 }
 .set-add { padding: 4px 10px; }
 
 .set-last {
   display: block;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--muted);
   margin-top: 2px;
@@ -1513,7 +1520,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .macro-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
 .macro-head b { font-size: 14px; }
 .macro-head span {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums;
 }
 
@@ -1593,7 +1600,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .macro-note { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
 
 .fit-focus-session {
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-display);
   font-size: 14px;
   color: var(--accent);
   margin: 0 0 8px;
@@ -1614,7 +1621,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .restore-box {
   display: block;
   width: 100%;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   margin-bottom: 8px;
   resize: vertical;
@@ -1659,7 +1666,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   align-items: center;
   gap: 4px;
   flex: 0 0 auto;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10.5px;
   color: rgba(255, 255, 255, 0.82);
   white-space: nowrap;
@@ -1674,14 +1681,14 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .echo-head { display: flex; align-items: center; gap: 7px; font-size: 12px; }
 
 .echo-head b {
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-display);
   color: var(--accent-dim);
   letter-spacing: 0.06em;
   font-size: 12px;
 }
 
 .echo-head .dot { color: var(--muted); }
-.echo-time { color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
+.echo-time { color: var(--muted); font-family: var(--font-mono); font-size: 11px; }
 
 .echo-mark { width: 22px; height: 22px; flex: 0 0 auto; display: block; }
 .echo-mark svg { width: 100%; height: 100%; display: block; }
@@ -1706,7 +1713,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   gap: 7px;
   font-size: 12.5px;
   color: var(--muted);
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
 }
 
 .echo-action svg { width: 14px; height: 14px; color: var(--ok); flex: 0 0 auto; }
@@ -1731,7 +1738,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 }
 
 .card-title {
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   margin: 0 0 3px;
   line-height: 1.25;
@@ -1766,7 +1773,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 /* Tabular figures so "4 × 5–8" and "3 × 12–15" line up down the right edge. */
 .ex-sets {
   flex: 0 0 auto;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -1940,7 +1947,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .md-p:last-child { margin-bottom: 0; }
 
 .md-h {
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-display);
   font-size: 15px;
   margin: 14px 0 6px;
   line-height: 1.3;
@@ -1967,7 +1974,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   padding: 10px 12px;
   margin: 0 0 10px;
   overflow-x: auto;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 12.5px;
 }
 
@@ -1976,7 +1983,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   border: 1px solid var(--line);
   border-radius: 5px;
   padding: 1px 5px;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 12.5px;
 }
 
@@ -2051,7 +2058,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 }
 
 .voice-state {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   color: var(--accent);
 }
@@ -2397,7 +2404,7 @@ summary:focus-visible {
   font-size: 26px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-mono);
 }
 
 .weight-delta { font-size: 13px; font-variant-numeric: tabular-nums; }
@@ -2440,7 +2447,7 @@ summary:focus-visible {
 
 /* Deliberately identical to .section-title — same face, size, tracking and colour. */
 .fold-label {
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-display);
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.09em;
@@ -2471,7 +2478,7 @@ summary:focus-visible {
   letter-spacing: 0.07em;
   color: var(--muted);
   margin: 18px 0 8px;
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-display);
 }
 
 .ghost-btn.active {
@@ -2712,3 +2719,111 @@ summary:focus-visible {
 /* The reference sets its destination list as "-> ITEM". Tried and dropped on the opener
    chips: inside a rounded pill the arrow points at the pill's own edge and reads as debris
    rather than as a marker. It belongs on a flush-left list, which this app does not have. */
+
+/* ============================================================================
+   THEME · INSTRUMENT  (beta only)
+   ============================================================================
+
+   Direction 02 from the mockups: a cockpit readout rather than an atmosphere.
+   Amber on graphite, hairline rules, 2px corners, a condensed display face, and
+   deliberately no glow, no blur and no 3D scene anywhere in it.
+
+   Scoped entirely under :root.theme-instrument, a class AppComponent applies only
+   when environment.beta is true. Nothing in this block can reach the production
+   app — which matters, because the last two visual passes did reach it and should
+   not have. Stable keeps the ember/Orbitron system untouched above.
+
+   The density is the point. Everything here trades atmosphere for how much you can
+   read at a glance in bad light with one hand, which is the actual situation this
+   app gets used in.
+   ---------------------------------------------------------------------------- */
+
+:root.theme-instrument {
+  --bg: #0b0b0c;
+  --panel: #141416;
+  --panel-2: #1a1a1d;
+  --line: #2e2e33;
+  --text: #e8e8e6;
+  --muted: #9c9c98;
+
+  /* One amber, two weights. --accent-dim is this app's primary (buttons, active
+     states); --accent is the lighter secondary used for dots and small highlights. */
+  --accent-dim: #ffb000;
+  --accent: #ffcf57;
+  --ember-deep: #b37a00;
+  /* The HUD brackets join the same palette instead of running a second one. */
+  --hud-cyan: #ffb000;
+
+  --warn: #e8b33c;
+  --danger: #e0574a;
+  --ok: #46c97f;
+
+  --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-body: 'Barlow', system-ui, -apple-system, sans-serif;
+}
+
+/* Condensed faces are drawn for setting headlines in caps and look weak in sentence
+   case at small sizes, which is the opposite of the Chakra Petch decision — there the
+   transform was hiding a font with no lowercase, here it is playing to the face's
+   actual strength. */
+.theme-instrument .page-title,
+.theme-instrument .brand,
+.theme-instrument .card-title,
+.theme-instrument .dash-card-title,
+.theme-instrument .month-name {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-weight: 700;
+}
+
+/* Hairline geometry. Corners go to 2px on the rectangular surfaces only — anything
+   deliberately circular (the mark, the centre nav button, dots, progress tracks) keeps
+   its shape, since squaring those would break the components rather than restyle them. */
+.theme-instrument .panel,
+.theme-instrument .dash-card,
+.theme-instrument .fold,
+.theme-instrument .echo-card,
+.theme-instrument .chat-panel,
+.theme-instrument .bubble,
+.theme-instrument .composer,
+.theme-instrument input,
+.theme-instrument textarea,
+.theme-instrument select,
+.theme-instrument button:not(.nav-echo):not(.brand-reactor) {
+  border-radius: 2px;
+}
+
+/* No depth cues at all. Instrument's whole argument is that a boundary should be a
+   line, not a blur — so every shadow in the theme is removed rather than softened. */
+.theme-instrument .panel,
+.theme-instrument .dash-card,
+.theme-instrument .fold,
+.theme-instrument .echo-card,
+.theme-instrument .bottom-nav,
+.theme-instrument .bubble {
+  box-shadow: none;
+}
+
+.theme-instrument .bottom-nav {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+}
+
+/* The header ECG comes out. It is the strongest piece of ECHO's identity and the
+   hardest thing to give up here, but a lit trace behind the wordmark is precisely the
+   ambient decoration this direction exists to reject — keeping it would make Instrument
+   a recolour of Deep Field rather than an alternative to it. The mark itself stays. */
+.theme-instrument .brand-row::before { display: none; }
+.theme-instrument .brand-reactor { animation: none; }
+
+/* Data reads as data. Tabular figures so columns of weights and reps line up, which is
+   most of what is on screen during a session. */
+.theme-instrument .stat-value,
+.theme-instrument .frac,
+.theme-instrument .due,
+.theme-instrument .month-index {
+  font-variant-numeric: tabular-nums;
+}
