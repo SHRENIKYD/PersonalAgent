@@ -1,39 +1,29 @@
 :root {
-  /* ---- Direction 01 · Deep Field ----------------------------------------------------
-     Near-black ground with the ember as the one accent you can act on, and a cold iris as
-     the counterweight the atmosphere is allowed to use. Retuned from the previous ember
-     palette rather than rebuilt: every component already reads these variables, so the
-     direction swap is a token change plus the surface rules below.
+  /* Ember palette — near-black ground with ember orange as the primary brand accent
+     (buttons, active states, links-that-act) and amber as the secondary highlight (dots,
+     small accents, the reactor gradient). This replaced the earlier red/gold arc-reactor
+     tuning; ember sits close enough to it that the swap is a retune rather than a rebuild,
+     and every component already reads these variables rather than hardcoding colour.
 
-     The neutrals carry a slight blue bias. A pure grey against an orange accent reads as
-     unconsidered; biasing it the other way makes the pairing look chosen.
-
-     --ok stays green and --danger stays red on purpose. With ember on everything
-     actionable, a green "done" is what keeps checked-vs-unchecked scannable, and a warning
-     that shares a hue with the brand accent stops meaning anything. */
-  --bg: #06070a;
-  --panel: #101319;
-  --panel-2: #171b24;
-  --line: #262c38;
-  --line-soft: #1b2029;
-  --text: #eef0f5;
-  --muted: #a8afbe;
-  --muted-2: #6c7484;
+     --ok stays green on purpose: with ember everywhere else, a green "done" signal is what
+     keeps checked-vs-unchecked scannable at a glance. --danger stays red for the same
+     reason — it has to be distinguishable from the accent to mean anything. */
+  --bg: #0a0a0c;
+  --panel: #16161b;
+  --panel-2: #1f1f26;
+  --line: #2b2b34;
+  --text: #f5f1ea;
+  --muted: #9a9187;
   --accent: #ffb020;
   --accent-dim: #ff6b1a;
-  --ember-deep: #c24e10;
-  --warn: #e8b33c;
+  --ember-deep: #d9480f;
+  --warn: #e8a34d;
   --danger: #e0574a;
-  --ok: #46c97f;
+  --ok: #63c088;
+  /* Layered HUD accent, kept for scanning lines, corner brackets, and readouts drawn on
+     top of the ember base. Retuned from cyan to amber so it reads as part of the same
+     system rather than a second palette fighting the first. */
   --hud-cyan: #ffc861;
-
-  /* Typefaces as variables rather than literals, so a direction is a token swap instead of
-     thirty find-and-replaces. Chakra Petch replaces Orbitron for display: it is the same
-     squared-off technical register but has real lowercase, which is why headings can now be
-     sentence case instead of permanently shouting. */
-  --font-display: 'Chakra Petch', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-body: 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -43,7 +33,7 @@ html, body {
   padding: 0;
   background: var(--bg);
   color: var(--text);
-  font: 15px/1.6 var(--font-body);
+  font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 .app {
@@ -83,7 +73,7 @@ html, body {
   font-size: 19px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  font-family: var(--font-display);
+  font-family: 'Orbitron', sans-serif;
 }
 
 .brand-sub {
@@ -102,7 +92,7 @@ html, body {
 }
 
 .tab-group-label {
-  font-family: var(--font-display);
+  font-family: 'Orbitron', sans-serif;
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -142,7 +132,7 @@ html, body {
   color: var(--muted);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
 }
 
 .tabs button.active .frac { color: #ffe2b8; }
@@ -213,7 +203,7 @@ html, body {
 .page-title {
   font-size: 25px;
   margin: 0 0 4px;
-  font-family: var(--font-display);
+  font-family: 'Orbitron', sans-serif;
 }
 
 .page-sub {
@@ -228,7 +218,7 @@ html, body {
   letter-spacing: 0.09em;
   color: var(--muted);
   margin: 26px 0 10px;
-  font-family: var(--font-display);
+  font-family: 'Orbitron', sans-serif;
 }
 
 .empty { color: var(--muted); }
@@ -353,7 +343,7 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
   flex: 0 0 auto;
   border: 1px solid var(--line);
   color: var(--muted);
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
 }
 
 .pill.high { border-color: var(--danger); color: #f0a6a6; }
@@ -367,7 +357,7 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
   font-variant-numeric: tabular-nums;
   flex: 0 0 auto;
   min-width: 88px;
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
   text-align: right;
 }
 
@@ -417,7 +407,7 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
   padding: 15px;
 }
 
-.stat-value { font-size: 27px; font-weight: 700; font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
+.stat-value { font-size: 27px; font-weight: 700; font-variant-numeric: tabular-nums; font-family: 'IBM Plex Mono', monospace; }
 
 .stat-label {
   color: var(--muted);
@@ -448,7 +438,7 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
   gap: 4px;
   padding: 13px 15px;
   text-align: left;
-  font-family: var(--font-display);
+  font-family: 'Orbitron', sans-serif;
   transition: border-color 0.15s ease, transform 0.15s ease;
 }
 
@@ -622,7 +612,7 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
   color: var(--muted);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
 }
 
 .month-theme {
@@ -640,10 +630,10 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   flex: 0 0 auto;
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
 }
 
-.month-name { font-weight: 700; font-size: 16px; flex: 0 0 auto; font-family: var(--font-display); }
+.month-name { font-weight: 700; font-size: 16px; flex: 0 0 auto; font-family: 'Orbitron', sans-serif; }
 
 .theme-input {
   flex: 1 1 220px;
@@ -783,7 +773,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 .prep-topic-chevron.open { transform: rotate(90deg); }
 
-.prep-topic-name { flex: 1 1 auto; font-weight: 600; font-family: var(--font-display); }
+.prep-topic-name { flex: 1 1 auto; font-weight: 600; font-family: 'Orbitron', sans-serif; }
 
 .prep-problem-list { border-top: 1px solid var(--line); }
 
@@ -886,7 +876,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   letter-spacing: 0.06em;
   color: var(--muted);
   margin-bottom: 4px;
-  font-family: var(--font-display);
+  font-family: 'Orbitron', sans-serif;
 }
 
 .note-section p { margin: 0; font-size: 13.5px; }
@@ -896,7 +886,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 10px 12px;
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--hud-cyan);
@@ -969,14 +959,14 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 18px;
   font-weight: 600;
   color: var(--accent);
 }
 
 .reactor-copy .h {
-  font-family: var(--font-display);
+  font-family: 'Orbitron', sans-serif;
   font-size: 15px;
   font-weight: 700;
   margin: 0 0 3px;
@@ -1003,7 +993,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 .overall-progress-label {
   font-size: 12px;
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
   color: var(--accent);
 }
 
@@ -1047,7 +1037,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 }
 
 .dash-card-title {
-  font-family: var(--font-display);
+  font-family: 'Orbitron', sans-serif;
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1058,7 +1048,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .dash-card-stat {
   color: var(--muted);
   font-size: 13px;
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
   margin-top: 8px;
 }
 
@@ -1096,7 +1086,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 .fit-table th {
   color: var(--accent-dim);
-  font-family: var(--font-display);
+  font-family: 'Orbitron', sans-serif;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1107,7 +1097,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .fit-group-row {
   background: var(--panel-2);
   color: var(--hud-cyan);
-  font-family: var(--font-display);
+  font-family: 'Orbitron', sans-serif;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1171,7 +1161,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 .boot-field {
   margin: 0;
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
   /* Tight leading so the character grid reads as a filled disc rather than stripes. */
   line-height: 1.02;
@@ -1185,7 +1175,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
    the text is already in the right cell. */
 .boot-count {
   position: absolute;
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
   font-size: 12px;
   letter-spacing: 0.14em;
   color: var(--hud-cyan);
@@ -1194,7 +1184,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 }
 
 .boot-status {
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
   font-size: 11px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -1293,7 +1283,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .rail-section:last-child { border-bottom: none; }
 
 .rail-head {
-  font-family: var(--font-display);
+  font-family: 'Orbitron', sans-serif;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -1369,7 +1359,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .fit-hero-copy { flex: 1 1 auto; min-width: 0; padding-bottom: 14px; }
 
 .fit-hero-session {
-  font-family: var(--font-display);
+  font-family: 'Orbitron', sans-serif;
   color: var(--accent);
   font-size: 15px;
   letter-spacing: 0.04em;
@@ -1432,7 +1422,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .fit-key { list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .fit-key li {
   display: flex; align-items: center; gap: 6px;
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--muted);
   border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px;
@@ -1445,7 +1435,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   border-radius: 10px; padding: 10px 6px; text-align: center;
 }
 .fit-stats b {
-  display: block; font-family: var(--font-mono);
+  display: block; font-family: 'IBM Plex Mono', monospace;
   font-size: 19px; font-variant-numeric: tabular-nums;
 }
 .fit-stats span {
@@ -1460,7 +1450,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .rest-ring-wrap circle { transition: stroke-dashoffset 0.25s linear; }
 .rest-val { position: absolute; text-align: center; }
 .rest-val b {
-  display: block; font-family: var(--font-mono);
+  display: block; font-family: 'IBM Plex Mono', monospace;
   font-size: 25px; font-weight: 700; font-variant-numeric: tabular-nums;
 }
 .rest-val span {
@@ -1477,7 +1467,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .set-log { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
 
 .set-chip {
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
   border: 1px solid var(--accent-dim);
   background: rgba(255, 107, 26, 0.12);
@@ -1492,13 +1482,13 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   width: 58px;
   padding: 4px 6px;
   font-size: 12px;
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
 }
 .set-add { padding: 4px 10px; }
 
 .set-last {
   display: block;
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
   color: var(--muted);
   margin-top: 2px;
@@ -1523,7 +1513,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .macro-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
 .macro-head b { font-size: 14px; }
 .macro-head span {
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums;
 }
 
@@ -1603,7 +1593,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .macro-note { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
 
 .fit-focus-session {
-  font-family: var(--font-display);
+  font-family: 'Orbitron', sans-serif;
   font-size: 14px;
   color: var(--accent);
   margin: 0 0 8px;
@@ -1624,7 +1614,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .restore-box {
   display: block;
   width: 100%;
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 12px;
   margin-bottom: 8px;
   resize: vertical;
@@ -1669,7 +1659,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   align-items: center;
   gap: 4px;
   flex: 0 0 auto;
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 10.5px;
   color: rgba(255, 255, 255, 0.82);
   white-space: nowrap;
@@ -1684,14 +1674,14 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .echo-head { display: flex; align-items: center; gap: 7px; font-size: 12px; }
 
 .echo-head b {
-  font-family: var(--font-display);
+  font-family: 'Orbitron', sans-serif;
   color: var(--accent-dim);
   letter-spacing: 0.06em;
   font-size: 12px;
 }
 
 .echo-head .dot { color: var(--muted); }
-.echo-time { color: var(--muted); font-family: var(--font-mono); font-size: 11px; }
+.echo-time { color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
 
 .echo-mark { width: 22px; height: 22px; flex: 0 0 auto; display: block; }
 .echo-mark svg { width: 100%; height: 100%; display: block; }
@@ -1716,7 +1706,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   gap: 7px;
   font-size: 12.5px;
   color: var(--muted);
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
 }
 
 .echo-action svg { width: 14px; height: 14px; color: var(--ok); flex: 0 0 auto; }
@@ -1741,7 +1731,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 }
 
 .card-title {
-  font-family: var(--font-display);
+  font-family: 'Orbitron', sans-serif;
   font-size: 16px;
   margin: 0 0 3px;
   line-height: 1.25;
@@ -1776,7 +1766,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 /* Tabular figures so "4 × 5–8" and "3 × 12–15" line up down the right edge. */
 .ex-sets {
   flex: 0 0 auto;
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 13px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -1950,7 +1940,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .md-p:last-child { margin-bottom: 0; }
 
 .md-h {
-  font-family: var(--font-display);
+  font-family: 'Orbitron', sans-serif;
   font-size: 15px;
   margin: 14px 0 6px;
   line-height: 1.3;
@@ -1977,7 +1967,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   padding: 10px 12px;
   margin: 0 0 10px;
   overflow-x: auto;
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 12.5px;
 }
 
@@ -1986,7 +1976,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   border: 1px solid var(--line);
   border-radius: 5px;
   padding: 1px 5px;
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 12.5px;
 }
 
@@ -2061,7 +2051,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 }
 
 .voice-state {
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 12px;
   color: var(--accent);
 }
@@ -2407,7 +2397,7 @@ summary:focus-visible {
   font-size: 26px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  font-family: var(--font-mono);
+  font-family: 'IBM Plex Mono', monospace;
 }
 
 .weight-delta { font-size: 13px; font-variant-numeric: tabular-nums; }
@@ -2450,7 +2440,7 @@ summary:focus-visible {
 
 /* Deliberately identical to .section-title — same face, size, tracking and colour. */
 .fold-label {
-  font-family: var(--font-display);
+  font-family: 'Orbitron', sans-serif;
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.09em;
@@ -2481,7 +2471,7 @@ summary:focus-visible {
   letter-spacing: 0.07em;
   color: var(--muted);
   margin: 18px 0 8px;
-  font-family: var(--font-display);
+  font-family: 'Orbitron', sans-serif;
 }
 
 .ghost-btn.active {
@@ -2551,29 +2541,13 @@ summary:focus-visible {
   }
 }
 
-/* ================= 3D scene layer · Direction 01 "Deep Field" ================= */
+/* ================= 3D scene layer ================= */
 
 /*
- * The correction to the first attempt, which put the scene behind everything and made text
- * contrast a function of scroll position.
- *
- * Three rules, and they are the whole design:
- *
- *   1. The scene is visible in a band at the top and nowhere else. `.scene-veil` is an
- *      opaque floor that starts fading in immediately and is fully solid by 34% of the
- *      viewport, so anything below that sits on --bg no matter what the camera is doing.
- *   2. Content surfaces are opaque. No backdrop-filter under a paragraph, a table or an
- *      input. The bottom nav is the single exception: four words, no data.
- *   3. Nothing rotates in Y. The previous pass put `perspective` on the app shell and
- *      `rotateY` on cards, which pushed transformed corners outside the viewport and gave
- *      the whole app a horizontal scroll. Depth here is translate/scale only.
+ * The WebGL canvas sits behind everything, fixed to the viewport rather than scrolling with
+ * the page — the camera moves through the scene instead, which is the whole point. It is
+ * inert to input so every tap still lands on the UI above it.
  */
-
-/* The host is a custom element, which defaults to display:inline. Both of its children are
-   position:fixed so layout is unaffected either way, but display:contents keeps it out of
-   the flex flow of .app entirely rather than leaving a zero-height inline box in it. */
-app-scene { display: contents; }
-
 .scene-canvas {
   position: fixed;
   inset: 0;
@@ -2585,134 +2559,156 @@ app-scene { display: contents; }
 }
 
 /*
- * The opaque floor. Fixed rather than scrolling, so the band stays at the top of the
- * viewport and the camera moves through the scene beneath it.
- *
- * Measured in pixels, not viewport percentages. The band has to end where the header ends
- * and the content column begins — about 165px — and a percentage gets that right at one
- * screen height and wrong at every other. At 34% of an 800px viewport the first heading was
- * still sitting on a translucent ground, which is the precise failure this veil exists to
- * prevent.
+ * With a scene behind it, the app's own opaque backgrounds have to go or there is nothing
+ * to see. `.over-scene` is only applied while the scene is actually drawing, so switching it
+ * off restores the solid, high-contrast UI exactly as it was rather than leaving translucent
+ * panels floating over a flat colour.
  */
-.scene-veil {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: linear-gradient(180deg,
-    rgba(6, 7, 10, 0) 0,
-    rgba(6, 7, 10, 0.45) 92px,
-    var(--bg) 165px,
-    var(--bg) 100%);
-}
-
 .app.over-scene {
   position: relative;
-  z-index: 2;
+  z-index: 1;
   background: transparent;
+  /* Establishes the 3D space the cards below tilt within. Without a perspective on the
+     ancestor, rotateY on a child is an affine squash rather than a perspective turn. */
+  perspective: 1400px;
+  perspective-origin: 50% 40%;
 }
 
 .app.over-scene .main,
 .app.over-scene .sidebar { background: transparent; }
 
-/* Only the nav is glass, and only because it carries no data. */
-.app.over-scene .bottom-nav {
-  background: color-mix(in srgb, var(--panel) 82%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+/*
+ * A scrim between the scene and the UI.
+ *
+ * The scene is at its most attractive when it is bright, and the app is at its most usable
+ * when the text on top of it has contrast — those pull in opposite directions and this is
+ * where the compromise lives. Darkest down the middle where the content column sits, and
+ * clearing toward the edges so the trace and motes still show at full strength in the
+ * margins. Tuned here rather than by dimming the scene itself, so the effect is strong in
+ * the gaps and quiet behind the words.
+ */
+.app.over-scene::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent, rgba(5, 6, 10, 0.62) 22%, rgba(5, 6, 10, 0.62) 78%, transparent),
+    radial-gradient(120% 70% at 50% 0%, transparent, rgba(5, 6, 10, 0.5));
 }
 
-/* Cards stay exactly as opaque as they are without the scene. Stated explicitly rather
-   than left to the cascade, because this is the rule that must not quietly regress. */
+/*
+ * Glass. backdrop-filter is what makes the scene visible *through* the panel rather than
+ * merely beside it; the inset highlight is the lit top edge that reads as thickness, and the
+ * outer shadow separates the card from the nebula behind it so text stays legible.
+ */
+.app.over-scene .chat-panel,
 .app.over-scene .dash-card,
 .app.over-scene .fold,
-.app.over-scene .chat-panel {
-  background: var(--panel);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+.app.over-scene .bottom-nav {
+  /* Deliberately thin. On a phone the UI covers the whole viewport, so the scene is only
+     ever seen *through* the panels — at a heavier blur and a higher alpha it degrades into
+     an undifferentiated smear and the 3D might as well not be running. */
+  background: color-mix(in srgb, var(--panel) 26%, transparent);
+  backdrop-filter: blur(9px) saturate(1.6);
+  -webkit-backdrop-filter: blur(9px) saturate(1.6);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 18px 44px rgba(0, 0, 0, 0.55);
 }
 
-/* Lite drops the blur on the nav too — backdrop-filter is the single most expensive thing
-   on this page, and on a mid-range phone it is what costs frames. */
+/*
+ * The iridescent edge. A conic gradient clipped to the border box gives the oil-slick rim
+ * the reference has on its cards, without a texture and without touching the fill.
+ */
+/* Note: .panel is not in the glass set. It is a transparent layout wrapper with the HUD
+   corner brackets on it, not a card — glassing it drew a frame around the entire viewport
+   rather than around any piece of content. The real cards are .dash-card and .fold, plus
+   .chat-panel, which is the one panel that is genuinely a surface in its own right. */
+.app.over-scene .chat-panel::after,
+.app.over-scene .dash-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from 210deg,
+    rgba(255, 107, 26, 0.55),
+    rgba(123, 92, 255, 0.5),
+    rgba(80, 220, 255, 0.4),
+    rgba(255, 107, 26, 0.55)
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Backdrop-filter is expensive per layer; a page of stacked glass panels is where a phone
+   starts dropping frames. Lite mode keeps the look and drops the blur. */
+.app.over-scene.lite .chat-panel,
+.app.over-scene.lite .dash-card,
+.app.over-scene.lite .fold,
 .app.over-scene.lite .bottom-nav {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  background: color-mix(in srgb, var(--panel) 94%, transparent);
+  background: color-mix(in srgb, var(--panel) 78%, transparent);
 }
 
-/* ---------------- scroll-driven reveals ---------------- */
+/* ---------------- depth: cards on their own Z plane ---------------- */
 
 /*
- * Kept from the previous pass, minus the rotation. Panels rise and fade as they enter the
- * viewport; nothing turns, so nothing can overflow. Behind @supports and
- * prefers-reduced-motion, so where it is unavailable everything simply renders in place.
+ * The CSS half of the parallax. Content stays in the DOM — selectable, accessible, and
+ * crisp — but rides the same scroll clock as the camera, so panels swing away in depth as
+ * they leave the viewport and settle square as they reach reading height. Driven by
+ * animation-timeline rather than a scroll handler, so it costs nothing per frame.
  */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
-    .dash-card,
-    .fold,
-    .section-title {
-      animation: rise-in linear both;
+    .app.over-scene .dash-card,
+    .app.over-scene .fold {
+      animation: card-depth linear both;
       animation-timeline: view();
-      animation-range: entry 5% cover 22%;
+      animation-range: entry 0% exit 100%;
+      transform-style: preserve-3d;
+      will-change: transform, opacity;
     }
 
-    /* The chat transcript scrolls itself and is rewritten on every streamed token; a reveal
-       there would re-run mid-reply. */
-    .chat-panel .dash-card,
-    .fold-body .dash-card,
-    .fold-body .section-title { animation: none; }
+    /* The chat transcript is rewritten on every streamed token; a depth animation there
+       would restart mid-reply. */
+    .app.over-scene .chat-panel { animation: none; transform: none; }
   }
 }
 
-@keyframes rise-in {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: none; }
+@keyframes card-depth {
+  from   { opacity: 0; transform: translate3d(0, 40px, -220px) rotateY(9deg) rotateX(4deg); }
+  35%    { opacity: 1; transform: none; }
+  70%    { opacity: 1; transform: none; }
+  to     { opacity: 0.25; transform: translate3d(0, -30px, -160px) rotateY(-7deg) rotateX(-3deg); }
 }
 
-/* ---------------- ECG reacts to scroll velocity ---------------- */
+/* ---------------- terminal type ---------------- */
 
 /*
- * --trace-dur is written by ScrollPulseService from the current scroll speed: about 9s at
- * rest, down to ~1.2s under a hard fling. Duration is animated rather than restarted, so
- * the trace keeps its phase and surges instead of jumping.
+ * Uppercase monospace for structural text — headings, labels, nav — while body copy and the
+ * assistant's replies stay in the reading face. Setting the whole app in monospace would
+ * look the part for about a minute and then make every paragraph harder to read.
  */
-:root {
-  --trace-dur: 9s;
-  --trace-lift: 0;
-}
-
-@media (max-width: 720px) {
-  .brand-row::before {
-    animation-duration: var(--trace-dur);
-    opacity: calc(0.28 + var(--trace-lift) * 0.34);
-    transition: opacity 0.25s ease-out;
-  }
-}
-
-/* ---------------- type: structure vs prose ---------------- */
-
-/*
- * Monospace is for structure — labels, counters, nav, data — and the reading face is for
- * anything set in sentences. Applying mono to everything looked the part for about a minute
- * and then made every workout note harder to read than it needed to be.
- *
- * Headings are no longer force-uppercased. Orbitron had no lowercase so the transform was
- * hiding a limitation; Chakra Petch does, and sentence case is markedly easier to scan.
- */
-.section-title,
-.fold-label {
-  font-family: var(--font-mono);
+.app.over-scene .section-title,
+.app.over-scene .fold-label,
+.app.over-scene .card-title,
+.app.over-scene .page-title,
+.app.over-scene .bottom-nav .nav-label {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: 11px;
-  color: var(--muted-2);
+  letter-spacing: 0.11em;
 }
 
-.page-title,
-.card-title,
-.month-name {
-  font-family: var(--font-display);
-  letter-spacing: -0.01em;
-  text-transform: none;
-}
+/* The reference sets its destination list as "-> ITEM". Tried and dropped on the opener
+   chips: inside a rounded pill the arrow points at the pill's own edge and reads as debris
+   rather than as a marker. It belongs on a flush-left list, which this app does not have. */
