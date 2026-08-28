@@ -7,7 +7,6 @@ import { VoiceService } from '../../services/voice.service';
 import { UpdateService } from '../../services/update.service';
 import { BackButtonService } from '../../services/back-button.service';
 import { NotifyService } from '../../services/notify.service';
-import { SceneService } from '../../services/scene.service';
 import { FoldComponent } from '../fold/fold.component';
 import { BackupService } from '../../services/backup.service';
 import { ApiProvider, PROVIDER_LABELS } from '../../models';
@@ -423,36 +422,6 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
 
 
 
-      <ng-container *ngIf="scenes.available">
-        <app-fold label="Visual effects" [note]="sceneNote()">
-        <p class="setting-note">
-          A 3D scene behind the app — a heartbeat trace the camera travels down as you
-          scroll, with the panels above it as glass. It costs a WebGL context and a render
-          loop, which is real battery on a phone, so it is a setting rather than a decision
-          made for you.
-        </p>
-
-        <p class="setting-note" *ngIf="scenes.unsupported()">
-          ⚠️ This device's browser could not start WebGL, so the scene cannot run here. The
-          app is otherwise unaffected.
-        </p>
-
-        <div class="add-row" *ngIf="!scenes.unsupported()">
-          <button class="ghost-btn" [class.active]="scenes.mode() === 'full'"
-                  (click)="scenes.setMode('full')">Full</button>
-          <button class="ghost-btn" [class.active]="scenes.mode() === 'lite'"
-                  (click)="scenes.setMode('lite')">Lite</button>
-          <button class="ghost-btn" [class.active]="scenes.mode() === 'off'"
-                  (click)="scenes.setMode('off')">Off</button>
-        </div>
-
-        <p class="setting-note">
-          <strong>Lite</strong> keeps the scene but drops the particle count and the glass
-          blur, which are the two things that actually cost frames.
-          <strong>Off</strong> restores the plain, solid UI exactly as it was.
-        </p>
-        </app-fold>
-      </ng-container>
 
       <app-fold label="Back button">
 
@@ -512,17 +481,12 @@ export class SettingsComponent {
     public backup: BackupService,
     public back: BackButtonService,
     public notify: NotifyService,
-    public scenes: SceneService,
   ) {
     this.draftGistId = sync.gistId();
     // Prefilled so the field shows what is in use rather than sitting empty.
     this.draftGroqModel = settings.groqModel();
   }
 
-  sceneNote(): string {
-    if (this.scenes.unsupported()) return 'unavailable';
-    return this.scenes.mode();
-  }
 
   providerLabel(): string {
     return PROVIDER_LABELS[this.settings.provider()];
