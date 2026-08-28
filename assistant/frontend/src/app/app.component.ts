@@ -1,6 +1,5 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { BootComponent } from './components/boot/boot.component';
 import { ContextRailComponent } from './components/context-rail/context-rail.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { BottomNavComponent } from './components/bottom-nav/bottom-nav.component';
@@ -20,14 +19,11 @@ import { SyncService } from './services/sync.service';
 import { BackButtonService } from './services/back-button.service';
 import { NotifyService } from './services/notify.service';
 
-const BOOT_SEEN_KEY = 'jarvis-boot-seen';
-
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
     CommonModule,
-    BootComponent,
     ContextRailComponent,
     SidebarComponent,
     BottomNavComponent,
@@ -43,7 +39,6 @@ const BOOT_SEEN_KEY = 'jarvis-boot-seen';
     NewsComponent,
   ],
   template: `
-    <app-boot *ngIf="showBoot()" (done)="dismissBoot()"></app-boot>
     <div class="app">
       <app-sidebar></app-sidebar>
       <main class="main">
@@ -73,7 +68,6 @@ const BOOT_SEEN_KEY = 'jarvis-boot-seen';
 })
 export class AppComponent {
   // sessionStorage, not localStorage: replays once per tab/session, not once ever.
-  showBoot = signal(sessionStorage.getItem(BOOT_SEEN_KEY) !== '1');
 
   // Injected purely to instantiate it at app start (providedIn: 'root' services are
   // otherwise created lazily on first use) — sync needs to kick off its initial pull
@@ -89,9 +83,4 @@ export class AppComponent {
     // launch, which must happen whether or not the Settings tab is ever opened.
     private notify: NotifyService,
   ) {}
-
-  dismissBoot() {
-    sessionStorage.setItem(BOOT_SEEN_KEY, '1');
-    this.showBoot.set(false);
-  }
 }

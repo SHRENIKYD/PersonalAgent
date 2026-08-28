@@ -1107,55 +1107,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .fit-list { margin: 0 0 8px; padding-left: 20px; color: var(--text); }
 .fit-list li { margin-bottom: 6px; }
 
-/* ---------------- boot sequence ---------------- */
-
-.boot-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 999;
-  background: var(--bg);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 22px;
-  cursor: pointer;
-  animation: boot-fade-out 0.4s ease 2.4s both;
-}
-
-@keyframes boot-fade-out {
-  to { opacity: 0; visibility: hidden; }
-}
-
-.boot-box {
-  font-family: 'IBM Plex Mono', monospace;
-  color: var(--hud-cyan);
-  font-size: 14px;
-  letter-spacing: 0.04em;
-  text-align: left;
-}
-
-.boot-line {
-  opacity: 0;
-  animation: boot-line-in 0.4s ease forwards;
-  margin-bottom: 8px;
-  text-shadow: 0 0 8px var(--hud-cyan);
-}
-
-.boot-line:nth-child(1) { animation-delay: 0.1s; }
-.boot-line:nth-child(2) { animation-delay: 0.7s; }
-.boot-line:nth-child(3) { animation-delay: 1.3s; }
-.boot-line:nth-child(4) { animation-delay: 1.9s; color: var(--accent); text-shadow: 0 0 8px var(--accent); }
-
-@keyframes boot-line-in {
-  from { opacity: 0; transform: translateX(-8px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-.boot-skip { opacity: 0.6; }
-
 @media (prefers-reduced-motion: reduce) {
-  .boot-overlay, .boot-line { animation: none; opacity: 1; }
 }
 
 /* ---------------- ambient HUD background ---------------- */
@@ -2205,21 +2157,10 @@ app-bottom-nav {
     background-position: 0 center;
     -webkit-mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
     mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
-    animation: brand-trace 9s linear infinite;
   }
 
   .brand-reactor { width: 30px; height: 30px; }
   .brand { font-size: 21px; }
-}
-
-/* One tile-width of travel per cycle, so the loop point is invisible. */
-@keyframes brand-trace {
-  from { background-position: 0 center; }
-  to { background-position: 300px center; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .brand-row::before { animation: none; }
 }
 
 /* ---------------- empty-chat openers ---------------- */
