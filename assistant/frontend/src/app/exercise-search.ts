@@ -18,6 +18,8 @@ export interface LibraryExercise {
   mechanic: string;
   force: string;
   steps: string[];
+  /** Two frames — the start and end position of the movement. */
+  images: string[];
 }
 
 export interface LibraryFilters {

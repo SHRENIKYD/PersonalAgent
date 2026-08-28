@@ -2813,3 +2813,48 @@ summary:focus-visible {
 }
 
 .lib-steps li { margin-bottom: 5px; }
+
+/*
+ * The two-frame demo.
+ *
+ * Start and end position, cross-faded on a loop. Done in CSS rather than by swapping a src
+ * in JavaScript: the browser keeps both decoded and the whole thing runs on the compositor,
+ * so a list of open exercises costs nothing per frame. steps(1) would cut hard between them;
+ * a short fade reads as the movement rather than as a flicker.
+ */
+.lib-demo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  margin: 0 0 10px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--panel-2);
+}
+
+.lib-demo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  animation: demo-flip 2.4s ease-in-out infinite;
+}
+
+/* Second frame runs half a cycle out of phase, so exactly one is visible at a time. */
+.lib-demo img:nth-child(2) { animation-delay: 1.2s; }
+
+@keyframes demo-flip {
+  0%   { opacity: 0; }
+  8%   { opacity: 1; }
+  42%  { opacity: 1; }
+  50%  { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+/* Reduced motion gets the start position, held. Still shows what the exercise looks like. */
+@media (prefers-reduced-motion: reduce) {
+  .lib-demo img { animation: none; opacity: 0; }
+  .lib-demo img:first-child { opacity: 1; }
+}

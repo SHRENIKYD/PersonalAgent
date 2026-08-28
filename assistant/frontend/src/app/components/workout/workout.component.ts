@@ -221,6 +221,16 @@ function todayIso(): string {
               <span class="pill" *ngIf="groupOfLib(ex) as g">counts as {{ g }}</span>
             </p>
 
+            <!--
+              The two frames are the start and end of the movement. Cross-faded on a loop so
+              it reads as the exercise being performed rather than as two unrelated photos —
+              which is the whole difference between a reference image and a demo.
+            -->
+            <div class="lib-demo" *ngIf="ex.images.length">
+              <img *ngFor="let src of ex.images" [src]="'assets/exercise-images/' + src"
+                   [alt]="ex.name" loading="lazy" decoding="async" />
+            </div>
+
             <ol class="lib-steps" *ngIf="ex.steps.length">
               <li *ngFor="let step of ex.steps">{{ step }}</li>
             </ol>
