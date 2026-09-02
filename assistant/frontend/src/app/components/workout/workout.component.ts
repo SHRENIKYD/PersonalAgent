@@ -47,10 +47,24 @@ import {
   imports: [CommonModule, FoldComponent],
   template: `
     <section class="panel">
-      <h1 class="page-title">{{ todayLabel() }}</h1>
-      <p class="page-sub">{{ todaySub() }}</p>
+      <h1 class="page-title">{{ shownLabel() }}</h1>
+      <p class="page-sub">{{ shownSub() }}</p>
 
-      <div class="card">
+      <!--
+        The six-day accordion this replaced was the only way to look at another session, and
+        removing it left the screen able to show exactly one day. These chips put every day
+        back on one row: Today is the default, and the rest are a tap away.
+      -->
+      <div class="chip-row chip-scroll">
+        <button class="chip-filter" [class.on]="viewing() === null" (click)="viewing.set(null)">
+          Today
+        </button>
+        <button class="chip-filter" *ngFor="let d of workoutDays; let i = index"
+                [class.on]="viewing() === i"
+                (click)="viewing.set(i)">{{ shortName(d.name) }}</button>
+      </div>
+
+      <div class="card" *ngIf="viewing() === null">
         <div class="card-head" style="margin-bottom: 0">
           <label class="fit-check">
             <input type="checkbox" [checked]="checked('workout')"
@@ -186,7 +200,33 @@ export class WorkoutComponent {
   }
 
   /** Today's movements, straight from the plan. */
-  exercises = computed(() => this.todaySession()?.exercises ?? []);
+  /** Which day is on screen: null means today, otherwise an index into the plan. */
+  readonly viewing = signal<number | null>(null);
+
+  /** The session being shown — the chosen day, else today's. */
+  shownSession = computed<WorkoutDay | null>(() => {
+    const i = this.viewing();
+    return i === null ? this.todaySession() : this.workoutDays[i] ?? null;
+  });
+
+  shownLabel = computed(() => this.shownSession()?.name ?? 'Rest day');
+
+  shownSub = computed(() => {
+    if (this.viewing() !== null) return 'Previewing another day. Sets still log against today.';
+    return this.todaySub();
+  });
+
+  exercises = computed(() => this.shownSession()?.exercises ?? []);
+
+  /**
+   * "Push A" out of "Push A — Upper Chest + Full Triceps".
+   *
+   * The chips sit on one row at 390px, and the part after the dash is the description
+   * rather than the name — it is what the title above already says in full.
+   */
+  shortName(name: string): string {
+    return name.split(/\s+[—-]\s+/)[0].trim();
+  }
 
   /**
    * The library's two frames for a plan exercise, matched by name.

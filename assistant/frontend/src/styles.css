@@ -1221,6 +1221,18 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
    what today loads reads before anything else on the screen. */
 .chip-row { display: flex; flex-wrap: wrap; gap: 7px; margin: 0 0 16px; }
 
+/* A row of chips that is a list rather than a filter — every training day, on one line.
+   Scrolls sideways inside itself so the page never does. */
+.chip-row.chip-scroll {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.chip-row.chip-scroll::-webkit-scrollbar { display: none; }
+.chip-row.chip-scroll > * { flex: 0 0 auto; }
+
 .chip-accent {
   border: 1px solid var(--accent-dim);
   color: var(--accent-dim);
