@@ -1,36 +1,110 @@
+/* ============================================================================
+   BLOOM · INDIGO
+   ============================================================================
+
+   The app's palette, light and dark. Replaces the ember/near-black "Ember" system.
+
+   Three states, not two. An explicit choice stamps data-theme="light" or "dark" on
+   <html>; the default setting stamps nothing, and there only prefers-color-scheme
+   separates the two. So light is defined on bare :root, and dark is redefined twice:
+   once behind the media query (guarded so an explicit light choice still wins over a
+   dark OS) and once behind the attribute (so the in-app toggle wins in both directions).
+   Every component reads these variables, so nothing below this block needs to know
+   which theme is on.
+
+   The neutrals are not grey. They carry a few degrees of the indigo, because a pure
+   mid-grey beside a saturated accent reads as unconsidered — the ground and the ink
+   are part of the palette, not the absence of one.
+
+   The accent LIGHTENS in dark mode (#3D4BC4 -> #8D97F0). The light-mode value is too
+   dim to carry a progress bar or an active tab against a dark ground, and anything
+   sitting *on* the accent flips to dark ink accordingly — that pair is what stops a
+   dark mode going unreadable at exactly the moments it matters.
+   ---------------------------------------------------------------------------- */
+
 :root {
-  /* Ember palette — near-black ground with ember orange as the primary brand accent
-     (buttons, active states, links-that-act) and amber as the secondary highlight (dots,
-     small accents, the reactor gradient). This replaced the earlier red/gold arc-reactor
-     tuning; ember sits close enough to it that the swap is a retune rather than a rebuild,
-     and every component already reads these variables rather than hardcoding colour.
+  --bg: #F0F1F6;
+  --panel: #FFFFFF;
+  --panel-2: #E8EAF3;
+  --line: #DCDFEC;
+  --text: #1B1E2C;
+  --muted: #575C74;
 
-     --ok stays green on purpose: with ember everywhere else, a green "done" signal is what
-     keeps checked-vs-unchecked scannable at a glance. --danger stays red for the same
-     reason — it has to be distinguishable from the accent to mean anything. */
-  --bg: #0a0a0c;
-  --panel: #16161b;
-  --panel-2: #1f1f26;
-  --line: #2b2b34;
-  --text: #f5f1ea;
-  --muted: #9a9187;
-  --accent: #ffb020;
-  --accent-dim: #ff6b1a;
-  --ember-deep: #d9480f;
-  --warn: #e8a34d;
-  --danger: #e0574a;
-  --ok: #63c088;
-  /* Layered HUD accent, kept for scanning lines, corner brackets, and readouts drawn on
-     top of the ember base. Retuned from cyan to amber so it reads as part of the same
-     system rather than a second palette fighting the first. */
-  --hud-cyan: #ffc861;
+  /* One indigo, two weights. --accent-dim is the primary (buttons, active states);
+     --accent is the lighter secondary for dots, small highlights and hover. */
+  --accent-dim: #3D4BC4;
+  --accent: #5566DC;
+  --ember-deep: #2B3596;
+  /* Kept for the readouts and brackets drawn over the base — same family, not a
+     second palette fighting the first. The name is historical. */
+  --hud-cyan: #4E5ED4;
 
-  /* Typefaces as tokens rather than literals. The defaults here are exactly what the app
-     already used, so this changes nothing on its own — it exists so a theme can override
-     the three stacks in one place instead of thirty. */
-  --font-display: 'Orbitron', sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
-  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* Semantic colours stay distinguishable from the accent, or they stop meaning
+     anything: a warning that looks like a button is not a warning. */
+  --warn: #A9640B;
+  --danger: #BC3B2C;
+  --ok: #12764A;
+
+  /* Ink that reads ON the accent. Flips with the theme; see the block comment. */
+  --on-accent: #FFFFFF;
+
+  /* Cards lift off the ground in light mode; in dark they lift by getting lighter,
+     so the shadow all but disappears there. */
+  --lift: 0 1px 2px rgba(27, 30, 44, .05), 0 8px 20px -12px rgba(27, 30, 44, .28);
+
+  /* The header ECG. The stroke colour lives inside the data URI and cannot read a
+     variable, so the entire URL is the token — one per theme. */
+  --ecg-trace: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20300%2060%22%3E%3Cpath%20d%3D%22M0%2042%20H80%20L92%2030%20L104%2042%20H124%20L129%2048%20L138%208%20L147%2056%20L154%2042%20H180%20L200%2024%20L220%2042%20H300%22%20fill%3D%22none%22%20stroke%3D%22%233D4BC4%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22miter%22%2F%3E%3C%2Fsvg%3E");
+
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, monospace;
+  --font-body: 'DM Sans', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1016;
+    --panel: #181A22;
+    --panel-2: #20232D;
+    --line: #2F3342;
+    --text: #E8EAF2;
+    --muted: #A0A5BC;
+
+    --accent-dim: #8D97F0;
+    --accent: #A3ABF5;
+    --ember-deep: #6C77D8;
+    --hud-cyan: #8D97F0;
+
+    --warn: #E2A468;
+    --danger: #E37F72;
+    --ok: #5FD3A0;
+
+    --on-accent: #0C0D14;
+    --lift: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 24px -14px rgba(0, 0, 0, .75);
+    --ecg-trace: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20300%2060%22%3E%3Cpath%20d%3D%22M0%2042%20H80%20L92%2030%20L104%2042%20H124%20L129%2048%20L138%208%20L147%2056%20L154%2042%20H180%20L200%2024%20L220%2042%20H300%22%20fill%3D%22none%22%20stroke%3D%22%238D97F0%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22miter%22%2F%3E%3C%2Fsvg%3E");
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0F1016;
+  --panel: #181A22;
+  --panel-2: #20232D;
+  --line: #2F3342;
+  --text: #E8EAF2;
+  --muted: #A0A5BC;
+
+  --accent-dim: #8D97F0;
+  --accent: #A3ABF5;
+  --ember-deep: #6C77D8;
+  --hud-cyan: #8D97F0;
+
+  --warn: #E2A468;
+  --danger: #E37F72;
+  --ok: #5FD3A0;
+
+  --on-accent: #0C0D14;
+  --lift: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 24px -14px rgba(0, 0, 0, .75);
+  --ecg-trace: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20300%2060%22%3E%3Cpath%20d%3D%22M0%2042%20H80%20L92%2030%20L104%2042%20H124%20L129%2048%20L138%208%20L147%2056%20L154%2042%20H180%20L200%2024%20L220%2042%20H300%22%20fill%3D%22none%22%20stroke%3D%22%238D97F0%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22miter%22%2F%3E%3C%2Fsvg%3E");
 }
 
 * { box-sizing: border-box; }
@@ -131,7 +205,7 @@ html, body {
 
 .tabs button.active {
   background: var(--accent-dim);
-  color: #fff;
+  color: var(--on-accent);
   font-weight: 600;
 }
 
@@ -264,7 +338,7 @@ button {
   background: var(--accent-dim);
   border: 0;
   border-radius: 7px;
-  color: #fff;
+  color: var(--on-accent);
   cursor: pointer;
   padding: 9px 15px;
   transition: filter 0.15s ease, transform 0.1s ease;
@@ -1114,55 +1188,72 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .fit-list { margin: 0 0 8px; padding-left: 20px; color: var(--text); }
 .fit-list li { margin-bottom: 6px; }
 
-/* ---------------- boot sequence ---------------- */
+/* ---------------- launch screen ---------------- */
 
-.boot-overlay {
+/*
+ * "Yesterday": the app opens by typing out what it remembers about you.
+ *
+ * Left-aligned and set in the mono face, because the lines are readouts rather than
+ * copy — and because a proportional face makes a character-by-character reveal jitter
+ * as the line re-flows on every frame, which mono does not.
+ */
+
+.launch {
   position: fixed;
   inset: 0;
   z-index: 999;
   background: var(--bg);
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  gap: 22px;
+  padding: 0 32px;
   cursor: pointer;
-  animation: boot-fade-out 0.4s ease 2.4s both;
 }
 
-@keyframes boot-fade-out {
-  to { opacity: 0; visibility: hidden; }
+.launch-lines {
+  font-family: var(--font-mono);
+  font-size: 17px;
+  line-height: 2.1;
+  color: var(--text);
+  /* Holds the block still while the lines arrive, so the text does not creep up the
+     screen as each one lands. Three lines at this line-height, plus the gap. */
+  min-height: 180px;
 }
 
-.boot-box {
-  font-family: 'IBM Plex Mono', monospace;
-  color: var(--hud-cyan);
-  font-size: 14px;
-  letter-spacing: 0.04em;
-  text-align: left;
+.launch-caret {
+  color: var(--accent-dim);
+  /* No blink. It is on screen for well under a second per line, and a blinking caret
+     at that duration reads as a rendering fault rather than a cursor. */
 }
 
-.boot-line {
+.launch-foot {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin-top: 34px;
   opacity: 0;
-  animation: boot-line-in 0.4s ease forwards;
-  margin-bottom: 8px;
-  text-shadow: 0 0 8px var(--hud-cyan);
+  transform: translateY(-8px);
+  transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-.boot-line:nth-child(1) { animation-delay: 0.1s; }
-.boot-line:nth-child(2) { animation-delay: 0.7s; }
-.boot-line:nth-child(3) { animation-delay: 1.3s; }
-.boot-line:nth-child(4) { animation-delay: 1.9s; color: var(--accent); text-shadow: 0 0 8px var(--accent); }
-
-@keyframes boot-line-in {
-  from { opacity: 0; transform: translateX(-8px); }
-  to { opacity: 1; transform: translateX(0); }
+.launch-foot.ready {
+  opacity: 1;
+  transform: none;
 }
 
-.boot-skip { opacity: 0.6; }
+.launch-skip {
+  position: absolute;
+  right: 20px;
+  bottom: 26px;
+  opacity: 0.6;
+}
 
+/* The reveal is the whole point, so reduced motion keeps the text and drops only the
+   movement — the component still finishes on its own timer. */
 @media (prefers-reduced-motion: reduce) {
-  .boot-overlay, .boot-line { animation: none; opacity: 1; }
+  .launch-foot { transition: none; }
 }
 
 /* ---------------- ambient HUD background ---------------- */
@@ -1611,7 +1702,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .bubble.me {
   max-width: 82%;
   background: linear-gradient(100deg, var(--ember-deep), var(--accent-dim));
-  color: #fff;
+  color: var(--on-accent);
   border-radius: 16px 16px 4px 16px;
   padding: 11px 14px;
   display: flex;
@@ -1629,7 +1720,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   flex: 0 0 auto;
   font-family: var(--font-mono);
   font-size: 10.5px;
-  color: rgba(255, 255, 255, 0.82);
+  color: color-mix(in srgb, var(--on-accent) 82%, transparent);
   white-space: nowrap;
 }
 
@@ -1684,7 +1775,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   border: 1px solid var(--danger);
   border-radius: 4px 16px 16px 16px;
   padding: 10px 14px;
-  color: #f3c3c3;
+  color: var(--danger);
   font-size: 14px;
 }
 
@@ -2115,7 +2206,7 @@ app-bottom-nav {
 .bn-item.primary.active .bn-icon {
   background: linear-gradient(160deg, var(--accent), var(--ember-deep));
   border-color: transparent;
-  color: #1a0d02;
+  color: var(--on-accent);
   box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
@@ -2127,7 +2218,7 @@ app-bottom-nav {
   padding: 0 4px;
   border-radius: 8px;
   background: var(--accent-dim);
-  color: #1a0d02;
+  color: var(--on-accent);
   font-size: 10px;
   font-weight: 700;
   line-height: 16px;
@@ -2206,7 +2297,7 @@ app-bottom-nav {
     pointer-events: none;
     z-index: -1;
     opacity: 0.28;
-    background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20300%2060%22%3E%3Cpath%20d%3D%22M0%2042%20H80%20L92%2030%20L104%2042%20H124%20L129%2048%20L138%208%20L147%2056%20L154%2042%20H180%20L200%2024%20L220%2042%20H300%22%20fill%3D%22none%22%20stroke%3D%22%23ff8a2b%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22miter%22%2F%3E%3C%2Fsvg%3E");
+    background-image: var(--ecg-trace);
     background-repeat: repeat-x;
     background-size: 300px 60px;
     background-position: 0 center;
@@ -2461,114 +2552,6 @@ summary:focus-visible {
   border-color: var(--accent-dim);
   color: var(--text);
   background: var(--panel-2);
-}
-
-/* ============================================================================
-   THEME · INSTRUMENT  (beta only)
-   ============================================================================
-
-   Direction 02 from the mockups: a cockpit readout rather than an atmosphere.
-   Amber on graphite, hairline rules, 2px corners, a condensed display face, and
-   deliberately no glow, no blur and no 3D scene anywhere in it.
-
-   Scoped entirely under :root.theme-instrument, a class AppComponent applies only
-   when environment.beta is true. Nothing in this block can reach the production
-   app — which matters, because the last two visual passes did reach it and should
-   not have. Stable keeps the ember/Orbitron system untouched above.
-
-   The density is the point. Everything here trades atmosphere for how much you can
-   read at a glance in bad light with one hand, which is the actual situation this
-   app gets used in.
-   ---------------------------------------------------------------------------- */
-
-:root.theme-instrument {
-  --bg: #0b0b0c;
-  --panel: #141416;
-  --panel-2: #1a1a1d;
-  --line: #2e2e33;
-  --text: #e8e8e6;
-  --muted: #9c9c98;
-
-  /* One amber, two weights. --accent-dim is this app's primary (buttons, active
-     states); --accent is the lighter secondary used for dots and small highlights. */
-  --accent-dim: #ffb000;
-  --accent: #ffcf57;
-  --ember-deep: #b37a00;
-  /* The HUD brackets join the same palette instead of running a second one. */
-  --hud-cyan: #ffb000;
-
-  --warn: #e8b33c;
-  --danger: #e0574a;
-  --ok: #46c97f;
-
-  --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
-  --font-body: 'Barlow', system-ui, -apple-system, sans-serif;
-}
-
-/* Condensed faces are drawn for setting headlines in caps and look weak in sentence
-   case at small sizes, which is the opposite of the Chakra Petch decision — there the
-   transform was hiding a font with no lowercase, here it is playing to the face's
-   actual strength. */
-.theme-instrument .page-title,
-.theme-instrument .brand,
-.theme-instrument .card-title,
-.theme-instrument .dash-card-title,
-.theme-instrument .month-name {
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  font-weight: 700;
-}
-
-/* Hairline geometry. Corners go to 2px on the rectangular surfaces only — anything
-   deliberately circular (the mark, the centre nav button, dots, progress tracks) keeps
-   its shape, since squaring those would break the components rather than restyle them. */
-.theme-instrument .panel,
-.theme-instrument .dash-card,
-.theme-instrument .fold,
-.theme-instrument .echo-card,
-.theme-instrument .chat-panel,
-.theme-instrument .bubble,
-.theme-instrument .composer,
-.theme-instrument input,
-.theme-instrument textarea,
-.theme-instrument select,
-.theme-instrument button:not(.nav-echo):not(.brand-reactor) {
-  border-radius: 2px;
-}
-
-/* No depth cues at all. Instrument's whole argument is that a boundary should be a
-   line, not a blur — so every shadow in the theme is removed rather than softened. */
-.theme-instrument .panel,
-.theme-instrument .dash-card,
-.theme-instrument .fold,
-.theme-instrument .echo-card,
-.theme-instrument .bottom-nav,
-.theme-instrument .bubble {
-  box-shadow: none;
-}
-
-.theme-instrument .bottom-nav {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  background: var(--bg);
-  border-top: 1px solid var(--line);
-}
-
-/* The header ECG comes out. It is the strongest piece of ECHO's identity and the
-   hardest thing to give up here, but a lit trace behind the wordmark is precisely the
-   ambient decoration this direction exists to reject — keeping it would make Instrument
-   a recolour of Deep Field rather than an alternative to it. The mark itself stays. */
-.theme-instrument .brand-row::before { display: none; }
-.theme-instrument .brand-reactor { animation: none; }
-
-/* Data reads as data. Tabular figures so columns of weights and reps line up, which is
-   most of what is on screen during a session. */
-.theme-instrument .stat-value,
-.theme-instrument .frac,
-.theme-instrument .due,
-.theme-instrument .month-index {
-  font-variant-numeric: tabular-nums;
 }
 
 /* ---------------- exercise library ---------------- */

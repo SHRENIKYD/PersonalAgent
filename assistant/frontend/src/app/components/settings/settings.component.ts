@@ -9,6 +9,7 @@ import { BackButtonService } from '../../services/back-button.service';
 import { NotifyService } from '../../services/notify.service';
 import { FoldComponent } from '../fold/fold.component';
 import { BackupService } from '../../services/backup.service';
+import { ThemeService, ThemeChoice } from '../../services/theme.service';
 import { ApiProvider, PROVIDER_LABELS } from '../../models';
 import { environment } from '../../../environments/environment';
 
@@ -265,14 +266,31 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
       <p class="setting-note" *ngIf="!sync.configured()">Not set up — data stays on this device only.</p>
       <p class="setting-note" *ngIf="sync.status() === 'error'">⚠️ {{ sync.errorMessage() }}</p>
 </app-fold>
+<app-fold label="Appearance">
+
+      <p class="setting-note">
+        ECHO comes in two: a light theme for daylight and a dark one for a gym at 6am.
+        <strong>Match my phone</strong> follows the system setting and changes with it.
+      </p>
+
+      <div class="add-row">
+        <button *ngFor="let c of themeChoices"
+                [class.ghost-btn]="theme.choice() !== c.value"
+                (click)="theme.set(c.value)">{{ c.label }}</button>
+      </div>
+</app-fold>
 <app-fold label="App version">
+
+      <p class="setting-note">
+        ECHO <strong>{{ update.version() }}</strong>
+      </p>
 
       <ng-container *ngIf="update.isApp; else webVersion">
         <p class="setting-note" *ngIf="update.local() as l">
           Installed build <code>{{ l.sha.slice(0, 7) }}</code>, {{ l.builtAt | date:'d MMM y, HH:mm' }}.
         </p>
         <p class="setting-note" *ngIf="!update.local()">
-          This build carries no version stamp, so it can't be compared against the latest release.
+          This build carries no build stamp, so it can't be compared against the latest release.
         </p>
 
         <div class="add-row">
@@ -286,8 +304,8 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
 
         <p class="setting-note" *ngIf="update.error()">⚠️ {{ update.error() }}</p>
         <p class="setting-note" *ngIf="update.updateAvailable() && update.remote() as r">
-          A newer build is available — <code>{{ r.sha.slice(0, 7) }}</code>,
-          {{ r.builtAt | date:'d MMM y, HH:mm' }}. Download it, then open the file to install.
+          A newer build is available — <strong *ngIf="r.version">{{ r.version }}</strong>
+          <code>{{ r.sha.slice(0, 7) }}</code>, {{ r.builtAt | date:'d MMM y, HH:mm' }}. Download it, then open the file to install.
           Android may ask you to uninstall this copy first: each build is signed with its own
           key, so it can't upgrade the previous install in place.
         </p>
@@ -301,7 +319,7 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
 
       <ng-template #webVersion>
         <p class="setting-note">
-          You're on the web version, which updates itself — a new build is fetched in the
+          You're on the web build, which updates itself — a new build is fetched in the
           background and applied next time you open the page. The update check is only
           shown in the Android app, where installing a new build is a manual step.
         </p>
@@ -473,7 +491,19 @@ export class SettingsComponent {
     input.value = '';
   }
 
+  readonly themeChoices: { value: ThemeChoice; label: string }[] = [
+
+    { value: 'system', label: 'Match my phone' },
+
+    { value: 'light', label: 'Light' },
+
+    { value: 'dark', label: 'Dark' },
+
+  ];
+
+
   constructor(
+    public theme: ThemeService,
     public settings: SettingsService,
     public sync: SyncService,
     public voice: VoiceService,

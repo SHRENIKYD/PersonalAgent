@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="ECHO">
   <defs>
     <linearGradient id="echoG" gradientUnits="userSpaceOnUse" x1="40" y1="30" x2="165" y2="175">
-      <stop offset="0%" stop-color="#ffb020"/>
-      <stop offset="55%" stop-color="#ff6b1a"/>
-      <stop offset="100%" stop-color="#e8503a"/>
+      <stop offset="0%" stop-color="#5566DC"/>
+      <stop offset="55%" stop-color="#3D4BC4"/>
+      <stop offset="100%" stop-color="#2B3596"/>
     </linearGradient>
   </defs>
   <g fill="none" stroke="url(#echoG)" stroke-linecap="round" stroke-linejoin="round">

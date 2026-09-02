@@ -27,8 +27,8 @@ interface DashCard {
           <svg class="reactor-ring" viewBox="0 0 96 96">
             <defs>
               <linearGradient id="reactorGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#ff6b1a" />
-                <stop offset="100%" stop-color="#ffb020" />
+                <stop offset="0%" stop-color="var(--ember-deep)" />
+                <stop offset="100%" stop-color="var(--accent)" />
               </linearGradient>
             </defs>
             <circle class="reactor-bg" cx="48" cy="48" r="42"></circle>

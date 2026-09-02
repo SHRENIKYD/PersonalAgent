@@ -27,8 +27,8 @@ const PRESETS = [60, 90, 120, 180];
                   [attr.stroke-dashoffset]="dashOffset()" />
           <defs>
             <linearGradient id="restG" gradientUnits="userSpaceOnUse" x1="12" y1="12" x2="120" y2="120">
-              <stop offset="0%" stop-color="#ff6b1a" />
-              <stop offset="100%" stop-color="#ffb020" />
+              <stop offset="0%" stop-color="var(--ember-deep)" />
+              <stop offset="100%" stop-color="var(--accent)" />
             </linearGradient>
           </defs>
         </svg>

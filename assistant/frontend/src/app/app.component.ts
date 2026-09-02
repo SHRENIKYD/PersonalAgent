@@ -19,7 +19,7 @@ import { StateService } from './services/state.service';
 import { SyncService } from './services/sync.service';
 import { BackButtonService } from './services/back-button.service';
 import { NotifyService } from './services/notify.service';
-import { environment } from '../environments/environment';
+import { ThemeService } from './services/theme.service';
 
 const BOOT_SEEN_KEY = 'jarvis-boot-seen';
 
@@ -89,17 +89,11 @@ export class AppComponent {
     // Injected purely so it is constructed: it reschedules the next week of briefs on
     // launch, which must happen whether or not the Settings tab is ever opened.
     private notify: NotifyService,
+    private theme: ThemeService,
   ) {
-    /*
-     * The Instrument theme, applied to the document root and only in beta builds.
-     *
-     * A class rather than a build-time swap so the whole theme stays one scoped block in
-     * styles.css that production can never match. Two visual passes have already reached
-     * the stable app when they should not have; this makes that structurally impossible
-     * rather than a matter of remembering.
-     */
-    if (environment.beta) document.documentElement.classList.add('theme-instrument');
-
+    // ThemeService is injected only so it is constructed: its effect applies the stored
+    // light/dark choice to <html>, which has to happen at launch whether or not Settings
+    // is ever opened.
   }
 
   dismissBoot() {
