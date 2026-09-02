@@ -11,6 +11,8 @@ capability, **PATCH** for fixes to what already shipped.
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-09-02
+
 ### Changed
 - Every screen rebuilt to the Bloom mockup, not just restyled. Today opens on the session
   you are doing rather than a progress ring; Workout is a card per movement carrying the
