@@ -37,9 +37,14 @@ jobs:
       # alongside the APK so the installed app can compare the two. Without a build stamp
       # inside the app there is nothing to compare a release against — "is there an update"
       # needs to know what you are already running.
+      # The version comes from package.json via sync-version.mjs, which also writes it into
+      # src/app/version.ts and android/app/build.gradle — one number in one place, so the
+      # APK's manifest, the bundle and this stamp can never disagree.
       - name: Stamp the build
         run: |
-          printf '{"sha":"%s","builtAt":"%s"}\n' \
+          node scripts/sync-version.mjs
+          printf '{"version":"%s","sha":"%s","builtAt":"%s"}\n' \
+            "$(node -p "require('./package.json').version")" \
             "${{ github.sha }}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             | tee src/assets/build-info.json version.json
 

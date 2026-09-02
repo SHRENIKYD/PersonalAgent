@@ -1,10 +1,13 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
+import { APP_VERSION } from '../version';
 
 /** What the CI build stamped into the APK, and what it published beside it. */
 interface BuildInfo {
   sha: string;
   builtAt: string;   // ISO
+  /** Semantic version. Absent on anything built before versioning existed. */
+  version?: string;
 }
 
 const RELEASE = 'https://github.com/SHRENIKYD/PersonalAgent/releases/download/android-latest';
@@ -14,15 +17,32 @@ export const APK_URL = `${RELEASE}/echo.apk`;
 const LAST_CHECK_KEY = 'assistant-update-checked-v1';
 
 /**
+ * Orders two MAJOR.MINOR.PATCH strings: positive when a is newer, negative when older.
+ *
+ * Compared part by part as numbers, because string comparison gets "1.10.0" vs "1.9.0"
+ * backwards — "1" sorts before "9".
+ */
+function compareVersions(a: string, b: string): number {
+  const pa = a.split('.').map(Number), pb = b.split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    const x = pa[i] ?? 0, y = pb[i] ?? 0;
+    if (Number.isNaN(x) || Number.isNaN(y)) return 0;   // unparsable: no claim either way
+    if (x !== y) return x - y;
+  }
+  return 0;
+}
+
+/**
  * Checks whether a newer sideload build exists.
  *
  * Only meaningful inside the Android app. The web build updates itself — the service worker
  * fetches a new bundle on the next load — so there is nothing for a user to do there, and
  * offering them a download would be nonsense.
  *
- * Comparison is on the build timestamp rather than the commit sha: shas do not order, so
- * with sha alone you can tell "different" but not "newer", and reinstalling an older APK
- * would look like an available update forever.
+ * Comparison is on the semantic version, falling back to the build timestamp for builds
+ * made before versioning existed. It is never on the commit sha: shas do not order, so with
+ * a sha alone you can tell "different" but not "newer", and reinstalling an older APK would
+ * look like an available update forever.
  */
 @Injectable({ providedIn: 'root' })
 export class UpdateService {
@@ -41,8 +61,18 @@ export class UpdateService {
   updateAvailable = computed(() => {
     const l = this.local(), r = this.remote();
     if (!l || !r) return false;
+    // Prefer the semantic version when both sides carry one: it is what a person means by
+    // "newer", and it survives a rebuild of the same code (which moves builtAt without
+    // changing anything). Fall back to the timestamp for builds made before versioning.
+    if (l.version && r.version) {
+      const cmp = compareVersions(r.version, l.version);
+      if (cmp !== 0) return cmp > 0;
+    }
     return Date.parse(r.builtAt) > Date.parse(l.builtAt);
   });
+
+  /** The version this app was built from, for display. */
+  version = computed(() => this.local()?.version ?? APP_VERSION);
 
   /**
    * Running natively rather than in a browser tab. Importing any Capacitor package defines

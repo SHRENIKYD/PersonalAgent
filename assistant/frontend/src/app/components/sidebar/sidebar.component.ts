@@ -57,7 +57,7 @@ const TAB_GROUPS: TabGroup[] = [
             <linearGradient id="brandG" gradientUnits="userSpaceOnUse" x1="40" y1="30" x2="165" y2="175">
               <stop offset="0%" stop-color="var(--accent)" />
               <stop offset="55%" stop-color="var(--accent-dim)" />
-              <stop offset="100%" stop-color="#e8503a" />
+              <stop offset="100%" stop-color="var(--ember-deep)" />
             </linearGradient>
           </defs>
           <g fill="none" stroke="url(#brandG)" stroke-linecap="round" stroke-linejoin="round">

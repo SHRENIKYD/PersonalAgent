@@ -1,8 +1,8 @@
 {
   "name": "ECHO \u2014 Personal Assistant",
   "short_name": "ECHO",
-  "theme_color": "#ff6b1a",
-  "background_color": "#0a0a0c",
+  "theme_color": "#3D4BC4",
+  "background_color": "#F0F1F6",
   "display": "standalone",
   "scope": "./",
   "start_url": "./",

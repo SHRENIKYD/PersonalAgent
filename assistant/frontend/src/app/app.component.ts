@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { BootComponent } from './components/boot/boot.component';
 import { ContextRailComponent } from './components/context-rail/context-rail.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { BottomNavComponent } from './components/bottom-nav/bottom-nav.component';
@@ -18,12 +19,17 @@ import { StateService } from './services/state.service';
 import { SyncService } from './services/sync.service';
 import { BackButtonService } from './services/back-button.service';
 import { NotifyService } from './services/notify.service';
+import { ThemeService } from './services/theme.service';
+import { APP_VERSION } from './version';
+
+const BOOT_SEEN_KEY = 'jarvis-boot-seen';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
     CommonModule,
+    BootComponent,
     ContextRailComponent,
     SidebarComponent,
     BottomNavComponent,
@@ -39,6 +45,7 @@ import { NotifyService } from './services/notify.service';
     NewsComponent,
   ],
   template: `
+    <app-boot *ngIf="showBoot()" (done)="dismissBoot()"></app-boot>
     <div class="app">
       <app-sidebar></app-sidebar>
       <main class="main">
@@ -58,6 +65,7 @@ import { NotifyService } from './services/notify.service';
         <div class="footnote">
           Tasks and notes stay in this browser &middot; only your chat messages are sent anywhere
           &middot; {{ state.saveStatus() }}
+          <span class="footnote-version">ECHO {{ version }}</span>
         </div>
         <div class="exit-hint" *ngIf="back.exitArmed()" role="status">Press back again to exit</div>
       </main>
@@ -67,7 +75,14 @@ import { NotifyService } from './services/notify.service';
   `,
 })
 export class AppComponent {
+  // sessionStorage, not localStorage: the launch screen replays once per tab/session,
+  // not once ever per browser.
+  showBoot = signal(sessionStorage.getItem(BOOT_SEEN_KEY) !== '1');
+
   // sessionStorage, not localStorage: replays once per tab/session, not once ever.
+
+  /** Shown in the footer so the running version is always readable, not one tap deep. */
+  readonly version = APP_VERSION;
 
   // Injected purely to instantiate it at app start (providedIn: 'root' services are
   // otherwise created lazily on first use) — sync needs to kick off its initial pull
@@ -82,5 +97,15 @@ export class AppComponent {
     // Injected purely so it is constructed: it reschedules the next week of briefs on
     // launch, which must happen whether or not the Settings tab is ever opened.
     private notify: NotifyService,
-  ) {}
+    private theme: ThemeService,
+  ) {
+    // ThemeService is injected only so it is constructed: its effect applies the stored
+    // light/dark choice to <html>, which has to happen at launch whether or not Settings
+    // is ever opened.
+  }
+
+  dismissBoot() {
+    sessionStorage.setItem(BOOT_SEEN_KEY, '1');
+    this.showBoot.set(false);
+  }
 }

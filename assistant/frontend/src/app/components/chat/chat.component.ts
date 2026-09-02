@@ -4,8 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { AgentService } from '../../services/agent.service';
 import { SettingsService } from '../../services/settings.service';
 import { UiService } from '../../services/ui.service';
-import { DictationService } from '../../services/dictation.service';
-import { VoiceModeService } from '../../services/voice-mode.service';
 import { MarkdownComponent } from '../markdown/markdown.component';
 import { WorkoutCard, DietCard, DisplayEntry } from '../../models';
 
@@ -17,19 +15,13 @@ interface Group {
 }
 
 /** Tappable openers for the empty chat. The first three show; More reveals the rest. */
-const OPENERS: { label: string; prompt: string; icon: string }[] = [
-  { label: 'My plan today', prompt: "What's my plan today?",
-    icon: 'M7 3v3M17 3v3M4 8.5h16M5 5.5h14a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1Z' },
-  { label: 'Workout plan', prompt: "What's my workout today?",
-    icon: 'M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10' },
-  { label: 'Nutrition', prompt: 'What should I eat today to hit my macros?',
-    icon: 'M12 8c-3 0-5 2-5 5.5S9 21 12 21s5-4 5-7.5S15 8 12 8ZM12 8c0-2 1.2-3.5 3-4' },
-  { label: 'Add a task', prompt: 'Add a task: ',
-    icon: 'M12 5v14M5 12h14' },
-  { label: 'Take a note', prompt: 'Note that ',
-    icon: 'M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1ZM8 11h8M8 15h5' },
-  { label: 'How am I doing?', prompt: 'How am I doing on my goals this month?',
-    icon: 'M4 19V9M10 19V5M16 19v-6M22 19H2' },
+const OPENERS: { label: string; prompt: string }[] = [
+  { label: 'My plan today', prompt: "What's my plan today?" },
+  { label: 'Workout plan', prompt: "What's my workout today?" },
+  { label: 'Nutrition', prompt: 'What should I eat today to hit my macros?' },
+  { label: 'Add a task', prompt: 'Add a task: ' },
+  { label: 'Take a note', prompt: 'Note that ' },
+  { label: 'How am I doing?', prompt: 'How am I doing on my goals this month?' },
 ];
 
 @Component({
@@ -55,23 +47,8 @@ const OPENERS: { label: string; prompt: string; icon: string }[] = [
         </button>
       </div>
 
-      <div class="voice-mode" *ngIf="voiceMode.available">
-        <button class="hands-free" [class.live]="voiceMode.enabled"
-                (click)="voiceMode.toggle()"
-                [attr.aria-pressed]="voiceMode.enabled">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z" />
-            <path d="M5 11a7 7 0 0 0 14 0M12 18v4" />
-          </svg>
-          {{ voiceMode.enabled ? 'Hands-free on' : 'Hands-free' }}
-        </button>
-        <span class="voice-state" *ngIf="voiceMode.enabled">{{ stateLabel() }}</span>
-        <span class="voice-heard" *ngIf="voiceMode.lastHeard() as h">“{{ h }}”</span>
-      </div>
-      <p class="chat-warn" *ngIf="voiceMode.error()">⚠️ {{ voiceMode.error() }}</p>
 
-      <p *ngIf="!settings.ready()" class="chat-warn">
+      <p *ngIf="!agent.ready()" class="chat-warn">
         No API key is set for direct mode.
         <a (click)="ui.setTab('settings')">Add one on the Settings tab</a> to use the assistant.
       </p>
@@ -103,16 +80,11 @@ const OPENERS: { label: string; prompt: string; icon: string }[] = [
           <div class="opener-row">
             <button class="opener" *ngFor="let o of openers()"
                     [disabled]="agent.thinking()" (click)="ask(o.prompt)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
-                   stroke-linecap="round" stroke-linejoin="round" class="opener-ico" aria-hidden="true">
-                <path [attr.d]="o.icon" />
-              </svg>
+              <span class="opener-arrow" aria-hidden="true">&#8594;</span>
               {{ o.label }}
             </button>
             <button class="opener" *ngIf="!showAllOpeners()" (click)="showAllOpeners.set(true)">
-              <svg viewBox="0 0 24 24" fill="currentColor" class="opener-ico" aria-hidden="true">
-                <circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" />
-              </svg>
+              <span class="opener-arrow" aria-hidden="true">&#8230;</span>
               More
             </button>
           </div>
@@ -233,9 +205,10 @@ const OPENERS: { label: string; prompt: string; icon: string }[] = [
       <div class="composer">
         <!--
           Deliberately not disabled while thinking. Disabling a focused element drops focus,
-          which un-hides the bottom bar and shifts the composer 87px mid-conversation, and
-          drafting the next message while a reply is in flight is worth having. agent.send
-          already refuses to start a second turn, so the guard bought nothing.
+          which un-hides the bottom bar and shifts the composer 87px mid-conversation; and
+          being able to draft the next message while a reply is in flight is worth more
+          than the guard. agent.send already refuses to
+          start a second turn.
         -->
         <textarea
           #composerInput
@@ -246,31 +219,11 @@ const OPENERS: { label: string; prompt: string; icon: string }[] = [
           (blur)="ui.composerFocused.set(false)"
           (keydown.enter)="onEnter($event)"></textarea>
 
-        <!--
-          Keeping focus in the textarea is what makes one tap enough. Without this, pressing
-          a composer button blurs the input, which un-hides the bottom bar, which moves the
-          composer up by the height of the bar — out from under the finger mid-tap, so the
-          first press only ever repositioned the button.
-        -->
-        <button *ngIf="dictation.supported()" class="mic-btn"
-                (pointerdown)="keepFocus($event)"
-                (mousedown)="keepFocus($event)"
-                [class.live]="dictation.listening()"
-                [disabled]="agent.thinking()"
-                (click)="toggleMic()"
-                [attr.aria-label]="dictation.listening() ? 'Stop dictation' : 'Dictate'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="9" y="2" width="6" height="12" rx="3" />
-            <path d="M5 11a7 7 0 0 0 14 0M12 18v4" />
-          </svg>
-        </button>
-
         <button class="send-btn" [disabled]="agent.thinking() || !inputText.trim()"
                 (pointerdown)="keepFocus($event)"
                 (mousedown)="keepFocus($event)"
                 (click)="send()" aria-label="Send">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6"
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M12 19V5M5 12l7-7 7 7" />
           </svg>
@@ -279,7 +232,6 @@ const OPENERS: { label: string; prompt: string; icon: string }[] = [
 
       <p class="chat-hint">
         Enter to send · Shift+Enter for a new line
-        <span *ngIf="dictation.error()" class="dict-err"> · {{ dictation.error() }}</span>
       </p>
     </section>
   `,
@@ -349,8 +301,6 @@ export class ChatComponent {
     public agent: AgentService,
     public settings: SettingsService,
     public ui: UiService,
-    public dictation: DictationService,
-    public voiceMode: VoiceModeService
   ) {
     // Follow the conversation as it grows. Reading the signal inside the effect is what
     // subscribes it, so this runs on every transcript change.
@@ -396,29 +346,6 @@ export class ChatComponent {
     return Date.now() - (g.entries[entryIndex].at ?? 0) < 4000;
   }
 
-  stateLabel(): string {
-    switch (this.voiceMode.state()) {
-      case 'listening': return 'Listening…';
-      case 'thinking':  return 'Thinking…';
-      case 'speaking':  return 'Speaking…';
-      default:          return '';
-    }
-  }
-
-  /** Set while the composer holds text that came from the microphone. */
-  private dictatedInput = false;
-
-  toggleMic() {
-    if (this.dictation.listening()) {
-      this.dictation.stop();
-      return;
-    }
-    this.dictation.start(text => {
-      // Appended rather than replacing, so dictation can extend something already typed.
-      this.inputText = (this.inputText + ' ' + text).trim();
-      this.dictatedInput = true;
-    });
-  }
 
   onEnter(e: Event) {
     const ke = e as KeyboardEvent;
@@ -431,10 +358,7 @@ export class ChatComponent {
   send() {
     const text = this.inputText;
     if (text.trim() === '') return;
-    const dictated = this.dictatedInput;
     this.inputText = '';
-    this.dictatedInput = false;
-    this.dictation.stop();
-    void this.agent.send(text, { dictated });
+    void this.agent.send(text);
   }
 }

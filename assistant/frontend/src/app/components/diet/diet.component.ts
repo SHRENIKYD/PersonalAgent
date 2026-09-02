@@ -1,6 +1,7 @@
 import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StateService } from '../../services/state.service';
+import { FoldComponent } from '../fold/fold.component';
 import {
   DIET_RULES,
   DIET_TARGETS,
@@ -10,104 +11,101 @@ import {
   SUPPLEMENTS,
   VEG_MEALS,
   mealTotals,
+  todayIso,
 } from '../../fitness-data';
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-/** Nutrition only — the other half of what used to be one Fitness tab. */
+/**
+ * Diet, rebuilt to the Bloom mockup: the day's calories as one figure, macros as bars
+ * underneath, then the meals that make them up.
+ *
+ * The numbers are what the plan totals as written, not what you ate. Adherence here is a
+ * single daily tick, so the app has no idea what actually went in — and a screen reading
+ * "1,840 kcal" as though it were measured would be inventing a measurement nobody took.
+ * That is why the figure says "planned", the one place this departs from the mockup's words.
+ *
+ * The supplement schedule, the targets and the diet rules are not in the mockup. They are
+ * reference material rather than screens, so they fold rather than disappear.
+ */
 @Component({
   selector: 'app-diet',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FoldComponent],
   template: `
     <section class="panel">
-      <div class="fit-hero">
-        <div class="fit-hero-copy">
-          <h1 class="page-title">Diet</h1>
-          <p class="fit-hero-session">{{ macroSummary() }}</p>
-          <p class="page-sub">
-            Recomposition targets and the meal plan behind them. Tick the day off once you have
-            stayed on plan.
-          </p>
+      <h1 class="page-title">Diet</h1>
 
-          <div class="fit-today-row">
-            <label class="fit-check">
-              <input type="checkbox" [checked]="checked()" (change)="toggle($any($event.target).checked)" />
-              On-plan with diet
-            </label>
-            <span class="pill complete">{{ state.fitnessWeekProgress().pct }}% this week</span>
-          </div>
-        </div>
+      <div class="chip-row">
+        <button class="chip-filter" [class.on]="!vegDay()" (click)="vegDay.set(false)">Non-veg day</button>
+        <button class="chip-filter" [class.on]="vegDay()" (click)="vegDay.set(true)">Veg day</button>
       </div>
 
-      <h2 class="section-title">Today's macros</h2>
-      <p class="page-sub">
-        Targets from the plan, against what the {{ vegDay() ? 'veg' : 'non-veg' }} day adds up
-        to as written — not what you actually ate, which the app doesn't track per meal.
-      </p>
-      <div class="macro-grid">
-        <div class="macro" *ngFor="let m of macroRows()" [class.over]="m.over">
-          <div class="macro-head">
-            <b>{{ m.label }}</b>
-            <span *ngIf="m.tracked">{{ m.have }} / {{ m.target }}{{ m.unit }}</span>
-            <span *ngIf="!m.tracked">target {{ m.target }}{{ m.unit }}</span>
+      <div class="card card-accent">
+        <div class="card-head">
+          <span>
+            <span class="big-figure">{{ totals().calories }}</span>
+            <span class="big-unit"> / {{ macros.kcal }} kcal planned</span>
+          </span>
+          <span class="pill" [class.high]="remaining() < 0">
+            {{ remaining() >= 0 ? remaining() + ' left' : (-remaining()) + ' over' }}
+          </span>
+        </div>
+
+        <div class="vol-row" *ngFor="let m of macroRows()">
+          <div class="vol-head">
+            <span>{{ m.label }}</span>
+            <span class="vol-count">
+              <ng-container *ngIf="m.tracked">{{ m.have }} / {{ m.target }}{{ m.unit }}</ng-container>
+              <ng-container *ngIf="!m.tracked">target {{ m.target }}{{ m.unit }}</ng-container>
+            </span>
           </div>
-          <div class="macro-bar" *ngIf="m.tracked"><i [style.width.%]="m.pct"></i></div>
-          <p class="macro-note" *ngIf="m.over">
-            Plan as written runs {{ m.have - m.target }}{{ m.unit }} over target.
-          </p>
+          <div class="overall-progress-track" *ngIf="m.tracked">
+            <div class="overall-progress-fill" [style.width.%]="m.pct"></div>
+          </div>
           <p class="macro-note" *ngIf="!m.tracked">Not itemised per meal in the plan.</p>
         </div>
       </div>
-      <button class="ghost-btn" (click)="vegDay.set(!vegDay())">
-        Show {{ vegDay() ? 'non-veg' : 'veg' }} day
-      </button>
 
-      <h2 class="section-title">Daily targets</h2>
-      <p class="page-sub">{{ dietTargets }}</p>
-
-      <h2 class="section-title">Non-veg day</h2>
-      <div class="fit-table-wrap">
-        <table class="fit-table">
-          <thead><tr><th>Meal</th><th>Food &amp; quantity</th><th>Protein</th><th>Calories</th></tr></thead>
-          <tbody>
-            <tr *ngFor="let m of nonvegMeals">
-              <td>{{ m.meal }}</td><td>{{ m.food }}</td><td>{{ m.protein }}</td><td>{{ m.calories }}</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="card">
+        <span class="card-label">Today's meals</span>
+        <div class="meal-row" *ngFor="let m of meals()">
+          <span class="meal-main">
+            <span class="meal-name">{{ m.meal }}</span>
+            <span class="meal-food">{{ m.food }}</span>
+          </span>
+          <span class="meal-kcal">{{ m.calories }} kcal</span>
+        </div>
       </div>
 
-      <h2 class="section-title">Veg day</h2>
-      <div class="fit-table-wrap">
-        <table class="fit-table">
-          <thead><tr><th>Meal</th><th>Food &amp; quantity</th><th>Protein</th><th>Calories</th></tr></thead>
-          <tbody>
-            <tr *ngFor="let m of vegMeals">
-              <td>{{ m.meal }}</td><td>{{ m.food }}</td><td>{{ m.protein }}</td><td>{{ m.calories }}</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="card">
+        <div class="card-head" style="margin-bottom: 0">
+          <label class="fit-check">
+            <input type="checkbox" [checked]="checked()"
+                   (change)="toggle($any($event.target).checked)" />
+            On plan today
+          </label>
+          <span class="card-count">{{ state.fitnessWeekProgress().pct }}% this week</span>
+        </div>
       </div>
 
-      <h2 class="section-title">Supplement schedule</h2>
-      <div class="fit-table-wrap">
-        <table class="fit-table">
-          <thead><tr><th>Supplement</th><th>When</th><th>Notes</th></tr></thead>
-          <tbody>
-            <tr *ngFor="let s of supplements">
-              <td>{{ s.supplement }}</td><td>{{ s.when }}</td><td>{{ s.notes }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <app-fold label="Daily targets">
+        <p class="setting-note">{{ dietTargets }}</p>
+      </app-fold>
 
-      <h2 class="section-title">Diet rules</h2>
-      <ul class="fit-list">
-        <li *ngFor="let r of dietRules">{{ r }}</li>
-      </ul>
+      <app-fold label="Supplements" [note]="supplements.length + ''">
+        <div class="meal-row" *ngFor="let s of supplements">
+          <span class="meal-main">
+            <span class="meal-name">{{ s.supplement }}</span>
+            <span class="meal-food">{{ s.notes }}</span>
+          </span>
+          <span class="meal-kcal">{{ s.when }}</span>
+        </div>
+      </app-fold>
+
+      <app-fold label="Diet rules">
+        <ul class="fit-list">
+          <li *ngFor="let r of dietRules">{{ r }}</li>
+        </ul>
+      </app-fold>
 
       <p class="footnote">{{ medicalDisclaimer }}</p>
     </section>
@@ -115,40 +113,33 @@ function todayIso(): string {
 })
 export class DietComponent {
   dietTargets = DIET_TARGETS;
-  nonvegMeals = NONVEG_MEALS;
-  vegMeals = VEG_MEALS;
   supplements = SUPPLEMENTS;
   dietRules = DIET_RULES;
   medicalDisclaimer = MEDICAL_DISCLAIMER;
+  macros = MACRO_TARGETS;
 
   vegDay = signal(false);
 
-  macroSummary = computed(() =>
-    `${MACRO_TARGETS.kcal} kcal \u00b7 ${MACRO_TARGETS.protein} g protein \u00b7 ` +
-    `${MACRO_TARGETS.carbs} g carbs \u00b7 ${MACRO_TARGETS.fat} g fat`
-  );
+  meals = computed(() => (this.vegDay() ? VEG_MEALS : NONVEG_MEALS));
+  totals = computed(() => mealTotals(this.meals()));
+  remaining = computed(() => MACRO_TARGETS.kcal - this.totals().calories);
 
   /**
-   * Macro progress against target. `have` is what the day's plan totals as written rather
-   * than what was actually eaten — adherence is a single daily tick, not per-meal, so
-   * claiming to know real intake would be a lie. Carbs and fat are not itemised per meal
-   * anywhere in the plan, so they render as the target alone rather than a bar that would
-   * imply a measurement nobody took.
+   * Macro progress against target.
+   *
+   * Carbs and fat are not itemised per meal anywhere in the plan, so they render as the
+   * target alone rather than a bar that would imply a measurement nobody took.
    */
   macroRows = computed(() => {
-    const meals = this.vegDay() ? this.vegMeals : this.nonvegMeals;
-    const totals = mealTotals(meals);
-    const row = (label: string, have: number, target: number, unit: string) => ({
-      label, have, target, unit,
-      pct: Math.min(100, Math.round((have / target) * 100)),
-      over: have > target,
-      tracked: true,
-    });
+    const totals = this.totals();
     return [
-      row('Calories', totals.calories, MACRO_TARGETS.kcal, ' kcal'),
-      row('Protein', totals.protein, MACRO_TARGETS.protein, ' g'),
-      { label: 'Carbs', have: 0, target: MACRO_TARGETS.carbs, unit: ' g', pct: 0, over: false, tracked: false },
-      { label: 'Fat', have: 0, target: MACRO_TARGETS.fat, unit: ' g', pct: 0, over: false, tracked: false },
+      {
+        label: 'Protein', have: totals.protein, target: MACRO_TARGETS.protein, unit: ' g',
+        pct: Math.min(100, Math.round((totals.protein / MACRO_TARGETS.protein) * 100)),
+        tracked: true,
+      },
+      { label: 'Carbs', have: 0, target: MACRO_TARGETS.carbs, unit: ' g', pct: 0, tracked: false },
+      { label: 'Fat', have: 0, target: MACRO_TARGETS.fat, unit: ' g', pct: 0, tracked: false },
     ];
   });
 

@@ -27,9 +27,9 @@ import { MuscleGroup } from '../../fitness-data';
           Fixed coordinates sidestep it.
         -->
         <linearGradient id="mgHot" gradientUnits="userSpaceOnUse" x1="60" y1="60" x2="180" y2="440">
-          <stop offset="0%" stop-color="#ffb020" />
-          <stop offset="45%" stop-color="#ff6b1a" />
-          <stop offset="100%" stop-color="#d9480f" />
+          <stop offset="0%" stop-color="var(--accent)" />
+          <stop offset="45%" stop-color="var(--accent-dim)" />
+          <stop offset="100%" stop-color="var(--ember-deep)" />
         </linearGradient>
         <filter id="mgBloom" x="-60%" y="-60%" width="220%" height="220%">
           <feGaussianBlur stdDeviation="4" result="b" />
