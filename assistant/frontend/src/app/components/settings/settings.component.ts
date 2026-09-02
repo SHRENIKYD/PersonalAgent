@@ -26,7 +26,17 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
   template: `
     <section class="panel">
       <h1 class="page-title">Settings</h1>
-      <p class="page-sub">How the assistant reaches a model.</p>
+
+      <!-- The mockup opens on who this is and where the data lives, before any control. -->
+      <div class="card">
+        <div class="profile-row">
+          <span class="profile-mark" aria-hidden="true">{{ initial }}</span>
+          <span class="profile-copy">
+            <span class="profile-name">ECHO</span>
+            <span class="profile-sub">Everything is stored on this device</span>
+          </span>
+        </div>
+      </div>
 
       <app-fold label="Connection"
                 [note]="settings.mode() === 'direct' ? 'Direct from browser' : 'Via backend'">
@@ -434,6 +444,9 @@ export class SettingsComponent {
   /** The current appearance, for the fold's closed row. */
   themeLabel = () =>
     this.themeChoices.find(c => c.value === this.theme.choice())?.label ?? '';
+
+  /** The monogram on the profile card. */
+  readonly initial = 'E';
 
   readonly themeChoices: { value: ThemeChoice; label: string }[] = [
 

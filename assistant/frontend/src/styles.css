@@ -1536,6 +1536,77 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 .habit-cells button.on { background: var(--accent-dim); }
 
+/* An exercise card: the library's photo beside the movement's name and target. */
+.ex-head { display: flex; gap: 13px; align-items: flex-start; margin-bottom: 13px; }
+
+/* Two classes deep on purpose: .lib-demo declares width:100% and aspect-ratio for the
+   library's full-width demo, and a single-class override loses to it on source order —
+   which pushed the card past the viewport and gave the whole page a sideways scroll. */
+.lib-demo.ex-photo {
+  width: 96px;
+  height: 72px;
+  aspect-ratio: auto;
+  margin: 0;
+  border-radius: 12px;
+  flex: 0 0 96px;
+}
+
+.ex-main { min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+
+.ex-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.ex-chips { margin: 0; }
+
+.ex-notes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ex-notes:empty { margin-top: 0; }
+
+.set-add {
+  min-width: 44px;
+  padding: 8px 14px;
+  font-size: 15px;
+}
+
+/* Settings opens on identity: a monogram, the app's name, and where the data lives. */
+.profile-row { display: flex; align-items: center; gap: 13px; }
+
+.profile-mark {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--wash);
+  color: var(--accent-dim);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 19px;
+}
+
+.profile-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+
+.profile-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+
+.profile-sub { color: var(--muted); font-size: 13px; }
+
 /* ---------------- launch screen ---------------- */
 
 /*
@@ -2546,7 +2617,13 @@ app-bottom-nav {
   background: var(--panel);
 }
 
-.opener-ico { width: 17px; height: 17px; flex: 0 0 auto; color: var(--accent-dim); }
+.opener-arrow {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--accent-dim);
+  flex: 0 0 auto;
+  line-height: 1;
+}
 
 /* ---------------- sticky header, with content fading under it ---------------- */
 

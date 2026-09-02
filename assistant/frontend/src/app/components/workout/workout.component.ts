@@ -23,8 +23,6 @@ import {
   muscleOptions,
   searchExercises,
 } from '../../exercise-search';
-import { MuscleMapComponent } from '../muscle-map/muscle-map.component';
-import { RestTimerComponent } from '../rest-timer/rest-timer.component';
 import {
   ABS_PROGRAM,
   WEEKLY_SCHEDULE,
@@ -46,334 +44,131 @@ import {
 @Component({
   selector: 'app-workout',
   standalone: true,
-  imports: [CommonModule, MuscleMapComponent, RestTimerComponent, FoldComponent],
+  imports: [CommonModule, FoldComponent],
   template: `
     <section class="panel">
-      <div class="fit-hero">
-        <div class="fit-hero-copy">
-          <h1 class="page-title">Workout</h1>
-          <p class="fit-hero-session">{{ todayLabel() }}</p>
-          <p class="page-sub">{{ todaySub() }}</p>
+      <h1 class="page-title">{{ todayLabel() }}</h1>
+      <p class="page-sub">{{ todaySub() }}</p>
 
-          <div class="fit-today-row">
-            <label class="fit-check">
-              <input type="checkbox" [checked]="checked('workout')" (change)="toggle('workout', $any($event.target).checked)" />
-              Workout done
-            </label>
-            <span class="pill complete">{{ state.fitnessWeekProgress().pct }}% this week</span>
-          </div>
-        </div>
-        <img class="fit-hero-art" src="assets/hero-athlete.webp" alt="" aria-hidden="true" />
-      </div>
-
-      <div class="section-head">
-        <h2 class="section-title">Muscle focus</h2>
-        <button class="ghost-btn" *ngIf="previewing()" (click)="showToday()">Back to today</button>
-      </div>
-      <div class="fit-focus">
-        <app-muscle-map [active]="todayMuscles()" />
-        <div class="fit-focus-side">
-          <p class="fit-focus-session">
-            {{ mapLabel() }}
-            <span class="pill" *ngIf="previewing()">preview</span>
-          </p>
-          <p class="fit-focus-lede">
-            {{ todayMuscles().length
-                ? (previewing()
-                    ? 'Lit groups are what this session loads. Open another day below to compare.'
-                    : 'Lit groups are what today actually loads. Open any day below to preview it.')
-                : 'Rest day — nothing scheduled. The map stays dark on purpose.' }}
-          </p>
-          <ul class="fit-key">
-            <li *ngFor="let m of todayMuscles()"><i></i>{{ m }}</li>
-          </ul>
-          <div class="fit-stats">
-            <div><b>{{ todayExerciseCount() }}</b><span>exercises</span></div>
-            <div><b>{{ todayMuscles().length }}</b><span>groups</span></div>
-            <div><b>{{ state.fitnessWeekProgress().pct }}</b><span>% week</span></div>
-          </div>
+      <div class="card">
+        <div class="card-head" style="margin-bottom: 0">
+          <label class="fit-check">
+            <input type="checkbox" [checked]="checked('workout')"
+                   (change)="toggle('workout', $any($event.target).checked)" />
+            Workout done
+          </label>
+          <span class="card-count">{{ state.fitnessWeekProgress().pct }}% this week</span>
         </div>
       </div>
 
-      <app-fold label="Body weight" [note]="latestWeight() ? latestWeight() + ' kg' : 'not logged'">
+      <!-- One card per movement: the photo the library carries for it, its target, the sets
+           you have already put in, and the two fields to add another. -->
+      <div class="card" *ngFor="let ex of exercises()">
+        <div class="ex-head">
+          <div class="lib-demo ex-photo" *ngIf="photosFor(ex.name) as pics">
+            <img *ngFor="let src of pics" [src]="'assets/exercise-images/' + src"
+                 [alt]="ex.name" loading="lazy" decoding="async" />
+          </div>
+          <div class="ex-main">
+            <span class="ex-name">{{ ex.name }}</span>
+            <div class="chip-row ex-chips">
+              <span class="pill" *ngIf="ex.group">{{ ex.group }}</span>
+              <span class="pill">{{ ex.sets }}</span>
+            </div>
+          </div>
+        </div>
 
-      <p class="setting-note">
-        Day to day this is mostly water — the line is the 7-day average, which is the only
-        part that tracks what your training is actually doing.
+        <div class="set-log">
+          <span class="set-chip" *ngFor="let st of setsToday(ex.name); let si = index"
+                (click)="state.removeSet(today(), ex.name, si)"
+                title="Click to remove">{{ st.weight }}&#215;{{ st.reps }}</span>
+          <input class="set-in" type="number" inputmode="decimal" placeholder="kg"
+                 #w (keydown.enter)="add(ex.name, w, r)" />
+          <input class="set-in" type="number" inputmode="numeric" placeholder="reps"
+                 #r (keydown.enter)="add(ex.name, w, r)" />
+          <button class="set-add" (click)="add(ex.name, w, r)">+</button>
+        </div>
+
+        <div class="ex-notes">
+          <span class="pr-badge" *ngIf="prFor(ex.name) as p">{{ p }}</span>
+          <span class="set-advice" *ngIf="adviceFor(ex) as a"
+                [class.up]="a.kind === 'up'"
+                [class.deload]="a.kind === 'deload'">{{ a.text }}</span>
+        </div>
+      </div>
+
+      <p class="empty" *ngIf="!exercises().length">
+        Nothing scheduled today. Recovery is part of the programme.
       </p>
 
-      <div class="weight-row" *ngIf="latestWeight() as w">
-        <span class="weight-now">{{ w }} kg</span>
-        <!--
-          Coloured by whether the trend moves toward the goal, not by its sign. Without a
-          goal set there is nothing to be right or wrong about, so it stays neutral rather
-          than assuming a cut.
-        -->
-        <span class="weight-delta" *ngIf="weeklyDelta() !== null"
-              [class.good]="deltaIsGood() === true"
-              [class.bad]="deltaIsGood() === false">
-          {{ weeklyDelta()! > 0 ? '+' : '' }}{{ weeklyDelta() }} kg / week
-        </span>
-      </div>
-
-      <p class="setting-note goal-line-note" *ngIf="goal() as g">
-        <ng-container [ngSwitch]="g.direction">
-          <span *ngSwitchCase="'reached'">At target.</span>
-          <span *ngSwitchDefault>
-            {{ g.remainingKg }} kg to {{ g.direction === 'cut' ? 'lose' : 'gain' }}<span
-              *ngIf="g.weeksToGoal"> · about {{ g.weeksToGoal }} week{{ g.weeksToGoal === 1 ? '' : 's' }} at this rate</span><span
-              *ngIf="g.movingToward === false"> · currently moving away</span>
+      <div class="card">
+        <div class="card-head">
+          <span class="card-label">Body weight</span>
+          <span class="weight-delta" *ngIf="weeklyDelta() !== null"
+                [class.good]="deltaIsGood() === true"
+                [class.bad]="deltaIsGood() === false">
+            {{ weeklyDelta()! > 0 ? '+' : '' }}{{ weeklyDelta() }} kg / week
           </span>
-        </ng-container>
-      </p>
-
-      <svg class="weight-chart" *ngIf="trendPath() as d" viewBox="0 0 300 90"
-           preserveAspectRatio="none" role="img" aria-label="Body weight trend">
-        <!-- The goal, drawn only when it falls inside the plotted range; a target far
-             outside the last few weeks would otherwise pin to an edge and read as data. -->
-        <line *ngIf="goalY() as gy" x1="0" [attr.y1]="gy" x2="300" [attr.y2]="gy"
-              stroke="var(--ok)" stroke-width="1" stroke-dasharray="4 4"
-              vector-effect="non-scaling-stroke" />
-        <path [attr.d]="d" fill="none" stroke="var(--accent)" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
-      </svg>
-      <p class="weight-empty" *ngIf="!trendPath()">
-        Two or more readings draw a trend line.
-      </p>
-
-      <div class="add-row">
-        <input class="grow" type="number" inputmode="decimal" step="0.1"
-               placeholder="today's weight in kg" #wkg />
-        <button (click)="saveWeight(wkg)">Log weight</button>
-      </div>
-
-      <div class="add-row">
-        <input class="grow" type="number" inputmode="decimal" step="0.1"
-               placeholder="target weight in kg" [value]="state.weightGoal() || ''" #gkg />
-        <button class="ghost-btn" (click)="saveGoal(gkg)">Set target</button>
-      </div>
-      </app-fold>
-<app-fold label="This week's volume">
-
-      <p class="setting-note">
-        Hard sets per group over the last 7 days — what you actually did, not what the plan
-        says. A group sitting at zero is the one to look at.
-      </p>
-      <div class="muscle-tags" *ngIf="weekVolume().length; else noVolume">
-        <span class="muscle-tag" *ngFor="let v of weekVolume()">
-          <span class="muscle-dot"></span>{{ v.group }} — {{ v.sets }}
-        </span>
-      </div>
-      <ng-template #noVolume>
-        <p class="weight-empty">No sets logged in the last 7 days.</p>
-      </ng-template>
-</app-fold>
-<app-fold label="Rest timer">
-
-      <app-rest-timer />
-</app-fold>
-<app-fold label="Exercise library" [note]="libNote()">
-
-      <p class="setting-note">
-        873 movements, searchable by name, muscle or equipment. Log a set against any of them
-        and it counts toward this week's volume like anything in the plan.
-      </p>
-
-      <div class="add-row">
-        <input class="grow" type="search" placeholder="search — bench, curl, dumbbell…"
-               [value]="libQuery()" (input)="onLibQuery($event)" />
-      </div>
-
-      <div class="lib-filters">
-        <select [value]="libMuscle()" (change)="onLibMuscle($event)" aria-label="Filter by muscle">
-          <option value="">Any muscle</option>
-          <option *ngFor="let m of muscles()" [value]="m">{{ m }}</option>
-        </select>
-        <select [value]="libEquipment()" (change)="onLibEquipment($event)" aria-label="Filter by equipment">
-          <option value="">Any equipment</option>
-          <option *ngFor="let e of equipment()" [value]="e">{{ e }}</option>
-        </select>
-      </div>
-
-      <p class="setting-note" *ngIf="library.loading()">Loading the library…</p>
-      <p class="setting-note" *ngIf="library.error() as err">⚠️ Could not load the library: {{ err }}</p>
-
-      <p class="setting-note" *ngIf="!library.loading() && !library.error() && !libResults().length">
-        Nothing matches. Try one word rather than several.
-      </p>
-
-      <div class="lib-list">
-        <div class="lib-item" *ngFor="let ex of libResults()">
-          <button class="lib-head" (click)="toggleLib(ex.id)"
-                  [attr.aria-expanded]="openLib() === ex.id">
-            <span class="lib-name">{{ ex.name }}</span>
-            <span class="lib-meta">{{ ex.equipment || 'no equipment' }} · {{ ex.primary.join(', ') }}</span>
-          </button>
-
-          <div class="lib-body" *ngIf="openLib() === ex.id">
-            <p class="lib-tags">
-              <span class="pill" *ngIf="ex.level">{{ ex.level }}</span>
-              <span class="pill" *ngIf="ex.mechanic">{{ ex.mechanic }}</span>
-              <span class="pill" *ngIf="ex.category">{{ ex.category }}</span>
-              <span class="pill" *ngIf="groupOfLib(ex) as g">counts as {{ g }}</span>
-            </p>
-
-            <!--
-              The two frames are the start and end of the movement. Cross-faded on a loop so
-              it reads as the exercise being performed rather than as two unrelated photos —
-              which is the whole difference between a reference image and a demo.
-            -->
-            <div class="lib-demo" *ngIf="ex.images.length">
-              <img *ngFor="let src of ex.images" [src]="'assets/exercise-images/' + src"
-                   [alt]="ex.name" loading="lazy" decoding="async" />
-            </div>
-
-            <ol class="lib-steps" *ngIf="ex.steps.length">
-              <li *ngFor="let step of ex.steps">{{ step }}</li>
-            </ol>
-            <p class="setting-note" *ngIf="!ex.steps.length">No written steps for this one.</p>
-
-            <div class="set-log">
-              <span class="set-chip" *ngFor="let st of setsToday(ex.name); let si = index"
-                    (click)="state.removeSet(today(), ex.name, si)"
-                    title="Click to remove">{{ st.weight }}×{{ st.reps }}</span>
-              <input class="set-in" type="number" inputmode="decimal" placeholder="kg"
-                     #lw (keydown.enter)="add(ex.name, lw, lr)" />
-              <input class="set-in" type="number" inputmode="numeric" placeholder="reps"
-                     #lr (keydown.enter)="add(ex.name, lw, lr)" />
-              <button class="ghost-btn set-add" (click)="add(ex.name, lw, lr)">+</button>
-            </div>
-            <span class="pr-badge" *ngIf="prFor(ex.name) as p">{{ p }}</span>
-          </div>
         </div>
-      </div>
-</app-fold>
-<app-fold label="Weekly split">
 
-      <div class="fit-table-wrap">
-        <table class="fit-table">
-          <thead>
-            <tr><th>Day</th><th>Time</th><th>Session</th><th>Length</th></tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let r of schedule">
-              <td>{{ r.day }}</td><td>{{ r.time }}</td><td>{{ r.session }}</td><td>{{ r.length }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      </app-fold>
+        <div *ngIf="latestWeight() as wnow">
+          <span class="big-figure">{{ wnow }}</span>
+          <span class="big-unit"> kg<span *ngIf="state.weightGoal()"> &middot; target {{ state.weightGoal() }}</span></span>
+        </div>
 
-      <div class="prep-topic" *ngFor="let day of workoutDays; let i = index">
-        <button class="prep-topic-head" (click)="toggleDay(i)">
-          <span class="prep-topic-chevron" [class.open]="isDayOpen(i)">›</span>
-          <span class="prep-topic-name">{{ day.name }}</span>
-        </button>
-        <div class="prep-problem-list" *ngIf="isDayOpen(i)">
-          <div class="fit-table-wrap">
-            <table class="fit-table">
-              <thead><tr><th>Exercise</th><th>Target</th><th>Logged sets</th></tr></thead>
-              <tbody>
-                <ng-container *ngFor="let ex of day.exercises; let ei = index">
-                  <tr *ngIf="isNewGroup(day, ei)"><td colspan="3" class="fit-group-row">{{ ex.group }}</td></tr>
-                  <tr>
-                    <td>
-                      {{ ex.name }}
-                      <span class="set-advice" *ngIf="adviceFor(ex) as a"
-                            [class.up]="a.kind === 'up'"
-                            [class.deload]="a.kind === 'deload'">{{ a.text }}</span>
-                      <span class="pr-badge" *ngIf="prFor(ex.name) as p">{{ p }}</span>
-                    </td>
-                    <td>{{ ex.sets }}</td>
-                    <td>
-                      <div class="set-log">
-                        <span class="set-chip" *ngFor="let st of setsToday(ex.name); let si = index"
-                              (click)="state.removeSet(today(), ex.name, si)"
-                              title="Click to remove">{{ st.weight }}×{{ st.reps }}</span>
-                        <input class="set-in" type="number" inputmode="decimal" placeholder="kg"
-                               #w (keydown.enter)="add(ex.name, w, r)" />
-                        <input class="set-in" type="number" inputmode="numeric" placeholder="reps"
-                               #r (keydown.enter)="add(ex.name, w, r)" />
-                        <button class="ghost-btn set-add" (click)="add(ex.name, w, r)">+</button>
-                      </div>
-                    </td>
-                  </tr>
-                </ng-container>
-              </tbody>
-            </table>
-          </div>
-          <p class="fit-note" *ngIf="day.extra">{{ day.extra }}</p>
+        <p class="setting-note goal-line-note" *ngIf="goal() as g">
+          <ng-container [ngSwitch]="g.direction">
+            <span *ngSwitchCase="'reached'">At target.</span>
+            <span *ngSwitchDefault>
+              {{ g.remainingKg }} kg to {{ g.direction === 'cut' ? 'lose' : 'gain' }}<span
+                *ngIf="g.weeksToGoal"> &middot; about {{ g.weeksToGoal }} week{{ g.weeksToGoal === 1 ? '' : 's' }} at this rate</span><span
+                *ngIf="g.movingToward === false"> &middot; currently moving away</span>
+            </span>
+          </ng-container>
+        </p>
+
+        <svg class="weight-chart" *ngIf="trendPath() as d" viewBox="0 0 300 90"
+             preserveAspectRatio="none" role="img" aria-label="Body weight trend">
+          <line *ngIf="goalY() as gy" x1="0" [attr.y1]="gy" x2="300" [attr.y2]="gy"
+                stroke="var(--ok)" stroke-width="1" stroke-dasharray="4 4"
+                vector-effect="non-scaling-stroke" />
+          <path [attr.d]="d" fill="none" stroke="var(--accent-dim)" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
+        </svg>
+        <p class="weight-empty" *ngIf="!trendPath()">Two or more readings draw a trend line.</p>
+
+        <div class="add-row">
+          <input class="grow" type="number" inputmode="decimal" step="0.1"
+                 placeholder="today's weight in kg" #wkg />
+          <button (click)="saveWeight(wkg)">Log</button>
+        </div>
+        <div class="add-row add-row-sub">
+          <input class="grow" type="number" inputmode="decimal" step="0.1"
+                 placeholder="target weight in kg" [value]="state.weightGoal() || ''" #gkg />
+          <button class="ghost-btn" (click)="saveGoal(gkg)">Set target</button>
         </div>
       </div>
 
-<app-fold label="Abs program">
-
-      <p class="page-sub">One block per training day, paired with that day's session — pick the easier option whenever the main move isn't accessible.</p>
-      <div class="prep-topic" *ngFor="let ad of absProgram; let ai = index">
-        <button class="prep-topic-head" (click)="toggleAbsDay(ai)">
-          <span class="prep-topic-chevron" [class.open]="isAbsDayOpen(ai)">›</span>
-          <span class="prep-topic-name">{{ ad.pairedWith }} — {{ ad.focus }}</span>
-        </button>
-        <div class="prep-problem-list" *ngIf="isAbsDayOpen(ai)">
-          <div class="fit-table-wrap">
-            <table class="fit-table">
-              <thead><tr><th>Exercise</th><th>Sets × Reps</th><th>Easier option</th></tr></thead>
-              <tbody>
-                <tr *ngFor="let ex of ad.exercises">
-                  <td>{{ ex.name }}</td><td>{{ ex.sets }}</td><td>{{ ex.easierOption }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+      <div class="card" *ngIf="recentSessions().length">
+        <span class="card-label">Recent sessions</span>
+        <div class="meal-row" *ngFor="let s of recentSessions()">
+          <span class="meal-main">
+            <span class="meal-name">{{ s.title }}</span>
+            <span class="meal-food">{{ s.when }}</span>
+          </span>
+          <span class="meal-kcal">{{ s.sets }} {{ s.sets === 1 ? 'set' : 'sets' }} &middot; {{ s.tonnes }} t</span>
         </div>
       </div>
-</app-fold>
-<app-fold label="Training rules">
-
-      <ul class="fit-list">
-        <li *ngFor="let r of workoutRules">{{ r }}</li>
-      </ul>
-</app-fold>
-<app-fold label="Expected progress">
-
-      <ul class="fit-list">
-        <li *ngFor="let p of workoutProgress">{{ p }}</li>
-      </ul>
-</app-fold>
-</section>
+    </section>
   `,
 })
 export class WorkoutComponent {
-  schedule = WEEKLY_SCHEDULE;
   workoutDays = WORKOUT_DAYS;
-  absProgram = ABS_PROGRAM;
-  workoutRules = WORKOUT_RULES;
-  workoutProgress = WORKOUT_PROGRESS;
 
-  /**
-   * One open day at a time. A Set here would let every session expand at once, which on a
-   * phone means scrolling past six full exercise tables to reach the one you are doing. It
-   * also folds the map's focus and the open panel into a single piece of state, so the
-   * figure can never disagree with what is on screen.
-   */
-  private openDay = signal<number | null>(null);
-  private openAbsDay = signal<number | null>(null);
 
   /** Today's session, or null on the rest day. */
   todaySession = computed<WorkoutDay | null>(() => workoutForDate());
-
-  /** The session the map is drawing — the open day, else today. */
-  mapSession = computed<WorkoutDay | null>(() => {
-    const i = this.openDay();
-    return i === null ? this.todaySession() : this.workoutDays[i] ?? null;
-  });
-
-  previewing = computed(() => this.openDay() !== null);
-  todayMuscles = computed(() => { const d = this.mapSession(); return d ? musclesFor(d) : []; });
-  todayExerciseCount = computed(() => this.mapSession()?.exercises.length ?? 0);
   todayLabel = computed(() => this.todaySession()?.name ?? 'Rest day');
-  mapLabel = computed(() => this.mapSession()?.name ?? 'Rest day');
-
   todaySub = computed(() =>
     this.todaySession()
       ? "Your recomposition plan — build muscle, lose belly fat. Check today's work off as you go."
@@ -390,6 +185,51 @@ export class WorkoutComponent {
     void this.library.load();
   }
 
+  /** Today's movements, straight from the plan. */
+  exercises = computed(() => this.todaySession()?.exercises ?? []);
+
+  /**
+   * The library's two frames for a plan exercise, matched by name.
+   *
+   * The mockup's exercise card carries a photograph, and the only photographs this app has
+   * are the library's — so the library stops being a separate screen you search and becomes
+   * the illustration on the movement you are actually doing. Names that do not match return
+   * null and the card is simply text, which is what a fresh install shows anyway.
+   */
+  photosFor(name: string): string[] | null {
+    const hit = this.library.byName(name);
+    return hit && hit.images.length ? hit.images : null;
+  }
+
+  /**
+   * The last few training days, newest first.
+   *
+   * Built from the set log rather than from the plan, so it reflects what was done and not
+   * what was scheduled. Tonnage is weight times reps summed over the day — a blunt measure,
+   * but the one that makes two sessions comparable at a glance.
+   */
+  recentSessions = computed(() => {
+    const byDate = new Map<string, { sets: number; kg: number }>();
+    Object.entries(this.state.setLog()).forEach(([key, sets]) => {
+      const date = key.slice(0, key.indexOf('|'));
+      const acc = byDate.get(date) ?? { sets: 0, kg: 0 };
+      sets.forEach(st => { acc.sets++; acc.kg += st.weight * st.reps; });
+      byDate.set(date, acc);
+    });
+    const today = todayIso();
+    return [...byDate.entries()]
+      .filter(([date]) => date < today)
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .slice(0, 3)
+      .map(([date, acc]) => ({
+        title: workoutForDate(new Date(date + 'T12:00:00'))?.name ?? 'Session',
+        when: new Date(date + 'T00:00:00').toLocaleDateString(undefined,
+          { weekday: 'long', day: 'numeric', month: 'short' }),
+        sets: acc.sets,
+        tonnes: (acc.kg / 1000).toFixed(1),
+      }));
+  });
+
   today(): string { return todayIso(); }
 
   checked(kind: 'workout' | 'diet'): boolean {
@@ -399,24 +239,6 @@ export class WorkoutComponent {
   toggle(kind: 'workout' | 'diet', value: boolean) {
     this.state.toggleFitnessLog(`${todayIso()}:${kind}`, value);
   }
-
-  isDayOpen(i: number): boolean { return this.openDay() === i; }
-
-  /** Opening a day closes whichever was open, and drives the map with the same signal. */
-  toggleDay(i: number) { this.openDay.update(cur => (cur === i ? null : i)); }
-
-  showToday() { this.openDay.set(null); }
-
-  /** True when this exercise starts a new muscle-group block, so a header row prints once. */
-  isNewGroup(day: WorkoutDay, ei: number): boolean {
-    const ex = day.exercises[ei];
-    if (!ex.group) return false;
-    return ei === 0 || day.exercises[ei - 1].group !== ex.group;
-  }
-
-  isAbsDayOpen(i: number): boolean { return this.openAbsDay() === i; }
-  toggleAbsDay(i: number) { this.openAbsDay.update(cur => (cur === i ? null : i)); }
-
   setsToday(exercise: string) { return this.state.setsFor(todayIso(), exercise); }
 
   /**
@@ -476,69 +298,8 @@ export class WorkoutComponent {
       .join(' ');
   });
 
-  // ---------------- exercise library ----------------
-
-  libQuery = signal('');
-  libMuscle = signal('');
-  libEquipment = signal('');
-  openLib = signal<string | null>(null);
-
-  muscles = computed(() => muscleOptions(this.library.all()));
-  equipment = computed(() => equipmentOptions(this.library.all()));
-
-  libResults = computed(() =>
-    searchExercises(this.library.all(), {
-      text: this.libQuery(),
-      muscle: this.libMuscle(),
-      equipment: this.libEquipment(),
-    }),
-  );
-
-  /** The fold's right-hand note: how many movements match right now. */
-  libNote(): string {
-    if (this.library.loading()) return 'loading';
-    const total = this.library.all().length;
-    if (!total) return '';
-    const shown = this.libResults().length;
-    return shown < total ? `${shown} of ${total}` : `${total}`;
-  }
-
-  onLibQuery(e: Event) { this.libQuery.set((e.target as HTMLInputElement).value); }
-  onLibMuscle(e: Event) { this.libMuscle.set((e.target as HTMLSelectElement).value); }
-  onLibEquipment(e: Event) { this.libEquipment.set((e.target as HTMLSelectElement).value); }
-
-  toggleLib(id: string) {
-    this.openLib.set(this.openLib() === id ? null : id);
-  }
-
-  groupOfLib(ex: LibraryExercise): string | null { return groupForExercise(ex); }
-
   saveGoal(input: HTMLInputElement) {
     this.state.setWeightGoal(parseFloat(input.value));
-  }
-
-  weekVolume = computed(() => {
-    const to = todayIso();
-    const from = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
-    return volumeByGroup(this.state.setLog(), name => this.groupOf(name), from, to);
-  });
-
-  /** Exercise name back to its muscle group, from the plan rather than from the log. */
-  /**
-   * Exercise name to muscle group, for the weekly volume readout.
-   *
-   * The plan wins, since its groups are the ones the split is balanced around. The library is
-   * the fallback, which is what makes a set logged against one of its 873 movements actually
-   * count — without it the panel promised that sets outside the plan contribute to volume and
-   * they silently did not, which is a worse failure than not offering the library at all.
-   */
-  private groupOf(name: string): string | undefined {
-    for (const day of this.workoutDays) {
-      const hit = day.exercises.find(e => e.name === name);
-      if (hit) return hit.group;
-    }
-    const fromLibrary = this.library.byName(name);
-    return fromLibrary ? groupForExercise(fromLibrary) ?? undefined : undefined;
   }
 
   saveWeight(input: HTMLInputElement) {

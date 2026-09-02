@@ -15,19 +15,13 @@ interface Group {
 }
 
 /** Tappable openers for the empty chat. The first three show; More reveals the rest. */
-const OPENERS: { label: string; prompt: string; icon: string }[] = [
-  { label: 'My plan today', prompt: "What's my plan today?",
-    icon: 'M7 3v3M17 3v3M4 8.5h16M5 5.5h14a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1Z' },
-  { label: 'Workout plan', prompt: "What's my workout today?",
-    icon: 'M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10' },
-  { label: 'Nutrition', prompt: 'What should I eat today to hit my macros?',
-    icon: 'M12 8c-3 0-5 2-5 5.5S9 21 12 21s5-4 5-7.5S15 8 12 8ZM12 8c0-2 1.2-3.5 3-4' },
-  { label: 'Add a task', prompt: 'Add a task: ',
-    icon: 'M12 5v14M5 12h14' },
-  { label: 'Take a note', prompt: 'Note that ',
-    icon: 'M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1ZM8 11h8M8 15h5' },
-  { label: 'How am I doing?', prompt: 'How am I doing on my goals this month?',
-    icon: 'M4 19V9M10 19V5M16 19v-6M22 19H2' },
+const OPENERS: { label: string; prompt: string }[] = [
+  { label: 'My plan today', prompt: "What's my plan today?" },
+  { label: 'Workout plan', prompt: "What's my workout today?" },
+  { label: 'Nutrition', prompt: 'What should I eat today to hit my macros?' },
+  { label: 'Add a task', prompt: 'Add a task: ' },
+  { label: 'Take a note', prompt: 'Note that ' },
+  { label: 'How am I doing?', prompt: 'How am I doing on my goals this month?' },
 ];
 
 @Component({
@@ -86,16 +80,11 @@ const OPENERS: { label: string; prompt: string; icon: string }[] = [
           <div class="opener-row">
             <button class="opener" *ngFor="let o of openers()"
                     [disabled]="agent.thinking()" (click)="ask(o.prompt)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
-                   stroke-linecap="round" stroke-linejoin="round" class="opener-ico" aria-hidden="true">
-                <path [attr.d]="o.icon" />
-              </svg>
+              <span class="opener-arrow" aria-hidden="true">&#8594;</span>
               {{ o.label }}
             </button>
             <button class="opener" *ngIf="!showAllOpeners()" (click)="showAllOpeners.set(true)">
-              <svg viewBox="0 0 24 24" fill="currentColor" class="opener-ico" aria-hidden="true">
-                <circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" />
-              </svg>
+              <span class="opener-arrow" aria-hidden="true">&#8230;</span>
               More
             </button>
           </div>
