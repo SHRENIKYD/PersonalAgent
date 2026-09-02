@@ -266,7 +266,7 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
       <p class="setting-note" *ngIf="!sync.configured()">Not set up — data stays on this device only.</p>
       <p class="setting-note" *ngIf="sync.status() === 'error'">⚠️ {{ sync.errorMessage() }}</p>
 </app-fold>
-<app-fold label="Appearance">
+<app-fold label="Appearance" [note]="themeLabel()">
 
       <p class="setting-note">
         ECHO comes in two: a light theme for daylight and a dark one for a gym at 6am.
@@ -279,7 +279,7 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
                 (click)="theme.set(c.value)">{{ c.label }}</button>
       </div>
 </app-fold>
-<app-fold label="App version">
+<app-fold label="App version" [note]="update.version()">
 
       <p class="setting-note">
         ECHO <strong>{{ update.version() }}</strong>
@@ -490,6 +490,10 @@ export class SettingsComponent {
     // Cleared so picking the same file twice still fires a change event.
     input.value = '';
   }
+
+  /** The current appearance, for the fold's closed row. */
+  themeLabel = () =>
+    this.themeChoices.find(c => c.value === this.theme.choice())?.label ?? '';
 
   readonly themeChoices: { value: ThemeChoice; label: string }[] = [
 

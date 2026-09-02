@@ -20,6 +20,7 @@ import { SyncService } from './services/sync.service';
 import { BackButtonService } from './services/back-button.service';
 import { NotifyService } from './services/notify.service';
 import { ThemeService } from './services/theme.service';
+import { APP_VERSION } from './version';
 
 const BOOT_SEEN_KEY = 'jarvis-boot-seen';
 
@@ -64,6 +65,7 @@ const BOOT_SEEN_KEY = 'jarvis-boot-seen';
         <div class="footnote">
           Tasks and notes stay in this browser &middot; only your chat messages are sent anywhere
           &middot; {{ state.saveStatus() }}
+          <span class="footnote-version">ECHO {{ version }}</span>
         </div>
         <div class="exit-hint" *ngIf="back.exitArmed()" role="status">Press back again to exit</div>
       </main>
@@ -75,6 +77,9 @@ const BOOT_SEEN_KEY = 'jarvis-boot-seen';
 export class AppComponent {
   // sessionStorage, not localStorage: replays once per tab/session, not once ever.
   showBoot = signal(sessionStorage.getItem(BOOT_SEEN_KEY) !== '1');
+
+  /** Shown in the footer so the running version is always readable, not one tap deep. */
+  readonly version = APP_VERSION;
 
   // Injected purely to instantiate it at app start (providedIn: 'root' services are
   // otherwise created lazily on first use) — sync needs to kick off its initial pull
