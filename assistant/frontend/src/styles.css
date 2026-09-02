@@ -216,7 +216,7 @@ html, body {
   font-family: var(--font-mono);
 }
 
-.tabs button.active .frac { color: #ffe2b8; }
+.tabs button.active .frac { color: color-mix(in srgb, var(--on-accent) 80%, var(--accent)); }
 
 .frac.warn { color: var(--warn); font-weight: 700; }
 
@@ -378,10 +378,10 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
 /* ---------------- chat ---------------- */
 
 .chat-warn {
-  background: rgba(255, 176, 32, 0.10);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
   border: 1px solid var(--warn);
   border-radius: 8px;
-  color: #ffd9ae;
+  color: var(--warn);
   font-size: 13px;
   margin: 0 0 12px;
   padding: 8px 12px;
@@ -427,10 +427,10 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
   font-family: var(--font-mono);
 }
 
-.pill.high { border-color: var(--danger); color: #f0a6a6; }
-.pill.normal { border-color: var(--accent-dim); color: #ffd9ae; }
+.pill.high { border-color: var(--danger); color: var(--danger); }
+.pill.normal { border-color: var(--accent-dim); color: var(--accent-dim); }
 .pill.low { border-color: var(--line); }
-.pill.complete { border-color: var(--ok); color: #a6e0bd; }
+.pill.complete { border-color: var(--ok); color: var(--ok); }
 
 .due {
   color: var(--muted);
@@ -548,10 +548,10 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
 .setting-note a { color: var(--accent); cursor: pointer; text-decoration: underline; }
 
 .warn-box {
-  background: rgba(255, 176, 32, 0.10);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
   border: 1px solid var(--warn);
   border-radius: 9px;
-  color: #ffd9ae;
+  color: var(--warn);
   font-size: 13px;
   padding: 12px 14px;
   margin-bottom: 14px;
@@ -1026,8 +1026,8 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .reactor-wrap { animation: reactor-glow 3s ease-in-out infinite; border-radius: 50%; }
 
 @keyframes reactor-glow {
-  0%, 100% { filter: drop-shadow(0 0 3px rgba(255, 176, 32, 0.35)); }
-  50% { filter: drop-shadow(0 0 10px rgba(255, 107, 26, 0.6)); }
+  0%, 100% { filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 35%, transparent)); }
+  50% { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent-dim) 60%, transparent)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1470,8 +1470,8 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   /* Resting muscle sits well down toward the page ground so the lit groups carry all the
      contrast — a brighter resting fill turns the whole figure into one orange mass and the
      highlight stops meaning anything. */
-  fill: #2a1a10;
-  stroke: rgba(255, 107, 26, 0.18);
+  fill: var(--panel-2);
+  stroke: color-mix(in srgb, var(--accent-dim) 18%, transparent);
   stroke-width: 1;
   transition: fill 0.45s ease, opacity 0.45s ease;
 }
@@ -1479,7 +1479,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 /* A loaded group. The pulse is slow and shallow — it marks state, it isn't a spinner. */
 .mg.on {
   fill: url(#mgHot);
-  stroke: rgba(255, 176, 32, 0.8);
+  stroke: color-mix(in srgb, var(--accent) 80%, transparent);
   animation: mg-glow 2.6s ease-in-out infinite alternate;
 }
 
@@ -1539,13 +1539,13 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   font-family: var(--font-mono);
   font-size: 11px;
   border: 1px solid var(--accent-dim);
-  background: rgba(255, 107, 26, 0.12);
-  color: #ffd9ae;
+  background: color-mix(in srgb, var(--accent-dim) 12%, transparent);
+  color: var(--warn);
   border-radius: 99px;
   padding: 2px 8px;
   cursor: pointer;
 }
-.set-chip:hover { border-color: var(--danger); color: #f0a6a6; }
+.set-chip:hover { border-color: var(--danger); color: var(--danger); }
 
 .set-in {
   width: 58px;
@@ -1642,7 +1642,8 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.26) 50%, transparent 70%);
+  background: linear-gradient(100deg, transparent 30%,
+              color-mix(in srgb, var(--on-accent) 26%, transparent) 50%, transparent 70%);
   transform: translateX(-100%);
   animation: cta-sweep 4.5s ease-in-out 1.2s infinite;
   pointer-events: none;
@@ -1718,7 +1719,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   display: flex;
   align-items: flex-end;
   gap: 12px;
-  box-shadow: 0 6px 20px -10px rgba(255, 107, 26, 0.8);
+  box-shadow: 0 6px 20px -10px color-mix(in srgb, var(--accent-dim) 80%, transparent);
 }
 
 .bubble-text { white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -1781,7 +1782,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .echo-action svg { width: 14px; height: 14px; color: var(--ok); flex: 0 0 auto; }
 
 .echo-error {
-  background: rgba(224, 87, 74, 0.12);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
   border: 1px solid var(--danger);
   border-radius: 4px 16px 16px 16px;
   padding: 10px 14px;
@@ -1896,8 +1897,8 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 }
 
 @keyframes mic-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(224, 87, 74, 0.5); }
-  50% { box-shadow: 0 0 0 7px rgba(224, 87, 74, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 50%, transparent); }
+  50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--danger) 0%, transparent); }
 }
 
 .send-btn {
@@ -1905,7 +1906,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   height: 42px;
   background: linear-gradient(135deg, var(--accent-dim), var(--accent));
   border: 0;
-  box-shadow: 0 6px 18px -8px rgba(255, 176, 32, 0.9);
+  box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--accent) 90%, transparent);
 }
 
 .send-btn svg { width: 19px; height: 19px; }
