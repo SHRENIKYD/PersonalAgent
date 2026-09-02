@@ -37,6 +37,17 @@ import {
   absForDay,
 } from '../../fitness-data';
 
+/** One entry in the stepper: a plan movement or one from the paired abs block. */
+interface FocusItem {
+  kind: 'plan' | 'abs';
+  name: string;
+  group: string;
+  sets: string;
+  /** The abs programme's regression, shown only for abs movements. */
+  easier: string | null;
+  advice: Advice | null;
+}
+
 /**
  * Training only. Split from the old combined Fitness tab because the two halves are used at
  * different times — you open this mid-set with one hand, and the diet tab when planning a
@@ -58,12 +69,12 @@ import {
         back on one row: Today is the default, and the rest are a tap away.
       -->
       <div class="chip-row chip-scroll">
-        <button class="chip-filter" [class.on]="viewing() === null" (click)="viewing.set(null)">
+        <button class="chip-filter" [class.on]="viewing() === null" (click)="showDay(null)">
           Today
         </button>
         <button class="chip-filter" *ngFor="let d of workoutDays; let i = index"
                 [class.on]="viewing() === i"
-                (click)="viewing.set(i)">{{ shortName(d.name) }}</button>
+                (click)="showDay(i)">{{ shortName(d.name) }}</button>
       </div>
 
       <div class="card" *ngIf="viewing() === null">
@@ -77,81 +88,79 @@ import {
         </div>
       </div>
 
-      <!-- One card per movement: the photo the library carries for it, its target, the sets
-           you have already put in, and the two fields to add another. -->
-      <div class="card" *ngFor="let ex of exercises()">
-        <div class="ex-head">
-          <div class="lib-demo ex-photo" *ngIf="photosFor(ex.name) as pics">
-            <img *ngFor="let src of pics" [src]="'assets/exercise-images/' + src"
-                 [alt]="ex.name" loading="lazy" decoding="async" />
-          </div>
-          <div class="ex-main">
-            <span class="ex-name">{{ ex.name }}</span>
-            <div class="chip-row ex-chips">
-              <span class="pill" *ngIf="ex.group">{{ ex.group }}</span>
-              <span class="pill">{{ ex.sets }}</span>
-            </div>
-          </div>
+      <!--
+        Focus: one movement fills the screen instead of eight cards stacked down it.
+        The photograph is big enough to check a setup against, the two fields are
+        thumb-sized, and the next movement is one tap away — which is what a session
+        actually needs, since you are holding the phone with one hand between sets.
+
+        The abs block is part of the same sequence rather than a second list underneath.
+        It pairs with the session, so in a stepper it is simply the movements at the end.
+      -->
+      <div class="card focus" *ngIf="current() as ex">
+        <div class="focus-count">
+          {{ ex.kind === 'abs' ? 'Abs' : 'Movement' }}
+          {{ pos() + 1 }} of {{ sequence().length }}
         </div>
 
-        <div class="set-log">
+        <div class="lib-demo ex-photo focus-photo" *ngIf="photosFor(ex.name) as pics">
+          <img *ngFor="let src of pics" [src]="'assets/exercise-images/' + src"
+               [alt]="ex.name" loading="lazy" decoding="async" />
+        </div>
+
+        <h2 class="focus-name">{{ ex.name }}</h2>
+        <div class="chip-row focus-chips">
+          <span class="pill">{{ ex.group }}</span>
+          <span class="pill">{{ ex.sets }}</span>
+        </div>
+
+        <div class="focus-sets" *ngIf="setsToday(ex.name).length">
           <span class="set-chip" *ngFor="let st of setsToday(ex.name); let si = index"
                 (click)="state.removeSet(today(), ex.name, si)"
-                title="Click to remove">{{ st.weight }}&#215;{{ st.reps }}</span>
-          <input class="set-in" type="number" inputmode="decimal" placeholder="kg"
-                 #w (keydown.enter)="add(ex.name, w, r)" />
-          <input class="set-in" type="number" inputmode="numeric" placeholder="reps"
-                 #r (keydown.enter)="add(ex.name, w, r)" />
-          <button class="set-add" (click)="add(ex.name, w, r)">+</button>
+                title="Tap to remove">{{ st.weight }}&#215;{{ st.reps }}</span>
         </div>
 
-        <div class="ex-notes">
+        <div class="focus-log">
+          <input class="set-in focus-in" type="number" inputmode="decimal" placeholder="kg"
+                 #w (keydown.enter)="add(ex.name, w, r)" />
+          <input class="set-in focus-in" type="number" inputmode="numeric" placeholder="reps"
+                 #r (keydown.enter)="add(ex.name, w, r)" />
+        </div>
+        <button class="focus-add" (click)="add(ex.name, w, r)">
+          Log set {{ setsToday(ex.name).length + 1 }}
+        </button>
+
+        <div class="ex-notes focus-notes">
           <span class="pr-badge" *ngIf="prFor(ex.name) as p">{{ p }}</span>
-          <span class="set-advice" *ngIf="adviceFor(ex) as a"
+          <span class="set-advice" *ngIf="ex.advice as a"
                 [class.up]="a.kind === 'up'"
                 [class.deload]="a.kind === 'deload'">{{ a.text }}</span>
         </div>
+        <p class="abs-easier" *ngIf="ex.easier">Easier: {{ ex.easier }}</p>
+
+        <!-- Every movement reachable in one tap, so the stepper never traps you at
+             number six with nothing but Back. -->
+        <div class="focus-dots" role="tablist" aria-label="Movements">
+          <button *ngFor="let it of sequence(); let i = index"
+                  [class.on]="i === pos()"
+                  [class.logged]="setsToday(it.name).length > 0"
+                  [attr.aria-label]="it.name"
+                  [attr.aria-selected]="i === pos()"
+                  role="tab"
+                  (click)="pos.set(i)"></button>
+        </div>
+
+        <div class="focus-move">
+          <button class="ghost-btn" [disabled]="pos() === 0" (click)="step(-1)">
+            &#8592; Back
+          </button>
+          <button class="ghost-btn focus-next" *ngIf="next() as nx" (click)="step(1)">
+            {{ nx.name }} &#8594;
+          </button>
+        </div>
       </div>
 
-      <!--
-        The abs block. It pairs with the session rather than being a day of its own, which
-        is why it sits under the movements instead of behind another tab — and it logs sets
-        the same way, so ab work counts toward weekly volume like everything else.
-      -->
-      <ng-container *ngIf="absDay() as abs">
-        <div class="card-label abs-head">Abs &middot; {{ abs.focus }}</div>
-
-        <div class="card" *ngFor="let ex of abs.exercises">
-          <div class="ex-head">
-            <div class="lib-demo ex-photo" *ngIf="photosFor(ex.name) as pics">
-              <img *ngFor="let src of pics" [src]="'assets/exercise-images/' + src"
-                   [alt]="ex.name" loading="lazy" decoding="async" />
-            </div>
-            <div class="ex-main">
-              <span class="ex-name">{{ ex.name }}</span>
-              <div class="chip-row ex-chips">
-                <span class="pill">Abs</span>
-                <span class="pill">{{ ex.sets }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="set-log">
-            <span class="set-chip" *ngFor="let st of setsToday(ex.name); let si = index"
-                  (click)="state.removeSet(today(), ex.name, si)"
-                  title="Click to remove">{{ st.weight }}&#215;{{ st.reps }}</span>
-            <input class="set-in" type="number" inputmode="decimal" placeholder="kg"
-                   #aw (keydown.enter)="add(ex.name, aw, ar)" />
-            <input class="set-in" type="number" inputmode="numeric" placeholder="reps"
-                   #ar (keydown.enter)="add(ex.name, aw, ar)" />
-            <button class="set-add" (click)="add(ex.name, aw, ar)">+</button>
-          </div>
-
-          <p class="abs-easier">Easier: {{ ex.easierOption }}</p>
-        </div>
-      </ng-container>
-
-      <p class="empty" *ngIf="!exercises().length">
+      <p class="empty" *ngIf="!sequence().length">
         Nothing scheduled today. Recovery is part of the programme.
       </p>
 
@@ -257,6 +266,55 @@ export class WorkoutComponent {
   });
 
   exercises = computed(() => this.shownSession()?.exercises ?? []);
+
+  /**
+   * The session as one flat sequence: the plan's movements, then the paired abs block.
+   *
+   * Flattened here rather than rendered as two lists because the screen is a stepper — a
+   * separate abs section below would be a second thing to scroll to and the exact thing
+   * that got missed when abs lived behind their own heading.
+   */
+  sequence = computed<FocusItem[]>(() => {
+    const plan: FocusItem[] = this.exercises().map(ex => ({
+      kind: 'plan' as const,
+      name: ex.name,
+      group: ex.group || 'Movement',
+      sets: ex.sets,
+      easier: null,
+      advice: this.adviceFor(ex),
+    }));
+    const abs = this.absDay();
+    const absItems: FocusItem[] = (abs?.exercises ?? []).map(ex => ({
+      kind: 'abs' as const,
+      name: ex.name,
+      group: 'Abs',
+      sets: ex.sets,
+      easier: ex.easierOption,
+      advice: null,
+    }));
+    return [...plan, ...absItems];
+  });
+
+  /** Where in the sequence we are. Clamped on read, so a shorter day cannot strand it. */
+  readonly pos = signal(0);
+
+  current = computed<FocusItem | null>(() => {
+    const seq = this.sequence();
+    return seq.length ? seq[Math.min(this.pos(), seq.length - 1)] : null;
+  });
+
+  next = computed<FocusItem | null>(() => this.sequence()[this.pos() + 1] ?? null);
+
+  step(by: number) {
+    const seq = this.sequence();
+    this.pos.set(Math.max(0, Math.min(seq.length - 1, this.pos() + by)));
+  }
+
+  /** Switching day starts that session at its first movement, not wherever you were. */
+  showDay(i: number | null) {
+    this.viewing.set(i);
+    this.pos.set(0);
+  }
 
   /** The abs block paired with the session on screen, if the programme pairs one. */
   absDay = computed(() => {

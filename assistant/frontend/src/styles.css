@@ -1590,6 +1590,119 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 .ex-chips { margin: 0; }
 
+/* ---------------- focus: one movement at a time ----------------
+   The workout page is a stepper rather than a stack of cards. Everything here is
+   centred and sized for a thumb, because it is read at arm's length between sets and
+   operated with the hand that is not holding a bar. */
+.card.focus {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 11px;
+}
+
+.focus-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+/* Beats .lib-demo.ex-photo's 96px thumbnail: at this size the photo is something you
+   can actually check a setup against, which is the whole argument for this layout. */
+.card.focus .lib-demo.ex-photo {
+  width: 100%;
+  flex: 0 0 auto;
+  height: 190px;
+  border-radius: 18px;
+}
+
+.focus-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.focus-chips { margin: 0; justify-content: center; }
+
+.focus-sets { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+
+.focus-log { display: flex; gap: 9px; }
+
+/* Overrides .set-in's 58px: two fields on one row of a phone can afford to be big, and
+   a 58px box asks for precision you do not have with chalk on your hands. */
+.set-in.focus-in {
+  width: 108px;
+  padding: 13px 16px;
+  font-size: 16px;
+  text-align: center;
+  border-radius: 999px;
+}
+
+/* The stepper arrows are a 12px target inside a control built to be hit with a thumb,
+   and they push the two fields to different widths. Gone on both engines. */
+.set-in.focus-in::-webkit-outer-spin-button,
+.set-in.focus-in::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+.set-in.focus-in { -moz-appearance: textfield; appearance: textfield; }
+
+.focus-add {
+  background: var(--accent);
+  color: var(--on-accent);
+  border: 0;
+  border-radius: 999px;
+  padding: 14px 32px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.focus-notes { justify-content: center; margin-top: 0; }
+
+.focus-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; }
+
+/* Each dot is a real target, not a 7px decoration: it is how you get to movement six. */
+.focus-dots button {
+  width: 26px;
+  height: 26px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 999px;
+  cursor: pointer;
+  position: relative;
+}
+.focus-dots button::after {
+  content: '';
+  position: absolute;
+  inset: 9px;
+  border-radius: 999px;
+  background: var(--line);
+}
+.focus-dots button.logged::after { background: color-mix(in srgb, var(--accent) 45%, transparent); }
+.focus-dots button.on::after { inset: 7px; background: var(--accent); }
+
+.focus-move { display: flex; gap: 9px; flex-wrap: wrap; justify-content: center; }
+.focus-move .ghost-btn { font-size: 13px; }
+.focus-move .ghost-btn[disabled] { opacity: 0.4; cursor: default; }
+
+/* The next movement names itself, so the tap is a decision and not a guess. */
+.focus-next {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .ex-notes {
   display: flex;
   flex-wrap: wrap;

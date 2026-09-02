@@ -11,6 +11,16 @@ capability, **PATCH** for fixes to what already shipped.
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-09-02
+
+### Changed
+- Workout is now one movement at a time. The session is a stepper — a photograph large
+  enough to check a setup against, the name and target, thumb-sized fields and one Log
+  button — instead of eight cards stacked down a page you scrolled through mid-set. Every
+  movement is one tap away on the row of dots, which fill in as you log against them.
+- The abs block is part of that sequence rather than a second list underneath it, so it is
+  reached by finishing the session instead of by remembering to scroll.
+
 ## [1.3.0] — 2026-09-02
 
 ### Added
