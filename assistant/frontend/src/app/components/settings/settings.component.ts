@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SettingsService } from '../../services/settings.service';
 import { SyncService } from '../../services/sync.service';
-import { VoiceService } from '../../services/voice.service';
 import { UpdateService } from '../../services/update.service';
 import { BackButtonService } from '../../services/back-button.service';
 import { NotifyService } from '../../services/notify.service';
@@ -156,66 +155,7 @@ const PROVIDER_PLACEHOLDER: Record<ApiProvider, string> = {
         </app-fold>
 </ng-container>
 
-      <app-fold label="Voice" [note]="voice.enabled() ? 'on' : 'off'">
-
-      <p class="setting-note">
-        A short spoken greeting plays when the app loads, using your browser's built-in
-        text-to-speech — nothing sent anywhere, no API key involved. This isn't a movie AI
-        voice performance (those are copyrighted, not something this app can source or
-        synthesize) — pick whichever of your device's own voices sounds closest.
-      </p>
-      <div class="mode-row">
-        <button class="mode-btn" [class.active]="voice.enabled()" (click)="voice.setEnabled(true)">
-          <strong>On</strong>
-          <span>Play the greeting on load.</span>
-        </button>
-        <button class="mode-btn" [class.active]="!voice.enabled()" (click)="voice.setEnabled(false)">
-          <strong>Off</strong>
-          <span>Stay silent.</span>
-        </button>
-      </div>
-
-      <div class="add-row" *ngIf="voice.enabled()">
-        <select
-          class="grow"
-          [ngModel]="voice.selectedVoiceURI() ?? ''"
-          (ngModelChange)="voice.setVoice($event)">
-          <option value="">Auto (best available match)</option>
-          <option *ngFor="let v of voice.voices()" [value]="v.voiceURI">
-            {{ v.name }} ({{ v.lang }})
-          </option>
-        </select>
-        <button class="ghost-btn" (click)="voice.speak('This is how I sound.')">Test voice</button>
-      </div>
-      <p class="setting-note" *ngIf="voice.lastError()">⚠️ {{ voice.lastError() }}</p>
-
-      <p class="setting-note" *ngIf="voice.enabled() && !voice.supported()">
-        This browser has no speech synthesis at all, so the greeting can't play here.
-      </p>
-
-      <p class="setting-note" *ngIf="voice.enabled() && !voice.isApp && !voice.unlocked()">
-        Waiting for you to tap the page — browsers block audio until then. The greeting is
-        held and plays on your first tap rather than being lost.
-      </p>
-
-      <p class="setting-note" *ngIf="voice.enabled() && voice.isApp">
-        Using Android's built-in text-to-speech engine. If nothing plays, check that a speech
-        engine is installed and enabled under Android Settings → Accessibility → Text-to-speech,
-        and that media volume isn't muted.
-      </p>
-
-      <p class="setting-note" *ngIf="voice.lastSpokeAt()">
-        Last spoke {{ voice.lastSpokeAt() | date:'HH:mm:ss' }} — if you heard nothing, check
-        media volume and the silent switch.
-      </p>
-
-      <p class="setting-note" *ngIf="voice.enabled() && !voice.isApp && voice.voices().length === 0">
-        No voices reported by this browser yet — try "Test voice" again in a moment, or check
-        another browser if this persists (voice availability is entirely up to the OS/browser,
-        not this app).
-      </p>
-      </app-fold>
-<app-fold label="Cross-device sync" [note]="sync.configured() ? 'on' : 'off'">
+      <app-fold label="Cross-device sync" [note]="sync.configured() ? 'on' : 'off'">
 
       <p class="setting-note">
         Syncs tasks, notes, growth, and fitness log across devices via a
@@ -510,7 +450,6 @@ export class SettingsComponent {
     public theme: ThemeService,
     public settings: SettingsService,
     public sync: SyncService,
-    public voice: VoiceService,
     public update: UpdateService,
     public backup: BackupService,
     public back: BackButtonService,

@@ -1,6 +1,5 @@
 import { Component, EventEmitter, Output, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { VoiceService } from '../../services/voice.service';
 import { StateService } from '../../services/state.service';
 import { launchLines } from '../../launch-lines';
 
@@ -55,7 +54,7 @@ export class BootComponent implements OnDestroy {
   private timer: ReturnType<typeof setTimeout>;
   private finished = false;
 
-  constructor(private voice: VoiceService, state: StateService) {
+  constructor(state: StateService) {
     this.lines = launchLines({
       setLog: state.setLog(),
       weightLog: state.weightLog(),
@@ -104,10 +103,6 @@ export class BootComponent implements OnDestroy {
     // Generous, because it must not pre-empt a slow but working launch.
     this.timer = setTimeout(() => this.skip(), MAX_MS * 3);
 
-    // Fires before any user gesture, which mobile browsers refuse to play audio for.
-    // VoiceService holds the greeting when the page is not yet unlocked and replays it on
-    // the first tap, so this is a request rather than a guarantee.
-    this.voice.greet();
   }
 
   skip(event?: Event) {

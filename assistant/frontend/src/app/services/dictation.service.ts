@@ -36,12 +36,12 @@ const IS_APP = Capacitor.isNativePlatform();
  * and stops; sending stays a deliberate act, because a mis-heard message sent automatically
  * is worse than one you get to read first.
  *
- * Two implementations, for the same reason speech *output* needed two: Android's WebView
- * does not implement webkitSpeechRecognition at all, so on the web the button would simply
- * not appear inside the app. The native path calls Android's own recogniser instead.
+ * Two implementations: Android's WebView does not implement webkitSpeechRecognition at
+ * all, so on the web the button would simply not appear inside the app. The native path
+ * calls Android's own recogniser instead.
  *
- * Nothing is spoken back here; that is VoiceService's job. Keeping them apart means the
- * microphone can never be open because the app happened to be talking.
+ * This is dictation only — speech in, never speech out. The app's text-to-speech was
+ * removed, so there is nothing that could be talking while the microphone is open.
  */
 @Injectable({ providedIn: 'root' })
 export class DictationService {
