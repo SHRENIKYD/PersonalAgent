@@ -17,6 +17,12 @@ capability, **PATCH** for fixes to what already shipped.
   because hands-free voice mode is gated on it, so removing it would have either shipped
   that feature or deleted it.
 
+### Changed
+- The interface itself is Bloom now, not the old one recoloured. Rounded cards on a soft
+  lift, a floating capsule navigation bar, sentence-case headings, capsule controls, and a
+  ground with nothing moving on it. The HUD corner brackets, the rotating radial
+  background and the ECG band across the header are deleted.
+
 ### Added
 - Bloom Indigo, light and dark, replacing the ember-on-near-black palette, with an
   Appearance setting that defaults to following the phone.
