@@ -12,6 +12,9 @@ capability, **PATCH** for fixes to what already shipped.
 ## [Unreleased]
 
 ### Removed
+- Voice. The spoken greeting, the voice picker, the Settings section and hands-free mode
+  are all gone, along with their services and styles. Dictation — the microphone that types
+  what you say into the composer — stays; that is speech *in*, a different feature.
 - The separate beta app. Its workflow, environment file and Angular build configuration
   are gone; there is one app again. The `beta` flag stays in `environment.ts` at `false`
   because hands-free voice mode is gated on it, so removing it would have either shipped
