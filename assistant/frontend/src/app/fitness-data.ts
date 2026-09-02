@@ -345,6 +345,63 @@ export function unmappedGroups(): string[] {
  * rather than an empty WorkoutDay, so callers must decide what "rest" reads like instead
  * of silently rendering a session with no exercises.
  */
+/**
+ * Plan exercise -> the library movement whose photographs illustrate it.
+ *
+ * Written out rather than matched at runtime, and that is the point. Fuzzy matching on
+ * these names scores 32 of 42, but the failures are not blanks — it paired "Dumbbell
+ * lateral raise" with a *rear* lateral raise and "Neutral-grip cable row" with an upright
+ * row. A photograph of the wrong movement on a card you follow in a gym is worse than no
+ * photograph at all, so every one of these was chosen by hand and checked to exist and to
+ * carry images.
+ *
+ * The plan is forty-two fixed rows. A lookup table is the right size of tool for it.
+ */
+export const EXERCISE_PHOTOS: Record<string, string> = {
+  'Incline barbell bench press': 'Barbell Incline Bench Press - Medium Grip',
+  'Flat dumbbell press': 'Dumbbell Bench Press',
+  'Low-to-high cable fly': 'Low Cable Crossover',
+  'Seated dumbbell shoulder press': 'Seated Dumbbell Press',
+  'Dumbbell lateral raise': 'Side Lateral Raise',
+  'Overhead cable extension (long head)': 'Cable Rope Overhead Triceps Extension',
+  'EZ-bar skull crusher (medial)': 'EZ-Bar Skullcrusher',
+  'Cable pushdown (lateral)': 'Triceps Pushdown',
+  'Wide-grip pull-ups / pulldown': 'Wide-Grip Lat Pulldown',
+  'Single-arm lat pulldown': 'One Arm Lat Pulldown',
+  'Chest-supported row': 'Seated Cable Rows',
+  'Face pulls': 'Face Pull',
+  'Incline dumbbell curl (long head)': 'Incline Dumbbell Curl',
+  'Preacher curl (short head)': 'Preacher Curl',
+  'Hammer curl': 'Alternate Hammer Curl',
+  'Back squat': 'Barbell Squat',
+  'Hack squat / leg press': 'Hack Squat',
+  'Leg extension': 'Leg Extensions',
+  'Seated leg curl': 'Seated Leg Curl',
+  'Romanian deadlift (light–moderate)': 'Romanian Deadlift',
+  'Standing calf raise': 'Standing Calf Raises',
+  'Flat barbell bench press': 'Barbell Bench Press - Medium Grip',
+  'Decline dumbbell press': 'Decline Dumbbell Bench Press',
+  'Cable fly (mid)': 'Cable Crossover',
+  'Barbell overhead press (front delt)': 'Barbell Shoulder Press',
+  'Cable lateral raise (side delt)': 'Cable Seated Lateral Raise',
+  'Reverse pec-deck (rear delt)': 'Reverse Flyes',
+  'Close-grip bench press': 'Close-Grip Barbell Bench Press',
+  'Rope overhead extension': 'Triceps Overhead Extension with Rope',
+  'Barbell row': 'Bent Over Barbell Row',
+  'T-bar row': 'T-Bar Row with Handle',
+  'Neutral-grip cable row': 'Seated Cable Rows',
+  'Cable rear-delt fly': 'Cable Rear Delt Fly',
+  'EZ-bar curl': 'EZ-Bar Curl',
+  'Spider curl': 'Spider Curl',
+  'Reverse curl': 'Reverse Barbell Curl',
+  'Romanian deadlift (heavy)': 'Romanian Deadlift',
+  'Hip thrust': 'Barbell Hip Thrust',
+  'Lying leg curl': 'Lying Leg Curls',
+  'Front squat or narrow-stance hack squat': 'Front Barbell Squat',
+  'Walking lunges': 'Barbell Walking Lunge',
+  'Seated calf raise': 'Seated Calf Raise',
+};
+
 /** Today as an ISO date. Shared, because three screens must agree on where "today" ends. */
 export function todayIso(): string {
   return new Date().toISOString().slice(0, 10);

@@ -1,6 +1,6 @@
 {
   "name": "assistant-frontend",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "scripts": {
     "ng": "ng",
     "sync-version": "node scripts/sync-version.mjs",

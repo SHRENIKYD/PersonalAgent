@@ -11,6 +11,15 @@ capability, **PATCH** for fixes to what already shipped.
 
 ## [Unreleased]
 
+## [1.2.1] — 2026-09-02
+
+### Fixed
+- Photographs on every exercise. Only four of the plan's forty-two movements matched a
+  library name exactly, so the rest of the cards were text; a hand-checked lookup table now
+  covers all forty-two.
+- Every training day is reachable again from Workout, as chips.
+- The release page names the version rather than only a commit sha.
+
 ## [1.2.0] — 2026-09-02
 
 ### Changed

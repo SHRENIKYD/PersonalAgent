@@ -33,6 +33,7 @@ import {
   musclesFor,
   workoutForDate,
   todayIso,
+  EXERCISE_PHOTOS,
 } from '../../fitness-data';
 
 /**
@@ -229,15 +230,15 @@ export class WorkoutComponent {
   }
 
   /**
-   * The library's two frames for a plan exercise, matched by name.
+   * The library's two frames for a plan exercise.
    *
-   * The mockup's exercise card carries a photograph, and the only photographs this app has
-   * are the library's — so the library stops being a separate screen you search and becomes
-   * the illustration on the movement you are actually doing. Names that do not match return
-   * null and the card is simply text, which is what a fresh install shows anyway.
+   * Goes through EXERCISE_PHOTOS rather than matching names directly: the plan calls it
+   * "Hack squat / leg press" and the library calls it "Hack Squat", so an exact lookup found
+   * four of forty-two. Falls back to the exact name for anything logged outside the plan,
+   * and returns null when the library has not loaded yet — the card is then simply text.
    */
   photosFor(name: string): string[] | null {
-    const hit = this.library.byName(name);
+    const hit = this.library.byName(EXERCISE_PHOTOS[name] ?? name);
     return hit && hit.images.length ? hit.images : null;
   }
 
