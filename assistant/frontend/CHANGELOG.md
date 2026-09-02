@@ -11,6 +11,17 @@ capability, **PATCH** for fixes to what already shipped.
 
 ## [Unreleased]
 
+### Changed
+- Every screen rebuilt to the Bloom mockup, not just restyled. Today opens on the session
+  you are doing rather than a progress ring; Workout is a card per movement carrying the
+  library's photograph of it; Tasks, Notes, News, Diet and Growth are card lists with
+  filters; Settings opens on an identity card.
+
+### Removed
+- The muscle map, the rest timer, the exercise-library search, the weekly-split table and
+  the six-day accordion — none are in the mockup. The library's photographs stay, now shown
+  on the movement you are actually doing.
+
 ## [1.1.0] — 2026-09-02
 
 ### Removed
