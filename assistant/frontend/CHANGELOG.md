@@ -21,6 +21,13 @@ capability, **PATCH** for fixes to what already shipped.
 - The abs block is part of that sequence rather than a second list underneath it, so it is
   reached by finishing the session instead of by remembering to scroll.
 
+### Removed
+- The rolling `android-latest` release. Every build now publishes only under its own `v*`
+  tag; GitHub already marks the newest one Latest, so the rolling tag was buying a stable
+  URL at the price of the archive it kept overwriting. The in-app update check reads
+  `releases/latest/download/version.json` instead — the same stable URL, without a release
+  that has to be destroyed to stay current.
+
 ## [1.3.0] — 2026-09-02
 
 ### Added

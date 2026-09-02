@@ -10,7 +10,15 @@ interface BuildInfo {
   version?: string;
 }
 
-const RELEASE = 'https://github.com/SHRENIKYD/PersonalAgent/releases/download/android-latest';
+/*
+ * `releases/latest/download/...` rather than a fixed tag.
+ *
+ * This used to point at a rolling "android-latest" release that every build overwrote,
+ * which is exactly why no old version stayed downloadable. Now each build publishes only
+ * under its own v* tag, and GitHub redirects /latest/ to whichever of those is newest —
+ * a stable URL without a release that has to be destroyed to stay current.
+ */
+const RELEASE = 'https://github.com/SHRENIKYD/PersonalAgent/releases/latest/download';
 const VERSION_URL = `${RELEASE}/version.json`;
 export const APK_URL = `${RELEASE}/echo.apk`;
 
