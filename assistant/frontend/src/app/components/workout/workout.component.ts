@@ -34,6 +34,7 @@ import {
   workoutForDate,
   todayIso,
   EXERCISE_PHOTOS,
+  absForDay,
 } from '../../fitness-data';
 
 /**
@@ -111,6 +112,44 @@ import {
                 [class.deload]="a.kind === 'deload'">{{ a.text }}</span>
         </div>
       </div>
+
+      <!--
+        The abs block. It pairs with the session rather than being a day of its own, which
+        is why it sits under the movements instead of behind another tab — and it logs sets
+        the same way, so ab work counts toward weekly volume like everything else.
+      -->
+      <ng-container *ngIf="absDay() as abs">
+        <div class="card-label abs-head">Abs &middot; {{ abs.focus }}</div>
+
+        <div class="card" *ngFor="let ex of abs.exercises">
+          <div class="ex-head">
+            <div class="lib-demo ex-photo" *ngIf="photosFor(ex.name) as pics">
+              <img *ngFor="let src of pics" [src]="'assets/exercise-images/' + src"
+                   [alt]="ex.name" loading="lazy" decoding="async" />
+            </div>
+            <div class="ex-main">
+              <span class="ex-name">{{ ex.name }}</span>
+              <div class="chip-row ex-chips">
+                <span class="pill">Abs</span>
+                <span class="pill">{{ ex.sets }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="set-log">
+            <span class="set-chip" *ngFor="let st of setsToday(ex.name); let si = index"
+                  (click)="state.removeSet(today(), ex.name, si)"
+                  title="Click to remove">{{ st.weight }}&#215;{{ st.reps }}</span>
+            <input class="set-in" type="number" inputmode="decimal" placeholder="kg"
+                   #aw (keydown.enter)="add(ex.name, aw, ar)" />
+            <input class="set-in" type="number" inputmode="numeric" placeholder="reps"
+                   #ar (keydown.enter)="add(ex.name, aw, ar)" />
+            <button class="set-add" (click)="add(ex.name, aw, ar)">+</button>
+          </div>
+
+          <p class="abs-easier">Easier: {{ ex.easierOption }}</p>
+        </div>
+      </ng-container>
 
       <p class="empty" *ngIf="!exercises().length">
         Nothing scheduled today. Recovery is part of the programme.
@@ -218,6 +257,12 @@ export class WorkoutComponent {
   });
 
   exercises = computed(() => this.shownSession()?.exercises ?? []);
+
+  /** The abs block paired with the session on screen, if the programme pairs one. */
+  absDay = computed(() => {
+    const d = this.shownSession();
+    return d ? absForDay(d.name) : null;
+  });
 
   /**
    * "Push A" out of "Push A — Upper Chest + Full Triceps".

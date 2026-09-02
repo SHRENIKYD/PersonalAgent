@@ -406,13 +406,16 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
   border-radius: 999px;
   font-size: 12px;
   padding: 4px 11px;
-  text-transform: capitalize;
   letter-spacing: 0;
   flex: 0 0 auto;
   border: 1px solid var(--line);
   color: var(--muted);
   font-family: var(--font-body);
 }
+
+/* Only the priority pills carry a stored lowercase word that needs a capital. Applying it
+   to every pill turned "3 × 30–45 sec" into "3 × 30–45 Sec". */
+.pill.high, .pill.normal, .pill.low, .pill.complete { text-transform: capitalize; }
 
 .pill.high { border-color: var(--danger); color: var(--danger); }
 .pill.normal { border-color: var(--accent-dim); color: var(--accent-dim); }
@@ -1547,6 +1550,18 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 }
 
 .habit-cells button.on { background: var(--accent-dim); }
+
+/* The abs block's heading, which separates it from the session's own movements without
+   needing a second screen. */
+.abs-head { margin: 22px 0 10px; }
+
+/* The regression, for a day the hard version is not happening. Quiet on purpose: it is a
+   fallback, not the instruction. */
+.abs-easier {
+  color: var(--muted);
+  font-size: 12.5px;
+  margin: 10px 0 0;
+}
 
 /* An exercise card: the library's photo beside the movement's name and target. */
 .ex-head { display: flex; gap: 13px; align-items: flex-start; margin-bottom: 13px; }

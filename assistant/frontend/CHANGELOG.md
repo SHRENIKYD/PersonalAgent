@@ -11,6 +11,17 @@ capability, **PATCH** for fixes to what already shipped.
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-09-02
+
+### Added
+- The abs programme is back on Workout, paired with each session as the plan intends —
+  twelve movements across the six days, each with its photograph, its set logging, and the
+  easier regression underneath.
+
+### Fixed
+- Pills no longer capitalise every word, which had been rendering "3 × 30–45 sec" as
+  "3 × 30–45 Sec".
+
 ## [1.2.1] — 2026-09-02
 
 ### Fixed

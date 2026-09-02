@@ -400,6 +400,22 @@ export const EXERCISE_PHOTOS: Record<string, string> = {
   'Front squat or narrow-stance hack squat': 'Front Barbell Squat',
   'Walking lunges': 'Barbell Walking Lunge',
   'Seated calf raise': 'Seated Calf Raise',
+
+  // Abs. The library has no captain's chair and no hanging *knee* raise, so both knee-raise
+  // rows borrow the hanging leg raise: the same movement, a different apparatus. That is a
+  // smaller lie than a photograph of a different exercise, and the only one in this table.
+  'Cable crunch': 'Cable Crunch',
+  'Weighted decline crunch': 'Decline Crunch',
+  'Hanging leg raises': 'Hanging Leg Raise',
+  "Captain's chair knee raises": 'Hanging Leg Raise',
+  'Ab wheel rollout': 'Ab Roller',
+  'Front plank': 'Plank',
+  'Machine crunch': 'Ab Crunch Machine',
+  'Cable crunch (different stance)': 'Cable Seated Crunch',
+  'Reverse crunch (bench or mat)': 'Reverse Crunch',
+  'Hanging knee raises (slow)': 'Hanging Leg Raise',
+  'Vacuum holds': 'Stomach Vacuum',
+  'Dead bug': 'Dead Bug',
 };
 
 /** Today as an ISO date. Shared, because three screens must agree on where "today" ends. */
