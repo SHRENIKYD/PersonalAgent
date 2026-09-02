@@ -14,6 +14,10 @@ capability, **PATCH** for fixes to what already shipped.
 ## [1.3.0] — 2026-09-02
 
 ### Added
+- Every build is now archived under its own version tag, so an older version stays
+  installable after a newer one ships. Until now one rolling release held a single APK that
+  each build overwrote, and 1.0.0 to 1.2.0 are simply gone — the numbers could not be rolled
+  back to.
 - The abs programme is back on Workout, paired with each session as the plan intends —
   twelve movements across the six days, each with its photograph, its set logging, and the
   easier regression underneath.
