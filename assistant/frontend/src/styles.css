@@ -1422,6 +1422,120 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 .row-x:hover { background: var(--panel-2); color: var(--danger); }
 
+/* A single figure a screen is organised around, with its unit kept quiet beside it. */
+.big-figure {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 30px;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.big-unit { color: var(--muted); font-size: 14px; }
+
+/* Meal and supplement rows: name over detail, a figure on the right. */
+.meal-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+}
+
+.meal-row + .meal-row { border-top: 1px solid var(--line); }
+.meal-main { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.meal-name { font-size: 14.5px; }
+
+/* Two lines, because a meal in this plan is a whole sentence of ingredients and the row
+   is here to be scanned, not read. */
+.meal-food {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.meal-kcal {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Growth: a month is a card row, and habits are square grids. */
+.month-head-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 0 0 10px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.month-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+
+.month-frac {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  flex: 0 0 auto;
+}
+
+.month-frac.on { color: var(--accent-dim); }
+.month-theme { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
+
+.habit-block + .habit-block { margin-top: 18px; }
+
+.habit-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+.habit-streak {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent-dim);
+  flex: 0 0 auto;
+}
+
+/* Seven to a row, so twenty-six weeks read as a calendar rather than a ribbon that has to
+   be scrolled sideways to be seen at all. */
+.habit-cells {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.habit-cells button {
+  aspect-ratio: 1;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: var(--panel-2);
+  cursor: pointer;
+}
+
+.habit-cells button.on { background: var(--accent-dim); }
+
 /* ---------------- launch screen ---------------- */
 
 /*
