@@ -151,17 +151,16 @@ html, body {
 }
 
 .brand {
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: -0.02em;
   font-family: var(--font-display);
 }
 
 .brand-sub {
   color: var(--muted);
   font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.01em;
   margin-top: 2px;
 }
 
@@ -175,8 +174,7 @@ html, body {
 .tab-group-label {
   font-family: var(--font-display);
   font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.01em;
   color: var(--muted);
   opacity: 0.75;
   margin: 16px 11px 4px;
@@ -191,7 +189,7 @@ html, body {
   gap: 8px;
   background: transparent;
   border: 0;
-  border-radius: 7px;
+  border-radius: 12px;
   color: var(--text);
   cursor: pointer;
   font: inherit;
@@ -236,31 +234,7 @@ html, body {
   width: 100%;
   animation: panel-in 0.35s ease both;
   position: relative;
-  padding: 4px 4px 4px 16px;
-}
-
-/*
- * HUD corner brackets — the targeting-overlay look from the films, drawn as eight small
- * gradient slivers on a ::before so a card's own background/border is untouched underneath.
- * Shared by .panel and .dash-card rather than one-off markup in every template.
- */
-.panel::before,
-.dash-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(var(--hud-cyan), var(--hud-cyan)), linear-gradient(var(--hud-cyan), var(--hud-cyan)),
-    linear-gradient(var(--hud-cyan), var(--hud-cyan)), linear-gradient(var(--hud-cyan), var(--hud-cyan)),
-    linear-gradient(var(--hud-cyan), var(--hud-cyan)), linear-gradient(var(--hud-cyan), var(--hud-cyan)),
-    linear-gradient(var(--hud-cyan), var(--hud-cyan)), linear-gradient(var(--hud-cyan), var(--hud-cyan));
-  background-repeat: no-repeat;
-  background-size: 16px 2px, 2px 16px, 16px 2px, 2px 16px, 16px 2px, 2px 16px, 16px 2px, 2px 16px;
-  background-position:
-    top 0 left 0, top 0 left 0, top 0 right 0, top 0 right 0,
-    bottom 0 left 0, bottom 0 left 0, bottom 0 right 0, bottom 0 right 0;
-  opacity: 0.55;
+  padding: 4px 16px 8px;
 }
 
 .dash-card { position: relative; }
@@ -282,9 +256,12 @@ html, body {
 }
 
 .page-title {
-  font-size: 25px;
-  margin: 0 0 4px;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
   font-family: var(--font-display);
+  text-wrap: balance;
 }
 
 .page-sub {
@@ -294,10 +271,11 @@ html, body {
 }
 
 .section-title {
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  font-family: var(--font-display);
   margin: 26px 0 10px;
   font-family: var(--font-display);
 }
@@ -323,7 +301,7 @@ input, select, textarea, button {
 input, select, textarea {
   background: var(--panel-2);
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: 12px;
   padding: 8px 10px;
 }
 
@@ -337,10 +315,11 @@ input:focus, select:focus, textarea:focus {
 button {
   background: var(--accent-dim);
   border: 0;
-  border-radius: 7px;
+  border-radius: 999px;
   color: var(--on-accent);
   cursor: pointer;
-  padding: 9px 15px;
+  font-weight: 600;
+  padding: 11px 18px;
   transition: filter 0.15s ease, transform 0.1s ease;
 }
 
@@ -417,14 +396,14 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
 
 .pill {
   border-radius: 999px;
-  font-size: 11px;
-  padding: 2px 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 12px;
+  padding: 4px 11px;
+  text-transform: capitalize;
+  letter-spacing: 0;
   flex: 0 0 auto;
   border: 1px solid var(--line);
   color: var(--muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
 }
 
 .pill.high { border-color: var(--danger); color: var(--danger); }
@@ -493,8 +472,7 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
 .stat-label {
   color: var(--muted);
   font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   margin-top: 3px;
 }
 
@@ -577,7 +555,8 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
     max-height: none;
     overflow-y: visible;
     border-right: 0;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 0;
+    background: transparent;
     padding: 14px;
   }
 
@@ -593,7 +572,7 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
     margin-left: auto;
     background: var(--panel-2);
     border: 1px solid var(--line);
-    border-radius: 7px;
+    border-radius: 12px;
     padding: 6px 10px;
     font-size: 13px;
     color: var(--text);
@@ -742,8 +721,7 @@ button:disabled { opacity: 0.5; cursor: default; filter: none; }
 .track-label {
   color: var(--muted);
   font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.01em;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -908,8 +886,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 .approach-label {
   font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   color: var(--muted);
   margin-bottom: 4px;
 }
@@ -953,8 +930,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 .note-label {
   font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   color: var(--muted);
   margin-bottom: 4px;
   font-family: var(--font-display);
@@ -1067,8 +1043,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 .overall-progress-tag {
   font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.01em;
   color: var(--muted);
 }
 
@@ -1102,8 +1077,9 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .dash-card {
   text-align: left;
   background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  border: 0;
+  border-radius: 18px;
+  box-shadow: var(--lift);
   padding: 16px;
   cursor: pointer;
   font: inherit;
@@ -1112,17 +1088,17 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 }
 
 .dash-card:hover {
-  border-color: var(--accent-dim);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--text) 6%, transparent),
+              0 14px 28px -14px color-mix(in srgb, var(--text) 34%, transparent);
 }
 
 .dash-card-title {
   font-family: var(--font-display);
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--accent-dim);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
   margin-bottom: 10px;
 }
 
@@ -1169,8 +1145,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   color: var(--accent-dim);
   font-family: var(--font-display);
   font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.01em;
 }
 
 .fit-note { color: var(--muted); font-size: 13px; padding: 10px 14px; margin: 0; }
@@ -1180,8 +1155,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   color: var(--hud-cyan);
   font-family: var(--font-display);
   font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.01em;
   border-bottom: 1px solid var(--line);
 }
 
@@ -1266,68 +1240,16 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   .launch-foot { transition: none; }
 }
 
-/* ---------------- ambient HUD background ---------------- */
+/* ---------------- app shell ---------------- */
 
 /*
- * A faint, slowly-rotating radial grid behind every tab — decorative only, low enough
- * opacity to never compete with real content. Fixed positioning + a radial-gradient mask
- * keeps it from ever affecting layout or scroll.
+ * The rotating radial grid and the dashed ring behind the hero are gone. They were the
+ * cockpit's atmosphere; Bloom's ground is quiet on purpose, and a slowly rotating pattern
+ * behind a set log is exactly the ambient decoration this direction exists to reject.
  */
-.app {
-  position: relative;
-}
-
-.app::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image:
-    repeating-conic-gradient(
-      from 0deg,
-      var(--hud-cyan) 0deg 0.6deg,
-      transparent 0.6deg 30deg
-    );
-  background-position: 50% 50%;
-  background-size: 1400px 1400px;
-  background-repeat: no-repeat;
-  opacity: 0.05;
-  mask-image: radial-gradient(circle at 50% 50%, black 0%, transparent 70%);
-  animation: ambient-rotate 90s linear infinite;
-}
-
-@keyframes ambient-rotate {
-  to { transform: rotate(360deg); }
-}
+.app { position: relative; }
 
 .sidebar, .main, .rail { position: relative; z-index: 1; }
-
-@media (prefers-reduced-motion: reduce) {
-  .app::before { animation: none; }
-}
-
-/* Extra ambient presence behind the dashboard's reactor hero specifically. */
-.reactor-row { position: relative; }
-
-.reactor-row::before {
-  content: '';
-  position: absolute;
-  left: -20px;
-  top: 50%;
-  width: 160px;
-  height: 160px;
-  transform: translateY(-50%);
-  border-radius: 50%;
-  border: 1px dashed var(--hud-cyan);
-  opacity: 0.25;
-  animation: ambient-rotate 12s linear infinite;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .reactor-row::before { animation: none; }
-}
 
 /* ---------------- context rail ---------------- */
 
@@ -1354,8 +1276,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .rail-head {
   font-family: var(--font-display);
   font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.01em;
   color: var(--accent-dim);
   margin-bottom: 10px;
 }
@@ -1492,8 +1413,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 .fit-key li {
   display: flex; align-items: center; gap: 6px;
   font-family: var(--font-mono);
-  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--muted);
+  font-size: 11px; letter-spacing: 0.01em; color: var(--muted);
   border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px;
 }
 .fit-key i { width: 7px; height: 7px; border-radius: 2px; background: var(--accent-dim); box-shadow: 0 0 8px var(--accent-dim); }
@@ -1508,8 +1428,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   font-size: 19px; font-variant-numeric: tabular-nums;
 }
 .fit-stats span {
-  display: block; font-size: 10px; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--muted); margin-top: 2px;
+  display: block; font-size: 10px; letter-spacing: 0.01em; color: var(--muted); margin-top: 2px;
 }
 
 /* ---------------- rest timer ---------------- */
@@ -1523,8 +1442,7 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   font-size: 25px; font-weight: 700; font-variant-numeric: tabular-nums;
 }
 .rest-val span {
-  display: block; font-size: 9px; letter-spacing: 0.16em;
-  text-transform: uppercase; color: var(--muted); margin-top: 2px;
+  display: block; font-size: 9px; letter-spacing: 0.01em; color: var(--muted); margin-top: 2px;
 }
 .rest-timer.done .rest-val b { color: var(--ok); }
 .rest-presets { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -2157,10 +2075,12 @@ app-bottom-nav {
 
 .bottom-nav {
   display: none;
-  background: color-mix(in srgb, var(--panel) 92%, transparent);
-  backdrop-filter: blur(12px);
-  border-top: 1px solid var(--line);
-  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  box-shadow: var(--lift);
+  margin: 0 12px calc(10px + env(safe-area-inset-bottom));
+  padding: 5px 6px;
 }
 
 .bn-item {
@@ -2168,10 +2088,10 @@ app-bottom-nav {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  gap: 3px;
+  justify-content: center;
+  gap: 4px;
   min-width: 0;
-  padding: 6px 2px;
+  padding: 4px 2px;
   background: transparent;
   border: 0;
   color: var(--muted);
@@ -2187,14 +2107,25 @@ app-bottom-nav {
   position: relative;
   display: grid;
   place-items: center;
-  height: 42px;
+  height: 38px;
+  min-width: 44px;
+  border-radius: 999px;
   line-height: 0;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+/* The active tab is a filled capsule behind the icon — the one place in the nav that
+   carries the accent, so which tab you are on reads before you have read a word. */
+.bn-item.active .bn-icon {
+  background: var(--accent-dim);
+  color: var(--on-accent);
 }
 .bn-icon svg { width: 24px; height: 24px; display: block; }
 
 .bn-label {
-  font-size: 11px;
-  letter-spacing: 0.02em;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2203,8 +2134,8 @@ app-bottom-nav {
 
 /* The assistant is the app's main action, so it reads as a button rather than a peer. */
 .bn-item.primary .bn-icon {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   /* transform, not margin: the button lifts out of the bar without changing the layout, so
      its label stays on the same line as every other label. */
   transform: translateY(-12px);
@@ -2215,10 +2146,9 @@ app-bottom-nav {
 }
 
 .bn-item.primary.active .bn-icon {
-  background: linear-gradient(160deg, var(--accent), var(--ember-deep));
+  background: var(--accent-dim);
   border-color: transparent;
   color: var(--on-accent);
-  box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
 .bn-badge {
@@ -2253,7 +2183,7 @@ app-bottom-nav {
   flex: 1 1 0;
   padding: 8px 6px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 12px;
   background: transparent;
   color: var(--muted);
   font-size: 13px;
@@ -2285,8 +2215,8 @@ app-bottom-nav {
      so it centres, and gets an ambient bloom behind it rather than sitting flush left. */
   .brand-row {
     justify-content: center;
-    gap: 10px;
-    padding: 4px 0 2px;
+    gap: 9px;
+    padding: 6px 0 4px;
     isolation: isolate;
   }
 
@@ -2297,25 +2227,6 @@ app-bottom-nav {
      that contrast is what makes it read as a heartbeat rather than a wave. Both tile edges
      sit on the baseline, so the repeat has no seam; the mask fades both ends so it reads
      as passing through the header. */
-  .brand-row::before {
-    content: '';
-    position: absolute;
-    left: -14px;
-    right: -14px;
-    top: 50%;
-    height: 62px;
-    transform: translateY(-50%);
-    pointer-events: none;
-    z-index: -1;
-    opacity: 0.28;
-    background-image: var(--ecg-trace);
-    background-repeat: repeat-x;
-    background-size: 300px 60px;
-    background-position: 0 center;
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
-    mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
-  }
-
   .brand-reactor { width: 30px; height: 30px; }
   .brand { font-size: 21px; }
 }
@@ -2364,10 +2275,12 @@ app-bottom-nav {
     z-index: 20;
   }
 
-  /* Same translucent treatment as the bottom bar, so the two read as one frame. */
+  /* The ground colour, not a panel. The bottom bar is a floating capsule now, so there is
+     no frosted frame for this to pair with — a full-width slab of panel colour here just
+     reads as a leftover bar. The scrim below still does the work of separating it from
+     content that scrolls under it. */
   .sidebar {
-    background: color-mix(in srgb, var(--panel) 92%, transparent);
-    backdrop-filter: blur(12px);
+    background: var(--bg);
   }
 
   /* The fade itself: a scrim hung off the header's own bottom edge, so it travels with the
@@ -2481,8 +2394,7 @@ summary:focus-visible {
   margin-top: 3px;
   font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
   color: var(--bg);
   background: var(--ok);
   border-radius: 3px;
@@ -2504,16 +2416,20 @@ summary:focus-visible {
    looks the way it always did. Only the chevron and the summary are new. */
 .fold {
   border: 0;
-  background: transparent;
-  margin-bottom: 2px;
+  background: var(--panel);
+  border-radius: 18px;
+  box-shadow: var(--lift);
+  margin-bottom: 12px;
+  overflow: hidden;
 }
 
 .fold-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  padding: 18px 0 8px;
+  padding: 17px 18px;
+  min-height: 56px;
   background: transparent;
   border: 0;
   text-align: left;
@@ -2526,24 +2442,24 @@ summary:focus-visible {
 /* Deliberately identical to .section-title — same face, size, tracking and colour. */
 .fold-label {
   font-family: var(--font-display);
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
   transition: color 0.15s ease;
 }
 
 .fold-note {
   margin-left: auto;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
   max-width: 45%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.fold-body { padding: 0 0 6px; }
+.fold-body { padding: 0 18px 18px; }
 
 /* The fold row is the heading now, so a section's first paragraph should not add to the
    gap the header already leaves. */
@@ -2552,8 +2468,7 @@ summary:focus-visible {
 /* Sub-heading inside a folded section, quieter than the fold's own label. */
 .setting-sub {
   font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.01em;
   color: var(--muted);
   margin: 18px 0 8px;
   font-family: var(--font-display);
@@ -2579,7 +2494,7 @@ summary:focus-visible {
   background: var(--panel-2);
   color: var(--text);
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: 12px;
   padding: 8px 10px;
   font-size: 13px;
 }
