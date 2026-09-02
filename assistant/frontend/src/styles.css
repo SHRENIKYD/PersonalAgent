@@ -1172,6 +1172,110 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
   margin-left: 6px;
 }
 
+/* ---------------- today ---------------- */
+
+/*
+ * The Bloom card vocabulary, shared by every screen that was rebuilt to the mockup: a
+ * rounded surface on a soft lift, 18px radius, 16px padding. Declared once here so a
+ * screen adds a card by naming it rather than by restating six properties.
+ */
+.card {
+  background: var(--panel);
+  border-radius: 18px;
+  box-shadow: var(--lift);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+/* The one card a screen wants read first carries the accent as a tinted ground rather than
+   a border — a rule would compete with the rounded edge, a wash does not. */
+.card-accent { background: var(--wash); }
+
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.card-label { color: var(--muted); font-size: 13px; }
+.card-value { font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+.card-count { font-family: var(--font-mono); font-size: 13px; color: var(--accent-dim); }
+
+.today-date {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0 0 4px;
+}
+
+/* Muscle groups as outlined capsules — the accent's only appearance above the fold, so
+   what today loads reads before anything else on the screen. */
+.chip-row { display: flex; flex-wrap: wrap; gap: 7px; margin: 0 0 16px; }
+
+.chip-accent {
+  border: 1px solid var(--accent-dim);
+  color: var(--accent-dim);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  /* The plan stores group names lowercase ("quads"); they are proper labels on screen. */
+  text-transform: capitalize;
+}
+
+/* Three figures on one card. Buttons, not divs: each jumps to the tab that explains it. */
+.stat-card {
+  display: flex;
+  background: var(--panel);
+  border-radius: 18px;
+  box-shadow: var(--lift);
+  padding: 16px 8px;
+  margin-bottom: 14px;
+}
+
+.stat-cell {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: transparent;
+  border: 0;
+  padding: 4px;
+  color: inherit;
+  cursor: pointer;
+  min-height: 56px;
+}
+
+.stat-figure {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-figure.accent { color: var(--accent-dim); }
+.stat-name { color: var(--muted); font-size: 12px; }
+
+.vol-row { margin-top: 12px; }
+
+.vol-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.vol-count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------------- launch screen ---------------- */
 
 /*

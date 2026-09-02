@@ -34,11 +34,8 @@ import {
   WorkoutDay,
   musclesFor,
   workoutForDate,
+  todayIso,
 } from '../../fitness-data';
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 /**
  * Training only. Split from the old combined Fitness tab because the two halves are used at

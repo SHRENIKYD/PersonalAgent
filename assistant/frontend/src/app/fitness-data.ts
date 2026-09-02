@@ -345,6 +345,11 @@ export function unmappedGroups(): string[] {
  * rather than an empty WorkoutDay, so callers must decide what "rest" reads like instead
  * of silently rendering a session with no exercises.
  */
+/** Today as an ISO date. Shared, because three screens must agree on where "today" ends. */
+export function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export function workoutForDate(date = new Date()): WorkoutDay | null {
   const row = WEEKLY_SCHEDULE[(date.getDay() + 6) % 7];   // WEEKLY_SCHEDULE starts Monday
   if (!row || /rest/i.test(row.session)) return null;

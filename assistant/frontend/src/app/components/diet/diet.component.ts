@@ -10,11 +10,8 @@ import {
   SUPPLEMENTS,
   VEG_MEALS,
   mealTotals,
+  todayIso,
 } from '../../fitness-data';
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 /** Nutrition only — the other half of what used to be one Fitness tab. */
 @Component({
