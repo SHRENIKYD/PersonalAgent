@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { AgentService } from '../../services/agent.service';
 import { SettingsService } from '../../services/settings.service';
 import { UiService } from '../../services/ui.service';
-import { DictationService } from '../../services/dictation.service';
 import { MarkdownComponent } from '../markdown/markdown.component';
 import { WorkoutCard, DietCard, DisplayEntry } from '../../models';
 
@@ -231,31 +230,11 @@ const OPENERS: { label: string; prompt: string; icon: string }[] = [
           (blur)="ui.composerFocused.set(false)"
           (keydown.enter)="onEnter($event)"></textarea>
 
-        <!--
-          Keeping focus in the textarea is what makes one tap enough. Without this, pressing
-          a composer button blurs the input, which un-hides the bottom bar, which moves the
-          composer up by the height of the bar — out from under the finger mid-tap, so the
-          first press only ever repositioned the button.
-        -->
-        <button *ngIf="dictation.supported()" class="mic-btn"
-                (pointerdown)="keepFocus($event)"
-                (mousedown)="keepFocus($event)"
-                [class.live]="dictation.listening()"
-                [disabled]="agent.thinking()"
-                (click)="toggleMic()"
-                [attr.aria-label]="dictation.listening() ? 'Stop dictation' : 'Dictate'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="9" y="2" width="6" height="12" rx="3" />
-            <path d="M5 11a7 7 0 0 0 14 0M12 18v4" />
-          </svg>
-        </button>
-
         <button class="send-btn" [disabled]="agent.thinking() || !inputText.trim()"
                 (pointerdown)="keepFocus($event)"
                 (mousedown)="keepFocus($event)"
                 (click)="send()" aria-label="Send">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6"
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M12 19V5M5 12l7-7 7 7" />
           </svg>
@@ -264,7 +243,6 @@ const OPENERS: { label: string; prompt: string; icon: string }[] = [
 
       <p class="chat-hint">
         Enter to send · Shift+Enter for a new line
-        <span *ngIf="dictation.error()" class="dict-err"> · {{ dictation.error() }}</span>
       </p>
     </section>
   `,
@@ -334,7 +312,6 @@ export class ChatComponent {
     public agent: AgentService,
     public settings: SettingsService,
     public ui: UiService,
-    public dictation: DictationService,
   ) {
     // Follow the conversation as it grows. Reading the signal inside the effect is what
     // subscribes it, so this runs on every transcript change.
@@ -381,21 +358,6 @@ export class ChatComponent {
   }
 
 
-  /** Set while the composer holds text that came from the microphone. */
-  private dictatedInput = false;
-
-  toggleMic() {
-    if (this.dictation.listening()) {
-      this.dictation.stop();
-      return;
-    }
-    this.dictation.start(text => {
-      // Appended rather than replacing, so dictation can extend something already typed.
-      this.inputText = (this.inputText + ' ' + text).trim();
-      this.dictatedInput = true;
-    });
-  }
-
   onEnter(e: Event) {
     const ke = e as KeyboardEvent;
     if (!ke.shiftKey) {
@@ -407,10 +369,7 @@ export class ChatComponent {
   send() {
     const text = this.inputText;
     if (text.trim() === '') return;
-    const dictated = this.dictatedInput;
     this.inputText = '';
-    this.dictatedInput = false;
-    this.dictation.stop();
-    void this.agent.send(text, { dictated });
+    void this.agent.send(text);
   }
 }

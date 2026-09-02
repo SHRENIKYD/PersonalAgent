@@ -96,15 +96,6 @@ const CARD_SHOWN_NOTE =
   'what they lifted last time, an answer to what they actually asked, or nothing more than a ' +
   'short sentence. One or two lines is usually right.';
 
-/** Appended to the history copy of anything that arrived by voice. */
-const DICTATED_NOTE =
-  '[INPUT NOTE] The above was dictated, so treat it as a phonetic transcript rather than ' +
-  'exact wording. Speech recognition substitutes similar-sounding words confidently — ' +
-  'product and technical names are the usual casualties. If a phrase reads oddly but a ' +
-  'near-homophone would make obvious sense in context, answer the likely intent and say ' +
-  'which reading you assumed in a few words. Ask only when the readings differ enough that ' +
-  'guessing wrong would waste real effort.';
-
 /** The prose in a response, for checking what the model claimed. */
 function textOf(r: AssistantResponse): string {
   return r.content
@@ -751,15 +742,8 @@ export class AgentService {
   }
 
   /**
-   * `dictated` marks text that came from speech recognition rather than a keyboard. The
-   * model cannot otherwise tell, and the two need reading differently: a recogniser
-   * substitutes phonetically similar words with total confidence — "GenAI" arrives as
-   * "Jain AI" — and answering the words as written is then confidently wrong.
-   *
-   * The hint rides on the history copy only. The transcript keeps the clean text, so the
-   * screen shows what was said rather than an annotation.
    */
-  async send(userText: string, opts: { dictated?: boolean } = {}): Promise<void> {
+  async send(userText: string): Promise<void> {
     const text = userText.trim();
     if (text === '' || this.thinking()) return;
 
@@ -767,7 +751,7 @@ export class AgentService {
     this.push({ kind: 'user', text });
     this.history.push({
       role: 'user',
-      content: opts.dictated ? `${text}\n\n${DICTATED_NOTE}` : text,
+      content: text,
     });
 
     const pendingIndex = this.transcript().length;

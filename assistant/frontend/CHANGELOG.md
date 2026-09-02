@@ -11,14 +11,16 @@ capability, **PATCH** for fixes to what already shipped.
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-09-02
+
 ### Removed
-- Voice. The spoken greeting, the voice picker, the Settings section and hands-free mode
-  are all gone, along with their services and styles. Dictation — the microphone that types
-  what you say into the composer — stays; that is speech *in*, a different feature.
+- Speech, in both directions. The spoken greeting, the voice picker, the Voice section,
+  hands-free mode, and the microphone button that dictated into the composer — with their
+  services, the transcript hint the assistant used to be given, and their styles. ECHO is
+  typed and read now.
 - The separate beta app. Its workflow, environment file and Angular build configuration
   are gone; there is one app again. The `beta` flag stays in `environment.ts` at `false`
-  because hands-free voice mode is gated on it, so removing it would have either shipped
-  that feature or deleted it.
+  as the documented hook for unfinished work, though nothing reads it any more.
 
 ### Changed
 - The interface itself is Bloom now, not the old one recoloured. Rounded cards on a soft

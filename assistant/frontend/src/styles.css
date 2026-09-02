@@ -1793,38 +1793,13 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 .composer textarea:focus { outline: none; }
 
-.mic-btn, .send-btn { flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; padding: 0; }
-
-.mic-btn {
-  width: 38px;
-  height: 38px;
-  background: transparent;
-  border: 1px solid var(--line);
-  color: var(--muted);
-}
-
-.mic-btn:hover { color: var(--text); filter: none; background: var(--panel-2); }
-.mic-btn svg { width: 18px; height: 18px; }
-
-/* Listening is a state you must be able to see at a glance — leaving a mic open without
-   saying so is not acceptable. */
-.mic-btn.live {
-  border-color: var(--danger);
-  color: var(--danger);
-  animation: mic-pulse 1.4s ease-in-out infinite;
-}
-
-@keyframes mic-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 50%, transparent); }
-  50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--danger) 0%, transparent); }
-}
+.send-btn { flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; padding: 0; }
 
 .send-btn {
   width: 42px;
   height: 42px;
-  background: linear-gradient(135deg, var(--accent-dim), var(--accent));
+  background: var(--accent-dim);
   border: 0;
-  box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--accent) 90%, transparent);
 }
 
 .send-btn svg { width: 19px; height: 19px; }
@@ -1838,7 +1813,6 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
      the hint and clips the bottom of the composer's shadow. */
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-.dict-err { color: var(--warn); }
 
 @media (max-width: 720px) {
   .chat-log { max-height: none; }
@@ -1848,7 +1822,6 @@ td.cell button.on { background: var(--ok); border-color: var(--ok); }
 
 @media (prefers-reduced-motion: reduce) {
   .chat-log { scroll-behavior: auto; }
-  .mic-btn.live { animation: none; }
 }
 
 /* Kept on one line: wrapped to "Clear / chat" it reads as two controls. */
