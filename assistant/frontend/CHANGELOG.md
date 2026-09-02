@@ -11,7 +11,17 @@ capability, **PATCH** for fixes to what already shipped.
 
 ## [Unreleased]
 
+### Removed
+- The separate beta app. Its workflow, environment file and Angular build configuration
+  are gone; there is one app again. The `beta` flag stays in `environment.ts` at `false`
+  because hands-free voice mode is gated on it, so removing it would have either shipped
+  that feature or deleted it.
+
 ### Added
+- Bloom Indigo, light and dark, replacing the ember-on-near-black palette, with an
+  Appearance setting that defaults to following the phone.
+- A launch screen that types out what the app remembers about you — your last session,
+  your weight, what is overdue — instead of a fake boot sequence.
 - Version numbers. Until now a build could only be identified by its commit sha, which tells
   you two builds differ but not which is newer — the app, the APK and the release asset now
   all carry the same semantic version.
